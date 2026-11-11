@@ -1,0 +1,45 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "outputDirectory": "public",
+  "functions": {
+    "api/index.php": {
+      "runtime": "vercel-php@0.7.3",
+      "maxDuration": 15,
+      "excludeFiles": "{node_modules/**,tests/**,storage/app/**,database/*.sqlite*,resources/css/**,.github/**}"
+    }
+  },
+  "routes": [
+    { "src": "/(css|js|fonts)/(.*)", "dest": "/$1/$2" },
+    { "src": "/(favicon\\.svg|robots\\.txt)", "dest": "/$1" },
+    { "src": "/(.*)", "dest": "/api/index.php" }
+  ],
+  "env": {
+    "APP_NAME": "SIPELAB",
+    "APP_ENV": "production",
+    "APP_DEBUG": "false",
+    "APP_TIMEZONE": "Asia/Jakarta",
+    "APP_LOCALE": "id",
+    "APP_FALLBACK_LOCALE": "en",
+    "APP_CONFIG_CACHE": "/tmp/config.php",
+    "APP_EVENTS_CACHE": "/tmp/events.php",
+    "APP_PACKAGES_CACHE": "/tmp/packages.php",
+    "APP_ROUTES_CACHE": "/tmp/routes.php",
+    "APP_SERVICES_CACHE": "/tmp/services.php",
+    "VIEW_COMPILED_PATH": "/tmp/views",
+    "LOG_CHANNEL": "stderr",
+    "LOG_LEVEL": "warning",
+    "DB_CONNECTION": "pgsql",
+    "SESSION_DRIVER": "database",
+    "SESSION_LIFETIME": "30",
+    "SESSION_EXPIRE_ON_CLOSE": "true",
+    "SESSION_ENCRYPT": "true",
+    "SESSION_SECURE_COOKIE": "true",
+    "CACHE_STORE": "database",
+    "QUEUE_CONNECTION": "sync",
+    "MAIL_MAILER": "log",
+    "TRUSTED_PROXIES": "*",
+    "SIPELAB_BERKAS_DB": "true",
+    "SEED_DEMO": "true"
+  }
+}

@@ -1,0 +1,53 @@
+<?php
+
+return [
+    'accepted' => ':Attribute harus disetujui.',
+    'array' => ':Attribute tidak valid.',
+    'boolean' => ':Attribute harus ya atau tidak.',
+    'confirmed' => 'Konfirmasi :attribute tidak cocok.',
+    'current_password' => 'Kata sandi saat ini salah.',
+    'different' => ':Attribute harus berbeda dari :other.',
+    'email' => ':Attribute harus berupa alamat email yang valid.',
+    'enum' => ':Attribute yang dipilih tidak valid.',
+    'exists' => ':Attribute yang dipilih tidak ditemukan.',
+    'file' => ':Attribute harus berupa berkas.',
+    'in' => ':Attribute yang dipilih tidak valid.',
+    'integer' => ':Attribute harus berupa bilangan bulat.',
+    'max' => [
+        'array' => ':Attribute maksimal :max item.',
+        'file' => ':Attribute maksimal :max kilobyte.',
+        'numeric' => ':Attribute maksimal :max.',
+        'string' => ':Attribute maksimal :max karakter.',
+    ],
+    'mimes' => ':Attribute harus berformat: :values.',
+    'min' => [
+        'array' => ':Attribute minimal :min item.',
+        'file' => ':Attribute minimal :min kilobyte.',
+        'numeric' => ':Attribute minimal :min.',
+        'string' => ':Attribute minimal :min karakter.',
+    ],
+    'numeric' => ':Attribute harus berupa angka.',
+    'password' => [
+        'letters' => ':Attribute harus berisi huruf.',
+        'mixed' => ':Attribute harus berisi huruf besar dan huruf kecil.',
+        'numbers' => ':Attribute harus berisi angka.',
+        'symbols' => ':Attribute harus berisi simbol.',
+        'uncompromised' => ':Attribute ini pernah bocor di internet. Pilih kata sandi lain.',
+    ],
+    'regex' => 'Format :attribute tidak valid.',
+    'required' => ':Attribute wajib diisi.',
+    'required_if' => ':Attribute wajib diisi.',
+    'string' => ':Attribute harus berupa teks.',
+    'unique' => ':Attribute sudah terdaftar.',
+    'uploaded' => ':Attribute gagal diunggah.',
+
+    'attributes' => [
+        'nama' => 'nama', 'email' => 'email', 'password' => 'kata sandi', 'current_password' => 'kata sandi saat ini',
+        'instansi' => 'instansi', 'telepon' => 'nomor telepon', 'portal' => 'masuk sebagai', 'role' => 'peran', 'lab_id' => 'lab',
+        'nama_sampel' => 'nama sampel', 'jenis_komoditas' => 'jenis komoditas', 'jumlah_sampel' => 'jumlah sampel',
+        'asal_sampel' => 'asal sampel', 'tujuan' => 'tujuan distribusi', 'keterangan' => 'keterangan', 'dokumen' => 'dokumen pendukung',
+        'kode_billing' => 'kode billing', 'ntpn' => 'NTPN', 'bukti' => 'bukti setor', 'keputusan' => 'keputusan', 'alasan' => 'alasan',
+        'catatan' => 'catatan', 'hasil' => 'hasil uji', 'lampiran' => 'lampiran', 'urutan' => 'urutan', 'tarif' => 'tarif',
+        'nama_instansi' => 'nama instansi', 'alamat_instansi' => 'alamat instansi', 'biaya_admin' => 'biaya administrasi', 'prefix_lhu' => 'prefiks nomor LHU',
+    ],
+];
