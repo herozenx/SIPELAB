@@ -1,4 +1,4 @@
-# SIPELAB — Sistem Pelayanan, Pengujian & Sertifikasi Laboratorium
+# SIPELAB  Sistem Pelayanan, Pengujian & Sertifikasi Laboratorium
 
 Aplikasi web layanan uji mutu hasil perikanan untuk **BPPMHKP Surabaya II**.
 Alur: permohonan online → verifikasi sampel + kode billing SIMPONI → NTPN + bukti setor → konfirmasi admin →
