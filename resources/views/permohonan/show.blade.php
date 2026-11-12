@@ -25,6 +25,8 @@
   <x-status :p="$p" class="mt-1 px-3 py-1.5 text-sm" />
 </div>
 
+{{-- Jalur tahapan lab & norma waktu: hanya untuk petugas Balai (pengguna jasa cukup melihat status). --}}
+@unless ($pengguna)
 <section class="panel mt-6 px-4 py-6 sm:px-6" aria-label="Jalur uji">
   <div class="overflow-x-auto pb-1"><div class="min-w-[480px]"><x-jalur :p="$p" :labs="$labs" /></div></div>
   @if ($p->target_selesai_at)
@@ -40,6 +42,7 @@
     </p>
   @endif
 </section>
+@endunless
 
 <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
   <div class="space-y-6">
@@ -148,7 +151,7 @@
       <section class="panel"><div class="panel-body">
         <h2>Pembayaran sedang dicek</h2>
         <p class="mt-2 text-sm text-kabut-600">Admin Lab mencocokkan NTPN <span class="kode">{{ $p->ntpn }}</span> dengan dana masuk di SIMPONI.
-          {{ $eksternal ? 'Setelah terkonfirmasi, LHU langsung bisa diunduh di halaman ini.' : 'Setelah terkonfirmasi, sampel langsung masuk ke laboratorium pertama.' }}</p>
+          {{ $eksternal ? 'Setelah terkonfirmasi, LHU langsung bisa diunduh di halaman ini.' : 'Setelah terkonfirmasi, sampel mulai diproses di laboratorium.' }}</p>
       </div></section>
     @endif
 
@@ -182,10 +185,22 @@
       </section>
     @endif
 
-    @if ($p->status === $S::DiLab && ! $petugas)
+    @if ($pengguna && in_array($p->status, [$S::DiLab, $S::MenungguValidasi], true))
+      {{-- Pengguna jasa hanya melihat bahwa sampel sedang diproses, tanpa tahapan internal lab. --}}
+      <section class="panel"><div class="panel-body flex items-start gap-4">
+        <span class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-laut-50 text-laut-600"><x-ikon n="jam" class="h-5 w-5" /></span>
+        <div>
+          <h2>Sampel sedang diproses</h2>
+          <p class="mt-1 text-sm text-kabut-600">Sampel Anda sedang diuji di laboratorium Balai. Halaman ini diperbarui otomatis; Anda akan melihat perubahannya begitu LHU {{ $eksternal ? 'jadi dan tagihan pelunasan terbit' : 'terbit' }}.</p>
+          @if ($p->target_selesai_at)
+            <p class="mt-3 text-sm">Perkiraan selesai: <span class="font-semibold">{{ tanggal($p->target_selesai_at, false) }}</span> <span class="text-kabut-500">({{ \App\Models\Setting::get('norma_total_hari') }} hari kerja)</span></p>
+          @endif
+        </div>
+      </div></section>
+    @elseif ($p->status === $S::DiLab && ! $petugas)
       <section class="panel"><div class="panel-body">
         <h2>Sedang diuji di Lab {{ $p->labSaatIni?->nama }}</h2>
-        <p class="mt-2 text-sm text-kabut-600">Sampel diteruskan otomatis ke laboratorium berikutnya setelah petugas menginput hasil. @if($pengguna)Nilai hasil uji ditampilkan setelah LHU tervalidasi.@endif</p>
+        <p class="mt-2 text-sm text-kabut-600">Sampel diteruskan otomatis ke laboratorium berikutnya setelah petugas menginput hasil.</p>
       </div></section>
     @endif
 
@@ -304,7 +319,7 @@
     @endif
 
     {{-- ===================== Hasil uji ===================== --}}
-    @if ($hasil->isNotEmpty() || ($pengguna && in_array($p->status, [$S::DiLab, $S::MenungguValidasi], true)))
+    @if ($hasil->isNotEmpty() && $tampilHasil)
       <section class="panel overflow-hidden">
         <div class="panel-head"><h2>{{ $petugas ? 'Hasil lab Anda' : 'Hasil pengujian' }}</h2></div>
         @if (! $tampilHasil)

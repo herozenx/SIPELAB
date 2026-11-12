@@ -1,35 +1,15 @@
 @extends('layouts.guest')
 @section('title', 'Layanan uji mutu hasil perikanan')
 @section('content')
-@php
-  $contoh = new \App\Models\Permohonan(['status' => \App\Enums\Status::DiLab, 'current_lab_id' => $labs->get(1)?->id ?? $labs->first()?->id]);
-  $perSampel = $labs->sum('tarif');
-@endphp
+@php $perSampel = $labs->sum('tarif'); @endphp
 
 <section class="bg-laut-700 text-white">
-  <div class="mx-auto grid max-w-6xl grid-cols-1 gap-10 px-4 pb-14 pt-10 sm:px-6 sm:pt-12 lg:grid-cols-[1fr_1.05fr] lg:items-center lg:pb-20 lg:pt-16 [&>*]:min-w-0">
-    <div>
-      <h1 class="max-w-[16ch] text-[1.9rem] font-extrabold leading-[1.12] tracking-tight text-white sm:text-5xl">Uji mutu hasil perikanan, terpantau sampai LHU terbit.</h1>
-      <p class="mt-5 max-w-[52ch] text-base text-laut-100 sm:text-lg">Ajukan permohonan uji secara online, bayar lewat SIMPONI, lalu ikuti sampel Anda berpindah dari satu laboratorium ke laboratorium berikutnya. Laporan Hasil Uji diterbitkan digital dan bisa dicek keasliannya oleh siapa pun.</p>
-      <div class="mt-8 flex flex-wrap gap-3 max-sm:[&>a]:flex-1">
-        <a href="{{ route('register') }}" class="btn bg-white py-3 text-laut-700 hover:bg-laut-50">Daftar sebagai pengguna jasa</a>
-        <a href="{{ route('login') }}" class="btn py-3 text-white ring-1 ring-inset ring-white/40 hover:bg-white/10">Masuk</a>
-      </div>
-    </div>
-
-    <div class="rounded-2xl bg-white p-5 text-tinta shadow-[0_24px_60px_-20px_rgba(0,0,0,.45)] sm:p-7">
-      <div class="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p class="text-xs text-kabut-500">Contoh tampilan pelacakan</p>
-          <p class="mt-0.5 font-bold">Udang vaname beku, 6 sampel</p>
-        </div>
-        <span class="badge-lab">Di Lab {{ $labs->get(1)?->nama ?? 'Mikrobiologi' }}</span>
-      </div>
-      <div class="-mx-1 mt-6 overflow-x-auto pb-1"><div class="min-w-[420px] px-1"><x-jalur :p="$contoh" :labs="$labs" /></div></div>
-      <ul class="mt-6 space-y-2.5 border-t border-kabut-200 pt-5 text-sm">
-        <li class="flex gap-3"><span class="num w-24 shrink-0 text-kabut-500">09.12</span><span>Uji Nekropsi selesai. Data diteruskan otomatis ke Lab Mikrobiologi.</span></li>
-        <li class="flex gap-3"><span class="num w-24 shrink-0 text-kabut-500">Kemarin</span><span>Pembayaran SIMPONI terkonfirmasi masuk.</span></li>
-      </ul>
+  <div class="mx-auto max-w-6xl px-4 pb-14 pt-10 sm:px-6 sm:pt-12 lg:pb-20 lg:pt-16">
+    <h1 class="max-w-[18ch] text-[1.9rem] font-extrabold leading-[1.12] tracking-tight text-white sm:text-5xl">Uji mutu hasil perikanan, terpantau sampai LHU terbit.</h1>
+    <p class="mt-5 max-w-[56ch] text-base text-laut-100 sm:text-lg">Ajukan permohonan uji secara online, bayar lewat SIMPONI, dan pantau status permohonan Anda dari mana saja. Laporan Hasil Uji diterbitkan digital dan bisa dicek keasliannya oleh siapa pun.</p>
+    <div class="mt-8 flex flex-wrap gap-3 max-sm:[&>a]:flex-1">
+      <a href="{{ route('register') }}" class="btn bg-white py-3 text-laut-700 hover:bg-laut-50">Daftar sebagai pengguna jasa</a>
+      <a href="{{ route('login') }}" class="btn py-3 text-white ring-1 ring-inset ring-white/40 hover:bg-white/10">Masuk</a>
     </div>
   </div>
 </section>
@@ -41,7 +21,7 @@
       ['Ajukan online', 'Isi data sampel, jumlah, asal, dan tujuan distribusi. Lampirkan dokumen pendukung bila ada.'],
       ['Serahkan sampel', 'Bawa sampel fisik ke loket. Admin Lab memeriksa kesesuaiannya.'],
       ['Bayar lewat SIMPONI', 'Mandiri: bayar di awal sebelum diuji. Eksternal: bayar setelah LHU jadi. Kirim NTPN dan bukti setor dari akun Anda.'],
-      ['Diuji berurutan', 'Sampel melewati '.$labs->pluck('nama')->join(', ', ', lalu ').'. Norma waktu '.\App\Models\Setting::get('norma_total_hari').' hari kerja.'],
+      ['Sampel diproses', 'Sampel diuji oleh laboratorium Balai. Norma waktu '.\App\Models\Setting::get('norma_total_hari').' hari kerja; status bisa dipantau dari akun Anda.'],
       ['Terima LHU digital', 'LHU bernomor dengan kode verifikasi. Siapa pun bisa mengecek keasliannya di situs ini.'],
     ] as $i => [$judul, $isi])
       <li class="border-t-[3px] border-laut-600 pt-4">

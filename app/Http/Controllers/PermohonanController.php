@@ -102,6 +102,15 @@ class PermohonanController extends Controller
         if ($u->role === Role::PenggunaJasa) {
             // Nilai hasil baru tampil setelah LHU tervalidasi; lampiran internal lab disembunyikan.
             $dokumen = $dokumen->where('jenis', '!=', Dokumen::LAMPIRAN_LAB);
+            // Tahapan internal lab (perpindahan antar-lab, operator) tidak diperlihatkan ke pengguna jasa.
+            $riwayat = $riwayat
+                ->reject(fn ($r) => $r->status === Status::MenungguValidasi
+                    || ($r->status === Status::DiLab && preg_match('/^(Uji |Sampel ditangani )/u', (string) $r->keterangan)))
+                ->map(function ($r) {
+                    $r->keterangan = preg_replace('/\.?\s*Sampel diteruskan otomatis ke Lab [^.]*/u', '. Sampel mulai diproses di laboratorium', (string) $r->keterangan);
+
+                    return $r;
+                });
             if ($p->status !== Status::Selesai) {
                 $tampilHasil = false;
                 $lhu = null;
@@ -114,7 +123,8 @@ class PermohonanController extends Controller
             $riwayat = $riwayat->filter(fn ($r) => in_array($r->status, [Status::DiLab, Status::MenungguValidasi], true));
         }
 
-        $tahap = $p->tahap->sortBy(fn ($t) => $t->lab->urutan)->values();
+        // Tim penanganan & norma per lab: hanya untuk petugas Balai.
+        $tahap = $u->role === Role::PenggunaJasa ? collect() : $p->tahap->sortBy(fn ($t) => $t->lab->urutan)->values();
         $sudahMenangani = $u->role === Role::PetugasLab
             && (bool) $tahap->first(fn ($t) => $t->lab_id === $u->lab_id && ! $t->selesai_at && $t->operator->contains('id', $u->id));
 

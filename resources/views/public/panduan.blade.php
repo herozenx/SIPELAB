@@ -46,7 +46,7 @@
         'Bawa sampel ke loket penerimaan Balai dan sebutkan <b>kode permohonan</b>.',
         'Admin Lab mencocokkan jenis, jumlah, dan kondisi sampel dengan data permohonan.',
         '<b>Mandiri:</b> bila sesuai, kode billing SIMPONI dan tagihan muncul di halaman permohonan Anda.',
-        '<b>Eksternal:</b> bila sesuai, sampel langsung masuk laboratorium pertama tanpa menunggu pembayaran.',
+        '<b>Eksternal:</b> bila sesuai, sampel langsung diproses tanpa menunggu pembayaran.',
         'Bila tidak sesuai, permohonan <b>ditolak</b> beserta alasannya. Perbaiki lalu ajukan permohonan baru.',
       ],
       [], null],
@@ -57,26 +57,26 @@
         'Salin <b>kode billing</b> (15 digit) dan <b>jumlah setor</b>.',
         'Bayar lewat teller bank, ATM, internet/mobile banking, atau kantor pos yang melayani SIMPONI.',
         'Isi <b>NTPN</b> (16 huruf/angka) persis seperti di bukti setor, unggah foto/PDF bukti setor, lalu klik <b>Kirim bukti pembayaran</b>.',
-        'Admin Lab mencocokkan dana masuk. Setelah terkonfirmasi, sampel otomatis masuk laboratorium pertama.',
+        'Admin Lab mencocokkan dana masuk. Setelah terkonfirmasi, sampel mulai diproses di laboratorium.',
       ],
       [['penting', 'Satu NTPN hanya berlaku untuk satu permohonan.'], ['info', 'Bila bukti ditolak, alasannya tampil di halaman permohonan dan Anda bisa mengunggah ulang.']], null],
     ['eksternal', 'Eksternal: pelunasan & pengambilan LHU', 'kunci',
       'Pengguna jasa Eksternal membayar setelah LHU jadi. LHU baru bisa diambil setelah lunas.',
       [
-        'Setelah semua lab selesai dan LHU divalidasi, status berubah menjadi <b>LHU jadi, menunggu pelunasan</b>.',
+        'Setelah pengujian selesai dan LHU divalidasi, status berubah menjadi <b>LHU jadi, menunggu pelunasan</b>.',
         'Buka permohonan: tampil <b>nomor LHU</b>, <b>kode billing</b> pelunasan, dan <b>jumlah setor</b>.',
         'Bayar lewat SIMPONI, lalu isi <b>NTPN</b> dan unggah bukti setor seperti pada pembayaran Mandiri.',
         'Setelah Admin Lab mengonfirmasi dana masuk, status menjadi <b>LHU terbit</b> dan LHU bisa dilihat serta diunduh.',
       ],
       [['penting', 'Sebelum lunas, LHU dan nilai hasil uji belum bisa dibuka atau diunduh.']], null],
-    ['pantau', 'Memantau pengujian & norma waktu', 'jam',
-      "Sampel diuji berurutan di {$labNama}. Setiap perpindahan tercatat dan bisa Anda pantau.",
+    ['pantau', 'Memantau permohonan & norma waktu', 'jam',
+      'Status permohonan bisa Anda pantau kapan saja dari akun Anda.',
       [
         'Buka menu <b>Permohonan saya</b> lalu klik permohonan.',
-        '<b>Jalur uji</b> di bagian atas menunjukkan posisi sampel saat ini.',
-        "Baris <b>Norma waktu sampel jadi</b> menunjukkan target tanggal selesai ({$normaTotal} hari kerja sejak sampel masuk laboratorium).",
-        'Tabel <b>Tim penanganan & norma waktu</b> menampilkan nama operator yang menangani sampel di tiap lab, batas waktunya, dan statusnya (tepat waktu/terlambat).',
-        'Nilai hasil uji tiap lab ditampilkan setelah LHU divalidasi.',
+        'Selama sampel diuji, status menampilkan <b>Sedang diproses</b>.',
+        "Bagian <b>Perkiraan selesai</b> menunjukkan target tanggal sampel jadi ({$normaTotal} hari kerja sejak sampel mulai diproses).",
+        'Halaman diperbarui sendiri. Begitu LHU terbit (Eksternal: begitu tagihan pelunasan terbit), statusnya langsung berubah.',
+        'Nilai hasil uji ditampilkan setelah LHU divalidasi.',
       ],
       [['info', 'Hari kerja = Senin–Jumat di luar hari libur nasional dan cuti bersama.']], 'norma'],
     ['lhu', 'LHU & cek keaslian', 'perisai',
@@ -121,7 +121,6 @@
     ['PNBP', 'Penerimaan Negara Bukan Pajak; tarif layanan uji termasuk PNBP.'],
     ['LHU', 'Laporan Hasil Uji, dokumen resmi hasil pengujian sampel.'],
     ['Norma waktu', 'Batas waktu pelayanan dalam hari kerja, per lab maupun total.'],
-    ['Operator', 'Petugas laboratorium yang menangani dan menguji sampel.'],
   ];
   $catatanGaya = ['info' => ['bg-laut-50 text-laut-700', 'info', 'Info'], 'penting' => ['bg-surya-50 text-surya-700', 'info', 'Penting']];
 @endphp
@@ -201,12 +200,10 @@
               @case('norma')
                 <div class="overflow-hidden rounded-xl ring-1 ring-kabut-200">
                   <table class="tabel">
-                    <thead><tr><th>Urutan</th><th>Laboratorium</th><th>Norma waktu</th><th class="text-right">Tarif per sampel</th></tr></thead>
                     <tbody>
-                      @foreach ($labs as $l)
-                        <tr><td class="num">{{ $l->urutan }}</td><td class="font-semibold">{{ $l->nama }}</td><td>{{ $l->norma_hari }} hari kerja</td><td class="num text-right">{{ rupiah($l->tarif) }}</td></tr>
-                      @endforeach
-                      <tr><td></td><td class="font-semibold">Target sampel jadi</td><td class="font-semibold">{{ $normaTotal }} hari kerja</td><td class="num text-right text-kabut-500">+ admin {{ rupiah($biayaAdmin) }}</td></tr>
+                      <tr><td class="font-semibold">Norma waktu sampel jadi</td><td class="num text-right font-semibold">{{ $normaTotal }} hari kerja</td></tr>
+                      <tr><td>Tarif pengujian per sampel</td><td class="num text-right">{{ rupiah($labs->sum('tarif')) }}</td></tr>
+                      <tr><td class="text-kabut-500">Biaya administrasi per permohonan</td><td class="num text-right text-kabut-500">{{ rupiah($biayaAdmin) }}</td></tr>
                     </tbody>
                   </table>
                 </div>

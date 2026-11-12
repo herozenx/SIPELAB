@@ -172,9 +172,11 @@ class RevisiSatuTest extends TestCase
         $mikro = TahapLab::query()->where('permohonan_id', $p->id)->whereHas('lab', fn ($q) => $q->where('nama', 'Mikrobiologi'))->firstOrFail();
         $this->assertEqualsCanonicalizing(['Dewi Mikrobiologi', 'Petugas Mikrobiologi'], $mikro->operator->pluck('nama')->all());
 
-        // Nama operator terlihat oleh pengguna jasa dan admin.
-        $this->as('pengguna@lab.local')->get("/permohonan/{$p->id}")->assertOk()->assertSee('Dewi Mikrobiologi')->assertSee('Petugas Nekropsi');
-        $this->as('admin@lab.local')->get("/permohonan/{$p->id}")->assertOk()->assertSee('Tim penanganan');
+        // Nama operator & tahapan lab hanya untuk petugas Balai; pengguna jasa cukup melihat "Sedang diproses".
+        $this->as('admin@lab.local')->get("/permohonan/{$p->id}")->assertOk()->assertSee('Tim penanganan')->assertSee('Dewi Mikrobiologi');
+        $this->as('pengguna@lab.local')->get("/permohonan/{$p->id}")->assertOk()
+            ->assertSee('Sedang diproses')->assertDontSee('Dewi Mikrobiologi')->assertDontSee('Petugas Nekropsi')
+            ->assertDontSee('Tim penanganan')->assertDontSee('Lab Kimia');
     }
 
     public function test_petugas_lab_lain_tidak_bisa_menangani(): void
@@ -271,7 +273,9 @@ class RevisiSatuTest extends TestCase
         $this->as('admin@lab.local')->get('/beranda')->assertOk()->assertSee('Sampel melewati norma waktu')->assertSee('Petugas Nekropsi');
         $this->as('nekropsi@lab.local')->get('/beranda')->assertOk()->assertSee('Lewat')->assertSee('Petugas Nekropsi');
         $this->as('eksternal@lab.local')->get('/beranda')->assertOk()->assertSee('Eksternal')->assertSee('Baca panduan');
-        $this->as('eksternal@lab.local')->get("/permohonan/{$p->id}")->assertOk()->assertSee('Norma waktu sampel jadi');
+        $this->as('eksternal@lab.local')->get("/permohonan/{$p->id}")->assertOk()->assertSee('Perkiraan selesai')->assertDontSee('Norma waktu sampel jadi');
+        $this->as('eksternal@lab.local')->get('/permohonan')->assertOk()->assertSee('Sedang diproses')->assertDontSee('Di Lab Nekropsi');
+        $this->as('admin@lab.local')->get("/permohonan/{$p->id}")->assertOk()->assertSee('Norma waktu sampel jadi');
         $this->as('admin@lab.local')->get('/permohonan')->assertOk()->assertSee($p->kode);
         $this->as('superadmin@lab.local')->get('/admin/lab')->assertOk()->assertSee('Norma (hari kerja)');
         $this->as('superadmin@lab.local')->get('/admin/pengaturan')->assertOk()->assertSee('Hari libur nasional');
@@ -285,6 +289,23 @@ class RevisiSatuTest extends TestCase
         $this->as('superadmin@lab.local')->put('/admin/pengaturan', $set + ['hari_libur' => '25-12-2026'])->assertSessionHasErrors('hari_libur');
         $this->as('superadmin@lab.local')->put('/admin/pengaturan', $set + ['hari_libur' => "2026-12-25\n2026-12-24"])->assertSessionHas('success');
         $this->assertSame("2026-12-24\n2026-12-25", Setting::get('hari_libur'));
+    }
+
+    public function test_halaman_publik_dan_pengguna_tidak_membuka_tahapan_internal_lab(): void
+    {
+        $this->get('/')->assertOk()->assertDontSee('Contoh tampilan pelacakan')->assertDontSee('Di Lab');
+        $this->get('/panduan')->assertOk()->assertDontSee('Tim penanganan')->assertDontSee('Jalur uji');
+
+        // Riwayat pengguna jasa tidak memuat perpindahan antar-lab.
+        $p = $this->ajukan('eksternal@lab.local');
+        $this->as('admin@lab.local')->post("/permohonan/{$p->id}/verifikasi", ['keputusan' => 'valid', 'jenis_bayar' => 'EKSTERNAL']);
+        $this->as('nekropsi@lab.local')->post("/permohonan/{$p->id}/hasil", ['hasil' => 'NEGATIF']);
+        // Di test sesi dipakai bersama: buang dulu pesan flash milik petugas dari langkah sebelumnya.
+        $this->as('eksternal@lab.local')->get('/beranda');
+        $this->as('eksternal@lab.local')->get("/permohonan/{$p->id}")->assertOk()
+            ->assertSee('Sampel mulai diproses di laboratorium')
+            ->assertDontSee('Uji Nekropsi selesai')->assertDontSee('Lab Mikrobiologi')->assertDontSee('Jalur uji');
+        $this->as('admin@lab.local')->get("/permohonan/{$p->id}")->assertOk()->assertSee('Uji Nekropsi selesai');
     }
 
     // ---------------------------------------------------------------- Panduan

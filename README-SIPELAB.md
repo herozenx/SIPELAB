@@ -68,7 +68,7 @@ Akun demo (hanya ada di laptop/demo), sandi semua: **`Lab12345!`**
 Perbedaan tampilan:
 - **Admin Lab & Superadmin** → beranda berisi antrean tindakan (verifikasi, cek bayar, validasi LHU), jumlah sampel per lab, dan daftar **sampel yang lewat norma waktu**. Menu tambahan **Tim operator** dan **Chat pengguna**.
 - **Petugas (operator)** → hanya antrean sampel di lab-nya sendiri, diurutkan dari batas norma terdekat; tombol **Tangani sampel**; menu **Chat pengguna**. Tidak melihat tagihan, hasil lab lain, maupun LHU.
-- **Pengguna jasa** → hanya permohonan miliknya; nilai hasil uji baru tampil setelah LHU tervalidasi (Eksternal: setelah lunas). Menu **Chat petugas** + tombol chat melayang, dan **Panduan**.
+- **Pengguna jasa** → hanya permohonan miliknya; saat sampel diuji cukup melihat status **Sedang diproses** + perkiraan selesai (tanpa jalur lab, nama operator, atau riwayat antar-lab); nilai hasil uji baru tampil setelah LHU tervalidasi (Eksternal: setelah lunas). Menu **Chat petugas** + tombol chat melayang, dan **Panduan**.
 
 Keamanan akun: 5x salah sandi → akun **terkunci 15 menit** (Superadmin bisa buka lewat menu Pengguna → *Buka kunci*). Sesi berakhir setelah **30 menit tidak aktif** (maks. 10 jam).
 
@@ -138,7 +138,7 @@ Pengguna ajukan ──▶ [Menunggu verifikasi]
    - **Mandiri**: setelah disetujui muncul **kode billing** dan **total tagihan** → bayar dulu.
    - **Eksternal**: sampel langsung diuji; kode billing muncul **setelah LHU jadi**.
 4. Bayar lewat SIMPONI, lalu isi **NTPN** (16 huruf/angka) dan unggah **bukti setor** (PDF/JPG/PNG, maks. 5 MB).
-5. Pantau status di **Permohonan saya**: posisi sampel, **nama operator** yang menangani tiap lab, dan **target selesai** (norma waktu).
+5. Pantau status di **Permohonan saya**: selama diuji tampil **Sedang diproses** beserta **perkiraan selesai** (norma waktu). Tahapan internal lab (lab mana, operator siapa, perpindahan antar-lab) **tidak** ditampilkan ke pengguna jasa — hanya petugas Balai yang melihatnya.
 6. Setelah status **LHU terbit** → buka permohonan → **Lihat/Cetak LHU** (Eksternal: setelah pelunasan dikonfirmasi).
 7. Ada pertanyaan? Klik **Chat petugas** (pojok kanan bawah). Terlihat juga siapa saja petugas yang sedang online.
 8. Bingung? Menu **Panduan**: buku panduan 10 bagian dengan tombol ← → dan **Unduh PDF** (juga bisa dibuka tanpa login di `/panduan`, dan lewat **Pusat bantuan** di halaman depan).
