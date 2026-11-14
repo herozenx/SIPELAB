@@ -62,7 +62,7 @@ DIAJUKAN ─(Admin: sampel sesuai + kode billing)─▶ MENUNGGU_PEMBAYARAN ─(
                                                                                                     (Admin: dana masuk)
 DI_LAB[lab urutan 1] ─▶ DI_LAB[lab urutan 2] ─▶ … ─▶ MENUNGGU_VALIDASI ─(Admin: terbitkan)─▶ SELESAI (LHU terbit)
 ```
-- Semua hasil **negatif** → *Lulus uji, bisa beredar/ekspor/impor* (sesuai tujuan). Ada **positif** → *Tidak lulus uji*.
+- Semua hasil **negatif** → *Lulus uji, bisa beredar/ekspor* (sesuai tujuan). Ada **positif** → *Tidak lulus uji*.
 - Lab, urutan, dan tarif diatur Superadmin (menu *Lab & tarif*); tagihan = Σ tarif lab aktif × jumlah sampel + biaya administrasi.
 - Format kode billing (15 digit) dan NTPN (16 huruf/angka) ada di `config/sipelab.php` — sesuaikan bila format Balai berbeda.
 - Pembaruan real-time: halaman memeriksa `/api/versi` tiap 8 detik dan memuat ulang otomatis bila data berubah

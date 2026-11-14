@@ -20,6 +20,20 @@
   backdrop?.addEventListener('click', () => setNav(false));
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && toggle?.getAttribute('aria-expanded') === 'true') setNav(false); });
 
+  // Menu atas halaman publik di HP
+  const menu = $('[data-menu]');
+  const menuBtn = $('[data-menu-toggle]');
+  const setMenu = (open) => {
+    if (!menu || !menuBtn) return;
+    menu.classList.toggle('hidden', !open);
+    menuBtn.setAttribute('aria-expanded', String(open));
+    menuBtn.setAttribute('aria-label', open ? 'Tutup menu' : 'Buka menu');
+    $('[data-menu-open]', menuBtn)?.classList.toggle('hidden', open);
+    $('[data-menu-close]', menuBtn)?.classList.toggle('hidden', !open);
+  };
+  menuBtn?.addEventListener('click', () => setMenu(menu.classList.contains('hidden')));
+  if (menu) $$('a', menu).forEach((a) => a.addEventListener('click', () => setMenu(false)));
+
   // Baris tabel bisa diklik (tautan asli tetap ada untuk keyboard & pembaca layar)
   document.addEventListener('click', (e) => {
     const row = e.target.closest('tr[data-href]');
@@ -60,7 +74,7 @@
   $$('[data-reveal-select]').forEach((sel) => {
     const form = sel.form;
     const sync = () => $$('[data-reveal-when]', form).forEach((el) => {
-      const on = el.dataset.revealWhen === sel.value;
+      const on = el.dataset.revealWhen.split(' ').includes(sel.value);
       el.hidden = !on;
       $$('input, select', el).forEach((f) => { f.disabled = !on; });
     });

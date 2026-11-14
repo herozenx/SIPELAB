@@ -31,7 +31,7 @@
       @foreach ($rows as $usr)
         <tr>
           <td><span class="font-semibold">{{ $usr->nama }}</span><span class="block break-all text-xs text-kabut-500">{{ $usr->email }}@if($usr->instansi), {{ $usr->instansi }}@endif</span></td>
-          <td class="whitespace-nowrap" data-label="Peran"><span>{{ $usr->role->label() }}@if($usr->lab)<span class="block text-xs text-kabut-500">Lab {{ $usr->lab->nama }}</span>@endif @if($usr->tipe_pengguna)<span class="block text-xs text-kabut-500">{{ $usr->tipe_pengguna->label() }}</span>@endif</span></td>
+          <td class="whitespace-nowrap" data-label="Peran"><span>{{ $usr->role->label() }}@if($usr->lab)<span class="block text-xs text-kabut-500">Lab {{ $usr->lab->nama }}</span>@endif</span></td>
           <td class="whitespace-nowrap" data-label="Status">
             @if (! $usr->aktif)<span class="badge-bad">Nonaktif</span>
             @elseif ($usr->locked_until && $usr->locked_until->isFuture())<span class="badge-wait">Terkunci</span>
@@ -67,12 +67,6 @@
         <select id="u-lab" name="lab_id" class="input">
           <option value="">Pilih lab</option>
           @foreach ($labs as $l)<option value="{{ $l->id }}" @selected((int) old('lab_id', $e?->lab_id) === $l->id)>{{ $l->nama }}</option>@endforeach
-        </select>
-      </div>
-      <div data-reveal-when="pengguna_jasa">
-        <label for="u-tipe" class="label">Jenis pengguna jasa</label>
-        <select id="u-tipe" name="tipe_pengguna" class="input">
-          @foreach (\App\Enums\JenisBayar::cases() as $jb)<option value="{{ $jb->value }}" @selected(old('tipe_pengguna', $e?->tipe_pengguna?->value ?? 'MANDIRI') === $jb->value)>{{ $jb->label() }}: {{ $jb->keterangan() }}</option>@endforeach
         </select>
       </div>
       <div><label for="u-instansi" class="label">Instansi <span class="font-normal text-kabut-500">(opsional)</span></label><input id="u-instansi" name="instansi" value="{{ old('instansi', $e?->instansi) }}" class="input"></div>

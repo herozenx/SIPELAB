@@ -17,7 +17,6 @@ enum StatusIzin: string
     {
         $jalur = match ($tujuan) {
             Tujuan::Ekspor => 'ekspor',
-            Tujuan::Impor => 'impor',
             default => 'beredar',
         };
 

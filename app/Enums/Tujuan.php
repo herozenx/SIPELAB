@@ -6,7 +6,6 @@ enum Tujuan: string
 {
     case Domestik = 'DOMESTIK';
     case Ekspor = 'EKSPOR';
-    case Impor = 'IMPOR';
 
     public function label(): string
     {

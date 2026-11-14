@@ -78,9 +78,9 @@
                   <option value="{{ $jb->value }}" @selected(old('jenis_bayar', $p->jenis_bayar?->value) === $jb->value)>{{ $jb->label() }}: {{ $jb->keterangan() }}</option>
                 @endforeach
               </select>
-              <p class="hint">Mengikuti jenis akun pengguna jasa ({{ $p->pemohon?->jenisBayar()->label() }}). Ubah bila perlu.</p>
+              <p class="hint">Sesuai pilihan pengguna jasa saat mengajukan. Ubah bila perlu.</p>
             </div>
-            <div data-reveal-when="MANDIRI">
+            <div data-reveal-when="MANDIRI SURVEILEN">
               <label for="kode_billing" class="label">Kode billing SIMPONI</label>
               <input id="kode_billing" name="kode_billing" value="{{ old('kode_billing') }}" class="input num max-w-xs" inputmode="numeric" maxlength="15" placeholder="15 digit angka" @error('kode_billing') aria-invalid="true" @enderror>
               @error('kode_billing')<p class="error">{{ $message }}</p>@enderror

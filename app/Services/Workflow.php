@@ -94,7 +94,10 @@ class Workflow
     public function ajukan(User $u, array $data, array $files): Permohonan
     {
         return $this->tx(function () use ($u, $data, $files) {
-            $p = Permohonan::query()->create($data + ['user_id' => $u->id, 'status' => Status::Diajukan, 'jenis_bayar' => $u->jenisBayar()]);
+            $data['jenis_bayar'] ??= $u->jenisBayar()->value;
+            $p = Permohonan::query()->create($data + ['user_id' => $u->id, 'status' => Status::Diajukan]);
+            // Diingat sebagai pilihan awal pada pengajuan berikutnya.
+            $u->forceFill(['tipe_pengguna' => $data['jenis_bayar']])->save();
             $p->update(['kode' => sprintf('PMH-%s-%05d', now()->format('Y'), $p->id)]);
             $this->simpanBerkas($files, $p, Dokumen::PENDUKUNG, $u);
             $this->catat($p, Status::Diajukan, 'Permohonan diajukan secara online', $u);
@@ -105,7 +108,7 @@ class Workflow
 
     /**
      * Sampel fisik sesuai.
-     * - MANDIRI  : terbitkan kode billing, pengguna bayar dulu.
+     * - MANDIRI/SURVEILEN: terbitkan kode billing, pengguna bayar dulu.
      * - EKSTERNAL: sampel langsung masuk lab pertama; kode billing diterbitkan setelah LHU jadi.
      */
     public function verifikasiValid(Permohonan $p, ?string $kodeBilling, User $admin, ?JenisBayar $jenis = null): int
@@ -113,9 +116,9 @@ class Workflow
         $jenis ??= $p->jenis_bayar ?? JenisBayar::Mandiri;
         $tagihan = $this->tagihan($p->jumlah_sampel);
 
-        if ($jenis === JenisBayar::Mandiri) {
+        if ($jenis->bayarDiAwal()) {
             if (! $kodeBilling) {
-                throw new WorkflowException('Isi kode billing SIMPONI untuk pengguna jasa mandiri.');
+                throw new WorkflowException('Isi kode billing SIMPONI untuk pengguna jasa yang bayar di awal.');
             }
             $this->tx(fn () => $this->transisi($p, Status::Diajukan,
                 ['status' => Status::MenungguPembayaran->value, 'tagihan' => $tagihan, 'kode_billing' => $kodeBilling, 'jenis_bayar' => $jenis->value],

@@ -9,7 +9,8 @@
 @tailwind utilities;
 
 @layer base {
-  html { @apply bg-kabut-100 text-tinta antialiased; font-feature-settings: 'ss01'; }
+  html { @apply bg-kabut-100 text-tinta antialiased; font-feature-settings: 'ss01'; scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
   body { @apply min-h-screen text-[0.9375rem] leading-relaxed; }
   h1, h2, h3 { @apply text-tinta font-bold tracking-tight; }
   h1 { @apply text-2xl leading-tight sm:text-[1.75rem]; }

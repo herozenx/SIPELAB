@@ -44,7 +44,7 @@ class AlurPermohonanTest extends TestCase
     {
         $this->as('pengguna@lab.local')->post('/permohonan', [
             'nama_sampel' => 'Tuna loin beku', 'jenis_komoditas' => 'Ikan beku', 'jumlah_sampel' => 2,
-            'asal_sampel' => 'Muncar, Banyuwangi', 'tujuan' => 'EKSPOR',
+            'asal_sampel' => 'Muncar, Banyuwangi', 'tujuan' => 'EKSPOR', 'jenis_bayar' => 'MANDIRI',
         ])->assertRedirect();
 
         return Permohonan::query()->latest('id')->firstOrFail();

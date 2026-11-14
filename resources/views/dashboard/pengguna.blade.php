@@ -4,7 +4,7 @@
 <div class="flex flex-wrap items-end justify-between gap-3">
   <div>
     <h1>Halo, {{ $u->nama }}</h1>
-    <p class="mt-1 text-kabut-600">{{ $u->instansi }} · Pengguna jasa <span class="font-semibold">{{ $u->jenisBayar()->label() }}</span> ({{ mb_strtolower($u->jenisBayar()->keterangan()) }})</p>
+    <p class="mt-1 text-kabut-600">{{ $u->instansi }}</p>
   </div>
   <a href="{{ route('permohonan.create') }}" class="btn-primary"><x-ikon n="tambah" class="h-4 w-4" />Ajukan uji baru</a>
 </div>

@@ -96,11 +96,9 @@ class AuthController extends Controller
             'instansi' => ['required', 'string', 'min:2', 'max:150'],
             'email' => ['required', 'email:rfc', 'max:120', 'unique:users,email'],
             'telepon' => ['required', 'regex:/^[0-9+\-\s]{8,20}$/'],
-            'tipe_pengguna' => ['required', Rule::enum(JenisBayar::class)],
             'password' => ['required', 'confirmed', Password::defaults()],
         ], [
             'telepon.regex' => 'Nomor telepon 8–20 digit, boleh memakai + atau -.',
-            'tipe_pengguna.required' => 'Pilih jenis pengguna jasa: Mandiri atau Eksternal.',
         ]);
 
         $user = User::query()->create($data + ['role' => Role::PenggunaJasa]);
