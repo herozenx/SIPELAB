@@ -142,7 +142,7 @@
 
   <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[270px_minmax(0,1fr)]">
     {{-- Daftar bagian --}}
-    <nav class="no-print panel self-start lg:sticky lg:top-6" aria-label="Daftar bagian panduan">
+    <nav class="no-print panel self-start lg:sticky lg:top-24" aria-label="Daftar bagian panduan">
       <div class="panel-head"><h2 class="text-base">Daftar bagian</h2><span class="num text-xs text-kabut-500" data-bab-pos>1 / {{ $n }}</span></div>
       <ol class="p-2">
         @foreach ($bab as $i => [$id, $judul])
@@ -152,7 +152,7 @@
     </nav>
 
     {{-- Isi: satu bagian per halaman (tanpa JavaScript: semua bagian tampil berurutan) --}}
-    <div data-panduan>
+    <div data-panduan class="scroll-mt-24">
       <div class="no-print mb-4 hidden flex-wrap items-center justify-between gap-3 rounded-xl bg-white px-4 py-3 shadow-[0_0_0_1px_theme(colors.kabut.200)]" data-bab-bar>
         <p class="min-w-0 text-sm"><span class="font-semibold" data-bab-judul></span> <span class="text-kabut-500">· Halaman <span class="num" data-bab-pos>1 / {{ $n }}</span></span></p>
         <div class="flex gap-2">
@@ -162,7 +162,7 @@
       </div>
 
       @foreach ($bab as $i => [$id, $judul, $ikon, $pengantar, $langkah, $catatan, $khusus])
-        <article id="{{ $id }}" data-bab data-judul="{{ $judul }}" class="panel mb-6 scroll-mt-6 overflow-hidden print:!block print:break-after-page print:shadow-none">
+        <article id="{{ $id }}" data-bab data-judul="{{ $judul }}" class="panel mb-6 scroll-mt-24 overflow-hidden print:!block print:break-after-page print:shadow-none">
           <header class="flex items-start gap-4 border-b border-kabut-200 bg-kabut-50 px-5 py-5 sm:px-7">
             <span class="relative grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-laut-600 text-white"><x-ikon :n="$ikon" class="h-6 w-6" /></span>
             <div class="min-w-0">
