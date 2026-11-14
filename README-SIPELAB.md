@@ -111,8 +111,8 @@ Pengguna ajukan ──▶ [Menunggu verifikasi]
                     [LHU terbit]  ──▶ pengguna bisa melihat & mengunduh LHU
 ```
 
-- Jenis (Mandiri/Eksternal) dipilih pengguna saat **Daftar**; Admin bisa mengubahnya saat **verifikasi** sampel (pilihan *Skema pembayaran*), Superadmin juga di menu **Pengguna**.
-- Semua hasil **Negatif** → "Lulus uji, bisa beredar / ekspor / impor" (sesuai tujuan).
+- Jenis pengguna jasa (**Mandiri / Eksternal / Surveilen**) dipilih pengguna setiap kali **Ajukan uji**; Admin bisa mengubahnya saat **verifikasi** sampel (pilihan *Skema pembayaran*). Surveilen sementara mengikuti alur Mandiri (bayar di awal).
+- Semua hasil **Negatif** → "Lulus uji, bisa beredar / ekspor" (sesuai tujuan).
 - Ada satu saja **Positif** → "Tidak lulus uji".
 - **Tagihan** = (jumlah tarif semua lab aktif × jumlah sampel) + biaya administrasi.
 - Halaman memperbarui diri otomatis tiap ±8 detik jika ada perubahan data.
@@ -132,10 +132,11 @@ Pengguna ajukan ──▶ [Menunggu verifikasi]
 1. **Daftar** di halaman depan → *Daftar* (atau masuk dengan akun yang ada).
 2. Menu **Ajukan uji** → isi:
    - Nama sampel, jenis komoditas, jumlah sampel (1–500), asal sampel
-   - Tujuan: **Domestik / Ekspor / Impor**
+   - Jenis pengguna jasa: **Mandiri / Eksternal / Surveilen**
+   - Tujuan: **Domestik / Ekspor**
    - Keterangan & lampiran (opsional; PDF/JPG/PNG, maks. 5 MB, maks. 3 berkas)
 3. Tunggu verifikasi.
-   - **Mandiri**: setelah disetujui muncul **kode billing** dan **total tagihan** → bayar dulu.
+   - **Mandiri / Surveilen**: setelah disetujui muncul **kode billing** dan **total tagihan** → bayar dulu.
    - **Eksternal**: sampel langsung diuji; kode billing muncul **setelah LHU jadi**.
 4. Bayar lewat SIMPONI, lalu isi **NTPN** (16 huruf/angka) dan unggah **bukti setor** (PDF/JPG/PNG, maks. 5 MB).
 5. Pantau status di **Permohonan saya**: selama diuji tampil **Sedang diproses** beserta **perkiraan selesai** (norma waktu). Tahapan internal lab (lab mana, operator siapa, perpindahan antar-lab) **tidak** ditampilkan ke pengguna jasa — hanya petugas Balai yang melihatnya.
@@ -146,7 +147,7 @@ Pengguna ajukan ──▶ [Menunggu verifikasi]
 ### 4.2 Admin Lab
 1. **Beranda** menampilkan 3 antrean: *Menunggu verifikasi*, *Cek pembayaran*, *Menunggu validasi LHU*.
 2. **Verifikasi**: buka permohonan → periksa data sampel → pilih **Skema pembayaran** →
-   - Sesuai + **Mandiri**: isi **kode billing 15 digit** → kirim.
+   - Sesuai + **Mandiri/Surveilen**: isi **kode billing 15 digit** → kirim.
    - Sesuai + **Eksternal**: tanpa kode billing → sampel langsung masuk lab pertama.
    - Tidak sesuai: **Tolak** + tulis alasan.
 3. **Cek pembayaran**: buka bukti setor → cocokkan NTPN dengan SIMPONI →
@@ -168,7 +169,7 @@ Pengguna ajukan ──▶ [Menunggu verifikasi]
 ### 4.4 Superadmin
 | Menu | Fungsi |
 |---|---|
-| **Pengguna** | Tambah akun Admin/Petugas (pilih lab untuk petugas), ubah peran, **jenis pengguna jasa (Mandiri/Eksternal)**, nonaktifkan, **reset sandi** (sandi sementara wajib diganti saat masuk), **buka kunci** |
+| **Pengguna** | Tambah akun Admin/Petugas (pilih lab untuk petugas), ubah peran, nonaktifkan, **reset sandi** (sandi sementara wajib diganti saat masuk), **buka kunci** |
 | **Tim operator** | Sama seperti Admin Lab: kelola operator per tim lab |
 | **Lab & tarif** | Tambah/ubah lab, **urutan** pengujian, **tarif** per sampel, **norma waktu (hari kerja)**, aktif/nonaktif |
 | **Pengaturan** | Nama instansi, alamat instansi (tampil di kop LHU), **biaya administrasi**, **prefiks nomor LHU**, **target norma total (6 hari kerja)**, **daftar hari libur** |
@@ -245,9 +246,9 @@ Pengguna ajukan ──▶ [Menunggu verifikasi]
 |---|---|
 | Nama status ("Menunggu verifikasi", "LHU terbit", dll.) & warnanya | `app/Enums/Status.php` → `label()`, `tone()` |
 | Nama peran ("Admin Lab", "Petugas Lab", …) | `app/Enums/Role.php` → `label()` |
-| Pilihan tujuan (Domestik/Ekspor/Impor) | `app/Enums/Tujuan.php` |
+| Pilihan tujuan (Domestik/Ekspor) | `app/Enums/Tujuan.php` |
 | Kalimat keputusan di LHU ("Lulus uji, bisa ekspor") | `app/Enums/StatusIzin.php` → `keputusan()` |
-| Nama & penjelasan **Mandiri / Eksternal** | `app/Enums/JenisBayar.php` → `label()`, `keterangan()` |
+| Nama & penjelasan **Mandiri / Eksternal / Surveilen**, siapa yang bayar di awal | `app/Enums/JenisBayar.php` → `label()`, `keterangan()`, `bayarDiAwal()` |
 | Hitungan **hari kerja** & teks lencana norma ("Sisa 2 hari kerja") | `app/Support/HariKerja.php` |
 | Berapa menit dianggap **online** (bawaan 2) | `app/Models/User.php` → `ONLINE_MENIT` |
 | Kecepatan chat (tarik pesan tiap 3 detik) | `public/js/app.js` → bagian "Chat langsung" |

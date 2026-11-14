@@ -85,7 +85,7 @@
   $langkah = [
     ['Ajukan online', 'Isi data sampel, jumlah, asal, dan tujuan distribusi. Lampirkan dokumen pendukung bila ada.', '-rotate-1'],
     ['Serahkan sampel', 'Bawa sampel fisik ke loket. Admin Lab memeriksa kesesuaiannya.', 'rotate-[1.25deg]'],
-    ['Bayar lewat SIMPONI', 'Mandiri: bayar di awal sebelum diuji. Eksternal: bayar setelah LHU jadi. Kirim NTPN dan bukti setor dari akun Anda.', '-rotate-[0.5deg]'],
+    ['Bayar lewat SIMPONI', 'Mandiri & Surveilen: bayar di awal sebelum diuji. Eksternal: bayar setelah LHU jadi. Kirim NTPN dan bukti setor dari akun Anda.', '-rotate-[0.5deg]'],
     ['Sampel diproses', 'Sampel diuji oleh laboratorium Balai. Norma waktu '.\App\Models\Setting::get('norma_total_hari').' hari kerja; status bisa dipantau dari akun Anda.', 'rotate-1'],
     ['Terima LHU digital', 'LHU bernomor dengan kode verifikasi. Siapa pun bisa mengecek keasliannya di situs ini.', '-rotate-[1.25deg]'],
   ];

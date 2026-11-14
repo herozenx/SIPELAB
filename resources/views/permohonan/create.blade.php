@@ -31,10 +31,20 @@
         @error('asal_sampel')<p class="error">{{ $message }}</p>@enderror
       </div>
       <fieldset class="sm:col-span-2">
-        <legend class="label">Tujuan distribusi</legend>
+        <legend class="label">Jenis pengguna jasa</legend>
         <div class="grid gap-2 sm:grid-cols-3">
+          @foreach (\App\Enums\JenisBayar::cases() as $jb)
+            <label class="choice"><input type="radio" name="jenis_bayar" value="{{ $jb->value }}" required @checked(old('jenis_bayar', $jenisTerakhir) === $jb->value)><span><span class="block font-semibold">{{ $jb->label() }}</span><span class="text-xs text-kabut-500">{{ $jb->keterangan() }}</span></span></label>
+          @endforeach
+        </div>
+        @error('jenis_bayar')<p class="error">{{ $message }}</p>@enderror
+        <p class="hint">Admin Lab dapat menyesuaikan saat verifikasi sampel. <a href="{{ route('panduan') }}#jenis">Bedanya apa?</a></p>
+      </fieldset>
+      <fieldset class="sm:col-span-2">
+        <legend class="label">Tujuan distribusi</legend>
+        <div class="grid gap-2 sm:grid-cols-2">
           @foreach (\App\Enums\Tujuan::cases() as $t)
-            <label class="choice"><input type="radio" name="tujuan" value="{{ $t->value }}" @checked(old('tujuan', 'DOMESTIK') === $t->value)><span><span class="block font-semibold">{{ $t->label() }}</span><span class="text-xs text-kabut-500">{{ ['DOMESTIK' => 'Diedarkan di dalam negeri', 'EKSPOR' => 'Dikirim ke luar negeri', 'IMPOR' => 'Masuk dari luar negeri'][$t->value] }}</span></span></label>
+            <label class="choice"><input type="radio" name="tujuan" value="{{ $t->value }}" @checked(old('tujuan', 'DOMESTIK') === $t->value)><span><span class="block font-semibold">{{ $t->label() }}</span><span class="text-xs text-kabut-500">{{ ['DOMESTIK' => 'Diedarkan di dalam negeri', 'EKSPOR' => 'Dikirim ke luar negeri'][$t->value] }}</span></span></label>
           @endforeach
         </div>
         @error('tujuan')<p class="error">{{ $message }}</p>@enderror

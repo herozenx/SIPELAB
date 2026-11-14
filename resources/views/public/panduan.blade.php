@@ -20,21 +20,21 @@
       ],
       [['info', 'Di HP, menu dibuka lewat tombol <b>Menu</b> di kanan atas.']], null],
     ['jenis', 'Akun, pendaftaran & jenis pengguna jasa', 'akun',
-      'Satu akun dipakai untuk semua permohonan instansi/usaha Anda. Saat mendaftar Anda memilih jenis pengguna jasa yang menentukan kapan membayar.',
+      'Satu akun dipakai untuk semua permohonan instansi/usaha Anda. Jenis pengguna jasa (Mandiri, Eksternal, atau Surveilen) dipilih setiap kali mengajukan permohonan dan menentukan kapan membayar.',
       [
         'Klik <b>Daftar</b> di halaman depan.',
         'Isi <b>nama penanggung jawab</b>, <b>nama usaha/instansi</b> (dicetak di LHU), <b>email</b>, dan <b>nomor telepon/WA</b>.',
-        'Pilih <b>jenis pengguna jasa</b>: <b>Mandiri</b> atau <b>Eksternal</b> (lihat perbandingan di bawah).',
         'Buat kata sandi minimal 8 karakter berisi huruf besar, huruf kecil, dan angka, lalu klik <b>Buat akun</b>.',
         'Untuk masuk berikutnya, klik <b>Masuk</b>, pilih <b>Masuk sebagai: Pengguna jasa</b>, isi email dan kata sandi.',
       ],
-      [['penting', 'Setelah 5 kali salah kata sandi, akun dikunci 15 menit demi keamanan.'], ['info', 'Tidak yakin memilih? Pilih Mandiri. Admin Lab dapat menyesuaikan jenis saat verifikasi sampel.']], 'jenis'],
+      [['penting', 'Setelah 5 kali salah kata sandi, akun dikunci 15 menit demi keamanan.'], ['info', 'Jenis pengguna jasa dipilih di formulir <b>Ajukan uji</b>. Admin Lab dapat menyesuaikan jenis saat verifikasi sampel.']], 'jenis'],
     ['ajukan', 'Mengajukan permohonan uji', 'tambah',
       'Permohonan diajukan online sebelum sampel dibawa ke Balai.',
       [
         'Klik menu <b>Ajukan uji</b>.',
         'Isi <b>nama sampel</b>, <b>jenis komoditas</b>, <b>jumlah sampel</b> (1–500), dan <b>asal sampel</b>.',
-        'Pilih <b>tujuan distribusi</b>: Domestik, Ekspor, atau Impor. Tujuan menentukan kalimat keputusan di LHU.',
+        'Pilih <b>jenis pengguna jasa</b>: <b>Mandiri</b>, <b>Eksternal</b>, atau <b>Surveilen</b> (lihat perbandingan di bab Akun).',
+        'Pilih <b>tujuan distribusi</b>: Domestik atau Ekspor. Tujuan menentukan kalimat keputusan di LHU.',
         'Lampirkan dokumen pendukung bila ada (PDF/JPG/PNG, maksimal 3 berkas, masing-masing 5 MB).',
         'Periksa <b>perkiraan tagihan</b> di samping formulir, lalu klik <b>Kirim permohonan</b>.',
         'Anda mendapat kode permohonan, misalnya <span class="kode">PMH-2026-00001</span>. Catat kode ini.',
@@ -45,13 +45,13 @@
       [
         'Bawa sampel ke loket penerimaan Balai dan sebutkan <b>kode permohonan</b>.',
         'Admin Lab mencocokkan jenis, jumlah, dan kondisi sampel dengan data permohonan.',
-        '<b>Mandiri:</b> bila sesuai, kode billing SIMPONI dan tagihan muncul di halaman permohonan Anda.',
+        '<b>Mandiri/Surveilen:</b> bila sesuai, kode billing SIMPONI dan tagihan muncul di halaman permohonan Anda.',
         '<b>Eksternal:</b> bila sesuai, sampel langsung diproses tanpa menunggu pembayaran.',
         'Bila tidak sesuai, permohonan <b>ditolak</b> beserta alasannya. Perbaiki lalu ajukan permohonan baru.',
       ],
       [], null],
-    ['bayar', 'Pembayaran SIMPONI (Mandiri)', 'berkas',
-      'Pengguna jasa Mandiri membayar sebelum sampel diuji.',
+    ['bayar', 'Pembayaran SIMPONI (Mandiri & Surveilen)', 'berkas',
+      'Pengguna jasa Mandiri dan Surveilen membayar sebelum sampel diuji.',
       [
         'Buka permohonan berstatus <b>Menunggu pembayaran</b> (juga muncul sebagai pengingat di Beranda).',
         'Salin <b>kode billing</b> (15 digit) dan <b>jumlah setor</b>.',
@@ -107,7 +107,7 @@
   ];
   $n = count($bab);
   $faq = [
-    ['Apa beda pengguna jasa Mandiri dan Eksternal?', 'Mandiri membayar di awal: setelah sampel diverifikasi, bayar dulu, lalu sampel diuji. Eksternal tidak perlu bayar di awal: sampel langsung diuji, tagihan dibayar setelah LHU jadi, dan LHU baru bisa dilihat/diunduh setelah pembayaran dikonfirmasi.'],
+    ['Apa beda pengguna jasa Mandiri, Surveilen, dan Eksternal?', 'Mandiri dan Surveilen membayar di awal: setelah sampel diverifikasi, bayar dulu, lalu sampel diuji. Eksternal tidak perlu bayar di awal: sampel langsung diuji, tagihan dibayar setelah LHU jadi, dan LHU baru bisa dilihat/diunduh setelah pembayaran dikonfirmasi.'],
     ['Berapa lama sampai LHU jadi?', "Norma waktu pelayanan {$normaTotal} hari kerja sejak sampel masuk laboratorium. Target tanggal selesai tampil di halaman permohonan Anda."],
     ['Kenapa nilai hasil uji belum terlihat?', 'Nilai hasil tiap lab ditampilkan setelah LHU divalidasi Admin Lab (Eksternal: setelah lunas), supaya yang Anda terima adalah hasil final.'],
     ['NTPN saya ditolak, apa yang harus dilakukan?', 'Pastikan NTPN disalin persis (16 huruf/angka, tanpa spasi) dan belum pernah dipakai permohonan lain. Bila bukti ditolak admin, alasannya tampil di halaman permohonan dan Anda bisa mengunggah ulang.'],
@@ -183,9 +183,10 @@
 
             @switch ($khusus)
               @case('jenis')
-                <div class="grid gap-4 md:grid-cols-2">
+                <div class="grid gap-4 md:grid-cols-3">
                   @foreach ([
                     ['Mandiri', 'Bayar di awal', ['Ajukan permohonan', 'Serahkan sampel, diverifikasi', 'Bayar tagihan SIMPONI', 'Sampel diuji di lab', 'LHU terbit, langsung bisa diunduh'], 'bg-laut-600'],
+                    ['Surveilen', 'Bayar di awal', ['Ajukan permohonan', 'Serahkan sampel, diverifikasi', 'Bayar tagihan SIMPONI', 'Sampel diuji di lab', 'LHU terbit, langsung bisa diunduh'], 'bg-laut-800'],
                     ['Eksternal', 'Bayar saat LHU jadi', ['Ajukan permohonan', 'Serahkan sampel, diverifikasi', 'Sampel langsung diuji di lab', 'LHU jadi, kode billing dikirim', 'Bayar, lalu LHU bisa diambil'], 'bg-lamun-600'],
                   ] as [$nama, $sub, $alur, $warna])
                     <div class="overflow-hidden rounded-xl ring-1 ring-kabut-200">

@@ -58,11 +58,12 @@ class RevisiSatuTest extends TestCase
         return new UploadedFile($copy, 'bukti.png', 'image/png', null, true);
     }
 
-    private function ajukan(string $email): Permohonan
+    private function ajukan(string $email, ?string $jenis = null): Permohonan
     {
+        $jenis ??= str_starts_with($email, 'eksternal') ? 'EKSTERNAL' : 'MANDIRI';
         $this->as($email)->post('/permohonan', [
             'nama_sampel' => 'Udang vaname', 'jenis_komoditas' => 'Krustasea', 'jumlah_sampel' => 1,
-            'asal_sampel' => 'Sidoarjo', 'tujuan' => 'DOMESTIK',
+            'asal_sampel' => 'Sidoarjo', 'tujuan' => 'DOMESTIK', 'jenis_bayar' => $jenis,
         ])->assertRedirect();
 
         return Permohonan::query()->latest('id')->firstOrFail();
@@ -121,13 +122,43 @@ class RevisiSatuTest extends TestCase
         $this->assertSame(Status::Diajukan, $p->fresh()->status);
     }
 
-    public function test_daftar_sebagai_eksternal(): void
+    public function test_daftar_tanpa_memilih_jenis_pengguna_jasa(): void
     {
+        $this->get('/daftar')->assertOk()->assertDontSee('name="tipe_pengguna"', false);
         $this->post('/daftar', [
             'nama' => 'Budi Eksternal', 'instansi' => 'PT Uji', 'email' => 'budi@uji.id', 'telepon' => '081234567890',
-            'tipe_pengguna' => 'EKSTERNAL', 'password' => 'Rahasia123', 'password_confirmation' => 'Rahasia123',
+            'password' => 'Rahasia123', 'password_confirmation' => 'Rahasia123',
         ])->assertRedirect('/beranda');
-        $this->assertSame(JenisBayar::Eksternal, $this->u('budi@uji.id')->tipe_pengguna);
+        $this->assertNotNull($this->u('budi@uji.id'));
+    }
+
+    public function test_jenis_pengguna_jasa_wajib_dipilih_saat_mengajukan(): void
+    {
+        $this->as('pengguna@lab.local')->get('/permohonan/baru')
+            ->assertOk()->assertSee('Mandiri')->assertSee('Eksternal')->assertSee('Surveilen')->assertDontSee('Impor');
+        $this->as('pengguna@lab.local')->post('/permohonan', [
+            'nama_sampel' => 'Udang vaname', 'jenis_komoditas' => 'Krustasea', 'jumlah_sampel' => 1,
+            'asal_sampel' => 'Sidoarjo', 'tujuan' => 'DOMESTIK',
+        ])->assertSessionHasErrors('jenis_bayar');
+        $this->as('pengguna@lab.local')->post('/permohonan', [
+            'nama_sampel' => 'Udang vaname', 'jenis_komoditas' => 'Krustasea', 'jumlah_sampel' => 1,
+            'asal_sampel' => 'Sidoarjo', 'tujuan' => 'IMPOR', 'jenis_bayar' => 'MANDIRI',
+        ])->assertSessionHasErrors('tujuan');
+        $this->assertSame(0, Permohonan::query()->count());
+    }
+
+    public function test_surveilen_bayar_di_awal_seperti_mandiri(): void
+    {
+        $p = $this->ajukan('pengguna@lab.local', 'SURVEILEN');
+        $this->assertSame(JenisBayar::Surveilen, $p->jenis_bayar);
+        $this->assertSame(JenisBayar::Surveilen, $this->u('pengguna@lab.local')->tipe_pengguna);
+
+        $this->as('admin@lab.local')->post("/permohonan/{$p->id}/verifikasi", ['keputusan' => 'valid', 'jenis_bayar' => 'SURVEILEN'])
+            ->assertSessionHasErrors('kode_billing');
+        $this->as('admin@lab.local')->post("/permohonan/{$p->id}/verifikasi", ['keputusan' => 'valid', 'jenis_bayar' => 'SURVEILEN', 'kode_billing' => '820260000000099'])
+            ->assertSessionHas('success');
+        $this->assertSame(Status::MenungguPembayaran, $p->fresh()->status);
+        $this->assertSame(JenisBayar::Surveilen, $p->fresh()->jenis_bayar);
     }
 
     // ---------------------------------------------------------------- Norma waktu
@@ -261,7 +292,7 @@ class RevisiSatuTest extends TestCase
     public function test_semua_halaman_utama_tampil_untuk_tiap_peran(): void
     {
         // Halaman tamu (sebelum login).
-        $this->get('/daftar')->assertOk()->assertSee('Jenis pengguna jasa');
+        $this->get('/daftar')->assertOk()->assertDontSee('Jenis pengguna jasa');
         $this->get('/')->assertOk()->assertSee('Panduan');
 
         // Satu sampel eksternal di lab yang sudah lewat norma, agar panel "lewat norma" ikut dirender.
@@ -279,7 +310,7 @@ class RevisiSatuTest extends TestCase
         $this->as('admin@lab.local')->get('/permohonan')->assertOk()->assertSee($p->kode);
         $this->as('superadmin@lab.local')->get('/admin/lab')->assertOk()->assertSee('Norma (hari kerja)');
         $this->as('superadmin@lab.local')->get('/admin/pengaturan')->assertOk()->assertSee('Hari libur nasional');
-        $this->as('superadmin@lab.local')->get('/admin/pengguna?edit='.$this->u('eksternal@lab.local')->id)->assertOk()->assertSee('Jenis pengguna jasa');
+        $this->as('superadmin@lab.local')->get('/admin/pengguna?edit='.$this->u('eksternal@lab.local')->id)->assertOk()->assertDontSee('name="tipe_pengguna"', false);
         $this->as('superadmin@lab.local')->get('/tim')->assertOk();
         $this->as('superadmin@lab.local')->get('/laporan')->assertOk();
         $this->as('mikro@lab.local')->get('/chat')->assertOk();

@@ -57,6 +57,7 @@ class PermohonanController extends Controller
         Gate::authorize('create', Permohonan::class);
 
         return view('permohonan.create', [
+            'jenisTerakhir' => request()->user()->tipe_pengguna?->value,
             'labs' => $this->wf->labAktif(),
             'biayaAdmin' => (int) \App\Models\Setting::get('biaya_admin'),
         ]);
@@ -70,11 +71,13 @@ class PermohonanController extends Controller
             'jenis_komoditas' => ['required', 'string', 'min:2', 'max:80'],
             'jumlah_sampel' => ['required', 'integer', 'min:1', 'max:500'],
             'asal_sampel' => ['required', 'string', 'min:2', 'max:150'],
+            'jenis_bayar' => ['required', Rule::enum(JenisBayar::class)],
             'tujuan' => ['required', Rule::enum(Tujuan::class)],
             'keterangan' => ['nullable', 'string', 'max:1000'],
             'dokumen' => ['nullable', 'array', 'max:3'],
             'dokumen.*' => ['file', 'max:5120', 'mimes:pdf,jpg,jpeg,png'],
         ], [
+            'jenis_bayar.required' => 'Pilih jenis pengguna jasa: Mandiri, Eksternal, atau Surveilen.',
             'dokumen.max' => 'Dokumen pendukung maksimal 3 berkas.',
             'dokumen.*.max' => 'Ukuran tiap berkas maksimal 5 MB.',
             'dokumen.*.mimes' => 'Format berkas harus PDF, JPG, atau PNG.',
@@ -146,13 +149,13 @@ class PermohonanController extends Controller
             $jenis = JenisBayar::tryFrom((string) $request->input('jenis_bayar')) ?? $permohonan->jenis_bayar ?? JenisBayar::Mandiri;
             $data = $request->validate([
                 'jenis_bayar' => ['nullable', Rule::enum(JenisBayar::class)],
-                'kode_billing' => [Rule::requiredIf($jenis === JenisBayar::Mandiri), 'nullable', 'regex:'.config('sipelab.regex_kode_billing'), Rule::unique('permohonan', 'kode_billing')],
+                'kode_billing' => [Rule::requiredIf($jenis->bayarDiAwal()), 'nullable', 'regex:'.config('sipelab.regex_kode_billing'), Rule::unique('permohonan', 'kode_billing')],
             ], $this->pesanBilling());
-            $kode = $jenis === JenisBayar::Mandiri ? $data['kode_billing'] : null;
+            $kode = $jenis->bayarDiAwal() ? $data['kode_billing'] : null;
             $tagihan = $this->wf->verifikasiValid($permohonan, $kode, $request->user(), $jenis);
             Audit::log('VERIFIKASI_VALID', 'permohonan', $permohonan->id, ['tagihan' => $tagihan, 'jenis_bayar' => $jenis->value]);
 
-            return back()->with('success', $jenis === JenisBayar::Mandiri
+            return back()->with('success', $jenis->bayarDiAwal()
                 ? 'Sampel terverifikasi. Tagihan '.rupiah($tagihan).' dan kode billing dikirim ke pengguna jasa.'
                 : 'Sampel terverifikasi dan langsung diteruskan ke lab. Pengguna jasa eksternal membayar '.rupiah($tagihan).' setelah LHU jadi.');
         }

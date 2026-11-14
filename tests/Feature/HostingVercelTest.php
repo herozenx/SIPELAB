@@ -32,7 +32,7 @@ class HostingVercelTest extends TestCase
 
         $this->as('pengguna@lab.local')->post('/permohonan', [
             'nama_sampel' => 'Tuna', 'jenis_komoditas' => 'Ikan beku', 'jumlah_sampel' => 1,
-            'asal_sampel' => 'Banyuwangi', 'tujuan' => 'EKSPOR',
+            'asal_sampel' => 'Banyuwangi', 'tujuan' => 'EKSPOR', 'jenis_bayar' => 'MANDIRI',
         ]);
         $p = Permohonan::query()->latest('id')->firstOrFail();
         $this->as('admin@lab.local')->post("/permohonan/{$p->id}/verifikasi", ['keputusan' => 'valid', 'kode_billing' => '820260000000077']);

@@ -96,14 +96,12 @@ class UserController extends Controller
             'instansi' => ['nullable', 'string', 'max:150'],
             'telepon' => ['nullable', 'regex:/^[0-9+\-\s]{8,20}$/'],
             'aktif' => ['boolean'],
-            'tipe_pengguna' => ['nullable', Rule::enum(JenisBayar::class)],
             'password' => [$user ? 'nullable' : 'required', Password::defaults()],
         ], ['lab_id.required_if' => 'Petugas lab harus ditempatkan di salah satu lab.']);
 
         if ($data['role'] !== Role::PetugasLab->value) {
             $data['lab_id'] = null;
         }
-        $data['tipe_pengguna'] = $data['role'] === Role::PenggunaJasa->value ? ($data['tipe_pengguna'] ?? JenisBayar::Mandiri->value) : null;
         if (empty($data['password'])) {
             unset($data['password']);
         }

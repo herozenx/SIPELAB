@@ -74,7 +74,7 @@
   $$('[data-reveal-select]').forEach((sel) => {
     const form = sel.form;
     const sync = () => $$('[data-reveal-when]', form).forEach((el) => {
-      const on = el.dataset.revealWhen === sel.value;
+      const on = el.dataset.revealWhen.split(' ').includes(sel.value);
       el.hidden = !on;
       $$('input, select', el).forEach((f) => { f.disabled = !on; });
     });
