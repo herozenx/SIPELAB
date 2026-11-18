@@ -21,6 +21,7 @@ use Tests\TestCase;
 /** Revisi 1: norma waktu, Mandiri/Eksternal, tim operator, penanganan, panduan, chat. */
 class RevisiSatuTest extends TestCase
 {
+    use IsiLab;
     use RefreshDatabase;
 
     protected bool $seed = true;
@@ -60,20 +61,19 @@ class RevisiSatuTest extends TestCase
 
     private function ajukan(string $email, ?string $jenis = null): Permohonan
     {
-        $jenis ??= str_starts_with($email, 'eksternal') ? 'EKSTERNAL' : 'MANDIRI';
-        $this->as($email)->post('/permohonan', [
-            'nama_sampel' => 'Udang vaname', 'jenis_komoditas' => 'Krustasea', 'jumlah_sampel' => 1,
-            'asal_sampel' => 'Sidoarjo', 'tujuan' => 'DOMESTIK', 'jenis_bayar' => $jenis,
-        ])->assertRedirect();
-
-        return Permohonan::query()->latest('id')->firstOrFail();
+        return $this->ajukanSebagai($email, $jenis ? ['jenis_bayar' => $jenis] : []);
     }
 
-    private function ujiSemuaLab(Permohonan $p): void
+    /** Payload Pengaturan lengkap (format nomor per layanan & penandatangan wajib). */
+    private function pengaturan(array $ubah = []): array
     {
-        foreach (['nekropsi', 'mikro', 'kimia'] as $l) {
-            $this->as("$l@lab.local")->post("/permohonan/{$p->id}/hasil", ['hasil' => 'NEGATIF'])->assertRedirect('/beranda');
+        $set = ['nama_instansi' => 'Balai Uji', 'alamat_instansi' => 'Sidoarjo', 'biaya_admin' => 10000, 'norma_total_hari' => 6,
+            'kota_lhp' => 'Sidoarjo', 'penandatangan' => 'Dyah Setyawati, S.Pi., MP.|19780207 200212 2 001'];
+        foreach (JenisBayar::cases() as $j) {
+            $set[$j->kunciNomor()] = Setting::DEFAULTS[$j->kunciNomor()];
         }
+
+        return $ubah + $set;
     }
 
     // ---------------------------------------------------------------- Eksternal
@@ -89,28 +89,35 @@ class RevisiSatuTest extends TestCase
         $p->refresh();
         $this->assertSame(Status::DiLab, $p->status);
         $this->assertNull($p->kode_billing);
-        $this->assertSame(425000 + 10000, $p->tagihan);
+        $this->assertSame(350000 + 10000, $p->tagihan);
+        $this->assertSame('SP.PE/'.now()->format('dmy').'.01', $p->kode_sampel);
 
         $this->ujiSemuaLab($p);
+        $this->assertSame(Status::MenungguCekAdministrasi, $p->fresh()->status);
+        $this->cekSesuai($p);
         $this->assertSame(Status::MenungguValidasi, $p->fresh()->status);
 
-        // Validasi LHU eksternal wajib kode billing pelunasan.
-        $this->as('admin@lab.local')->post("/permohonan/{$p->id}/validasi-lhu")->assertSessionHasErrors('kode_billing');
-        $this->as('admin@lab.local')->post("/permohonan/{$p->id}/validasi-lhu", ['kode_billing' => '820260000000009'])->assertSessionHas('success');
+        // Terbit LHP eksternal wajib kode billing pelunasan.
+        $this->terbitkan($p)->assertSessionHasErrors('kode_billing');
+        $this->terbitkan($p, ['kode_billing' => '820260000000009'])->assertSessionHas('success');
         $p->refresh();
         $this->assertSame(Status::MenungguPembayaran, $p->status);
         $this->assertNotNull(Lhu::query()->where('permohonan_id', $p->id)->value('nomor'));
 
-        // Belum lunas: pengguna belum bisa membuka LHU, admin sudah bisa.
+        // Belum lunas: pengguna belum bisa membuka LHP, admin sudah bisa.
         $this->as('eksternal@lab.local')->get("/permohonan/{$p->id}/lhu")->assertNotFound();
-        $this->as('eksternal@lab.local')->get("/permohonan/{$p->id}")->assertOk()->assertSee('LHU sudah jadi')->assertSee('820260000000009');
+        $this->as('eksternal@lab.local')->get("/permohonan/{$p->id}/lhp.docx")->assertNotFound();
+        $this->as('eksternal@lab.local')->get("/permohonan/{$p->id}")->assertOk()->assertSee('LHP sudah jadi')->assertSee('820260000000009');
         $this->as('admin@lab.local')->get("/permohonan/{$p->id}/lhu")->assertOk();
 
         $this->as('eksternal@lab.local')->post("/permohonan/{$p->id}/bayar", ['ntpn' => 'EKST1234EFGH5678', 'bukti' => $this->png()])->assertSessionHas('success');
         $this->as('admin@lab.local')->post("/permohonan/{$p->id}/konfirmasi-bayar", ['keputusan' => 'terima'])->assertSessionHas('success');
 
         $this->assertSame(Status::Selesai, $p->fresh()->status);
-        $this->as('eksternal@lab.local')->get("/permohonan/{$p->id}/lhu")->assertOk()->assertSee('Lulus uji, bisa beredar');
+        $this->as('eksternal@lab.local')->get("/permohonan/{$p->id}/lhu")->assertOk()->assertSee('Angka Lempeng Total (ALT) Aerob');
+        $this->as('eksternal@lab.local')->get("/permohonan/{$p->id}/lhp.docx")->assertOk();
+        // Pengujian Eksternal: "mewakili populasi" dicoret (seperti LHP asli).
+        $this->as('eksternal@lab.local')->get("/permohonan/{$p->id}/lhu")->assertSee('line-through">Hasil uji ini mewakili populasi', false);
     }
 
     public function test_mandiri_tetap_wajib_kode_billing_saat_verifikasi(): void
@@ -136,14 +143,26 @@ class RevisiSatuTest extends TestCase
     {
         $this->as('pengguna@lab.local')->get('/permohonan/baru')
             ->assertOk()->assertSee('Mandiri')->assertSee('Eksternal')->assertSee('Surveilen')->assertDontSee('Impor');
-        $this->as('pengguna@lab.local')->post('/permohonan', [
-            'nama_sampel' => 'Udang vaname', 'jenis_komoditas' => 'Krustasea', 'jumlah_sampel' => 1,
-            'asal_sampel' => 'Sidoarjo', 'tujuan' => 'DOMESTIK',
-        ])->assertSessionHasErrors('jenis_bayar');
-        $this->as('pengguna@lab.local')->post('/permohonan', [
-            'nama_sampel' => 'Udang vaname', 'jenis_komoditas' => 'Krustasea', 'jumlah_sampel' => 1,
-            'asal_sampel' => 'Sidoarjo', 'tujuan' => 'IMPOR', 'jenis_bayar' => 'MANDIRI',
-        ])->assertSessionHasErrors('tujuan');
+        $tanpaJenis = $this->dataAjukan();
+        unset($tanpaJenis['jenis_bayar']);
+        $this->as('pengguna@lab.local')->post('/permohonan', $tanpaJenis)->assertSessionHasErrors('jenis_bayar');
+        $this->as('pengguna@lab.local')->post('/permohonan', $this->dataAjukan(['tujuan' => 'IMPOR']))->assertSessionHasErrors('tujuan');
+        $this->as('pengguna@lab.local')->post('/permohonan', $this->dataAjukan(['nama_sampel' => '']))->assertSessionHasErrors('nama_sampel');
+        $this->as('pengguna@lab.local')->get('/permohonan/baru')->assertOk()->assertSee('Nama produk')->assertDontSee('Tambah sampel')
+            ->assertSee('Nama pelanggan')->assertSee('value="CV Bahari Demo"', false);
+        $this->as('pengguna@lab.local')->post('/permohonan', $this->dataAjukan(['pelanggan' => '']))->assertSessionHasErrors('pelanggan');
+        $this->assertSame(0, Permohonan::query()->count());
+
+        // Nama pelanggan bisa berbeda dari nama usaha di akun; alamat tersimpan terpisah.
+        $this->as('pengguna@lab.local')->post('/permohonan', $this->dataAjukan(['pelanggan' => 'PT. Bahari Biru Nusantara', 'alamat' => 'Jl. Daendels KM 82,6, Brondong']))->assertRedirect();
+        $p = Permohonan::query()->latest('id')->firstOrFail();
+        $this->assertSame('PT. Bahari Biru Nusantara', $p->pelanggan);
+        $this->assertSame('Jl. Daendels KM 82,6, Brondong', $p->alamat);
+        // Petugas loket bisa membetulkan saat verifikasi.
+        $this->as('admin@lab.local')->post("/permohonan/{$p->id}/verifikasi", ['keputusan' => 'valid', 'kode_billing' => '820260000000088', 'pelanggan' => 'PT. Bahari Biru Nusantara', 'alamat' => 'Jl. Daendels KM 82,6 No.88, Brondong, Lamongan'])->assertSessionHas('success');
+        $this->assertSame('Jl. Daendels KM 82,6 No.88, Brondong, Lamongan', $p->fresh()->alamat);
+        Permohonan::query()->delete();
+        $this->as('pengguna@lab.local')->post('/permohonan', $this->dataAjukan(['alamat' => '']))->assertSessionHasErrors('alamat');
         $this->assertSame(0, Permohonan::query()->count());
     }
 
@@ -189,24 +208,21 @@ class RevisiSatuTest extends TestCase
         $this->assertNotNull($p->masuk_lab_at);
         $this->assertNotNull($p->target_selesai_at);
         $tahap = TahapLab::query()->where('permohonan_id', $p->id)->firstOrFail();
-        $this->assertSame(1, $tahap->norma_hari); // Nekropsi
+        $this->assertSame(3, $tahap->norma_hari); // Mikrobiologi
         $this->assertTrue($tahap->batas_at->gt($tahap->masuk_at));
 
-        // Operator menangani, lalu operator kedua di tim Mikrobiologi ikut menangani.
-        $this->as('nekropsi@lab.local')->post("/permohonan/{$p->id}/tangani")->assertSessionHas('success');
-        $this->as('nekropsi@lab.local')->post("/permohonan/{$p->id}/tangani")->assertSessionHas('error'); // tidak dobel
-        $this->as('nekropsi@lab.local')->post("/permohonan/{$p->id}/hasil", ['hasil' => 'NEGATIF']);
-        $this->assertNotNull($tahap->fresh()->selesai_at);
-
+        // Operator menangani (tidak dobel), operator kedua di tim Mikrobiologi ikut menangani.
+        $this->as('mikro@lab.local')->post("/permohonan/{$p->id}/tangani")->assertSessionHas('success');
+        $this->as('mikro@lab.local')->post("/permohonan/{$p->id}/tangani")->assertSessionHas('error');
         $this->as('mikro2@lab.local')->post("/permohonan/{$p->id}/tangani")->assertSessionHas('success');
-        $this->as('mikro@lab.local')->post("/permohonan/{$p->id}/hasil", ['hasil' => 'NEGATIF']);
-        $mikro = TahapLab::query()->where('permohonan_id', $p->id)->whereHas('lab', fn ($q) => $q->where('nama', 'Mikrobiologi'))->firstOrFail();
-        $this->assertEqualsCanonicalizing(['Dewi Mikrobiologi', 'Petugas Mikrobiologi'], $mikro->operator->pluck('nama')->all());
+        $this->isiLab($p, 'mikro@lab.local', ['ALT' => ['2,3 x 10^4']]);
+        $this->assertNotNull($tahap->fresh()->selesai_at);
+        $this->assertEqualsCanonicalizing(['Dewi Mikrobiologi', 'Petugas Mikrobiologi'], $tahap->fresh()->operator->pluck('nama')->all());
 
         // Nama operator & tahapan lab hanya untuk petugas Balai; pengguna jasa cukup melihat "Sedang diproses".
         $this->as('admin@lab.local')->get("/permohonan/{$p->id}")->assertOk()->assertSee('Tim penanganan')->assertSee('Dewi Mikrobiologi');
         $this->as('pengguna@lab.local')->get("/permohonan/{$p->id}")->assertOk()
-            ->assertSee('Sedang diproses')->assertDontSee('Dewi Mikrobiologi')->assertDontSee('Petugas Nekropsi')
+            ->assertSee('Sedang diproses')->assertDontSee('Dewi Mikrobiologi')->assertDontSee('Petugas Mikrobiologi')
             ->assertDontSee('Tim penanganan')->assertDontSee('Lab Kimia');
     }
 
@@ -237,7 +253,8 @@ class RevisiSatuTest extends TestCase
         $this->as('admin@lab.local')->put("/tim/{$super->id}", ['nama' => 'X', 'email' => 'x@x.id', 'lab_id' => $lab, 'aktif' => 1])->assertNotFound();
         $this->as('admin@lab.local')->post("/tim/{$super->id}/reset")->assertNotFound();
 
-        $this->as('nekropsi@lab.local')->get('/tim')->assertForbidden();
+        $this->as('mikro@lab.local')->get('/tim')->assertForbidden();
+        $this->as('administrasi@lab.local')->get('/tim')->assertForbidden();
         $this->as('pengguna@lab.local')->get('/tim')->assertForbidden();
     }
 
@@ -299,25 +316,29 @@ class RevisiSatuTest extends TestCase
         $p = $this->ajukan('eksternal@lab.local');
         $this->as('admin@lab.local')->post("/permohonan/{$p->id}/verifikasi", ['keputusan' => 'valid', 'jenis_bayar' => 'EKSTERNAL']);
         TahapLab::query()->where('permohonan_id', $p->id)->update(['batas_at' => now()->subDays(5)]);
-        $this->as('nekropsi@lab.local')->post("/permohonan/{$p->id}/tangani");
+        $this->as('mikro@lab.local')->post("/permohonan/{$p->id}/tangani");
 
-        $this->as('admin@lab.local')->get('/beranda')->assertOk()->assertSee('Sampel melewati norma waktu')->assertSee('Petugas Nekropsi');
-        $this->as('nekropsi@lab.local')->get('/beranda')->assertOk()->assertSee('Lewat')->assertSee('Petugas Nekropsi');
+        $this->as('admin@lab.local')->get('/beranda')->assertOk()->assertSee('Sampel melewati norma waktu')->assertSee('Petugas Mikrobiologi')->assertSee('Dicek administrasi');
+        $this->as('mikro@lab.local')->get('/beranda')->assertOk()->assertSee('Lewat')->assertSee('Petugas Mikrobiologi');
         $this->as('eksternal@lab.local')->get('/beranda')->assertOk()->assertSee('Eksternal')->assertSee('Baca panduan');
         $this->as('eksternal@lab.local')->get("/permohonan/{$p->id}")->assertOk()->assertSee('Perkiraan selesai')->assertDontSee('Norma waktu sampel jadi');
-        $this->as('eksternal@lab.local')->get('/permohonan')->assertOk()->assertSee('Sedang diproses')->assertDontSee('Di Lab Nekropsi');
-        $this->as('admin@lab.local')->get("/permohonan/{$p->id}")->assertOk()->assertSee('Norma waktu sampel jadi');
-        $this->as('admin@lab.local')->get('/permohonan')->assertOk()->assertSee($p->kode);
+        $this->as('eksternal@lab.local')->get('/permohonan')->assertOk()->assertSee('Sedang diproses')->assertDontSee('Di Lab Mikrobiologi');
+        $this->as('admin@lab.local')->get("/permohonan/{$p->id}")->assertOk()->assertSee('Norma waktu sampel jadi')->assertSee('Administrasi');
+        $this->as('admin@lab.local')->get('/permohonan')->assertOk()->assertSee($p->fresh()->kode_sampel);
+        $this->as('administrasi@lab.local')->get('/beranda')->assertOk()->assertSee('Perlu diperiksa');
+        $this->as('administrasi@lab.local')->get('/permohonan')->assertOk()->assertSee($p->fresh()->kode_sampel);
         $this->as('superadmin@lab.local')->get('/admin/lab')->assertOk()->assertSee('Norma (hari kerja)');
-        $this->as('superadmin@lab.local')->get('/admin/pengaturan')->assertOk()->assertSee('Hari libur nasional');
-        $this->as('superadmin@lab.local')->get('/admin/pengguna?edit='.$this->u('eksternal@lab.local')->id)->assertOk()->assertDontSee('name="tipe_pengguna"', false);
+        $this->as('superadmin@lab.local')->get('/admin/parameter')->assertOk()->assertSee('Katalog parameter');
+        $this->as('superadmin@lab.local')->get('/admin/pengaturan')->assertOk()->assertSee('Hari libur nasional')->assertSee('Penandatangan LHP');
+        $this->as('superadmin@lab.local')->get('/admin/pengguna?edit='.$this->u('eksternal@lab.local')->id)->assertOk()->assertDontSee('name="tipe_pengguna"', false)->assertSee('Administrasi');
         $this->as('superadmin@lab.local')->get('/tim')->assertOk();
         $this->as('superadmin@lab.local')->get('/laporan')->assertOk();
         $this->as('mikro@lab.local')->get('/chat')->assertOk();
 
         // Simpan pengaturan norma & hari libur (format salah ditolak).
-        $set = ['nama_instansi' => 'Balai Uji', 'alamat_instansi' => 'Sidoarjo', 'biaya_admin' => 10000, 'prefix_lhu' => 'LHU/X', 'norma_total_hari' => 6];
+        $set = $this->pengaturan();
         $this->as('superadmin@lab.local')->put('/admin/pengaturan', $set + ['hari_libur' => '25-12-2026'])->assertSessionHasErrors('hari_libur');
+        $this->as('superadmin@lab.local')->put('/admin/pengaturan', ['penandatangan' => 'Tanpa NIP'] + $set)->assertSessionHasErrors('penandatangan');
         $this->as('superadmin@lab.local')->put('/admin/pengaturan', $set + ['hari_libur' => "2026-12-25\n2026-12-24"])->assertSessionHas('success');
         $this->assertSame("2026-12-24\n2026-12-25", Setting::get('hari_libur'));
     }
@@ -330,13 +351,13 @@ class RevisiSatuTest extends TestCase
         // Riwayat pengguna jasa tidak memuat perpindahan antar-lab.
         $p = $this->ajukan('eksternal@lab.local');
         $this->as('admin@lab.local')->post("/permohonan/{$p->id}/verifikasi", ['keputusan' => 'valid', 'jenis_bayar' => 'EKSTERNAL']);
-        $this->as('nekropsi@lab.local')->post("/permohonan/{$p->id}/hasil", ['hasil' => 'NEGATIF']);
+        $this->isiLab($p, 'mikro@lab.local', ['ALT' => ['2,3 x 10^4']]);
         // Di test sesi dipakai bersama: buang dulu pesan flash milik petugas dari langkah sebelumnya.
         $this->as('eksternal@lab.local')->get('/beranda');
         $this->as('eksternal@lab.local')->get("/permohonan/{$p->id}")->assertOk()
             ->assertSee('Sampel mulai diproses di laboratorium')
-            ->assertDontSee('Uji Nekropsi selesai')->assertDontSee('Lab Mikrobiologi')->assertDontSee('Jalur uji');
-        $this->as('admin@lab.local')->get("/permohonan/{$p->id}")->assertOk()->assertSee('Uji Nekropsi selesai');
+            ->assertDontSee('Uji Mikrobiologi selesai')->assertDontSee('Lab Kimia')->assertDontSee('Jalur uji');
+        $this->as('admin@lab.local')->get("/permohonan/{$p->id}")->assertOk()->assertSee('Uji Mikrobiologi selesai');
     }
 
     // ---------------------------------------------------------------- Panduan
@@ -355,7 +376,7 @@ class RevisiSatuTest extends TestCase
     {
         $this->get('/')->assertOk()->assertSee('Pusat bantuan')->assertDontSee('wa.me');
 
-        $set = ['nama_instansi' => 'Balai Uji', 'alamat_instansi' => 'Sidoarjo', 'biaya_admin' => 10000, 'prefix_lhu' => 'LHU/X', 'norma_total_hari' => 6];
+        $set = $this->pengaturan();
         $this->as('superadmin@lab.local')->put('/admin/pengaturan', $set + ['whatsapp_center' => 'bukan-nomor'])->assertSessionHasErrors('whatsapp_center');
         $this->as('superadmin@lab.local')->put('/admin/pengaturan', $set + ['whatsapp_center' => '0853-8522-0631'])->assertSessionHas('success');
 

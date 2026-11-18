@@ -43,7 +43,7 @@ class KeamananAkunTest extends TestCase
 
     public function test_sandi_sementara_wajib_diganti(): void
     {
-        $u = User::query()->where('email', 'nekropsi@lab.local')->firstOrFail();
+        $u = User::query()->where('email', 'mikro@lab.local')->firstOrFail();
         $u->forceFill(['wajib_ganti_password' => true])->save();
         $this->actingAs($u)->withSession(['auth_version' => $u->auth_version, 'login_at' => time()])->get('/beranda')->assertRedirect('/akun');
     }

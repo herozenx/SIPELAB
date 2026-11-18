@@ -31,7 +31,7 @@ class HostingVercelTest extends TestCase
         config(['sipelab.berkas_di_database' => true]);
 
         $this->as('pengguna@lab.local')->post('/permohonan', [
-            'nama_sampel' => 'Tuna', 'jenis_komoditas' => 'Ikan beku', 'jumlah_sampel' => 1,
+            'nama_sampel' => 'Tuna', 'jumlah_sampel' => 1, 'pelanggan' => 'CV Bahari Demo', 'alamat' => 'Muncar, Banyuwangi', 'jenis_komoditas' => 'Ikan beku',
             'asal_sampel' => 'Banyuwangi', 'tujuan' => 'EKSPOR', 'jenis_bayar' => 'MANDIRI',
         ]);
         $p = Permohonan::query()->latest('id')->firstOrFail();

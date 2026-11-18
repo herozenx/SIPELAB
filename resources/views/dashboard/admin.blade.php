@@ -5,12 +5,12 @@
   $papan = array_merge(
     [['Perlu verifikasi', $verifikasi->count(), 'wait'], ['Menunggu bayar', $menungguBayar, 'info'], ['Cek pembayaran', $bayar->count(), 'wait']],
     $labs->map(fn ($l) => ['Lab '.$l->nama, (int) ($diLab[$l->id] ?? 0), 'lab'])->all(),
-    [['Validasi LHU', $validasi->count(), 'wait'], ['Lewat norma waktu', $lewatNorma->count(), 'bad']]
+    [['Dicek administrasi', $diCek, 'wait'], ['Terbitkan LHP', $validasi->count(), 'wait'], ['Lewat norma waktu', $lewatNorma->count(), 'bad']]
   );
   $antrean = [
-    ['Perlu verifikasi sampel', 'Periksa sampel fisik di loket, lalu terbitkan kode billing atau tolak.', $verifikasi],
+    ['Perlu verifikasi sampel', 'Periksa sampel fisik di loket, lengkapi jenis & berat sampel, lalu terbitkan kode sampel.', $verifikasi],
     ['Cek pembayaran SIMPONI', 'Cocokkan NTPN dengan dana masuk di SIMPONI sebelum mengonfirmasi.', $bayar],
-    ['Validasi dan terbitkan LHU', 'Seluruh lab sudah selesai. Periksa rekap hasil, lalu terbitkan LHU.', $validasi],
+    ['Terbitkan LHP', 'Sudah diperiksa Administrasi. Pilih penandatangan, lalu terbitkan LHP bernomor.', $validasi],
   ];
 @endphp
 <div class="flex flex-wrap items-end justify-between gap-3">
@@ -44,7 +44,7 @@
         @foreach ($lewatNorma as $t)
           @php [$tTeks] = $t->norma(); @endphp
           <tr data-href="{{ route('permohonan.show', $t->permohonan_id) }}">
-            <td><a href="{{ route('permohonan.show', $t->permohonan_id) }}" class="kode no-underline hover:underline">{{ $t->permohonan->kode }}</a><span class="block text-xs text-kabut-500">{{ $t->permohonan->nama_sampel }}</span></td>
+            <td><a href="{{ route('permohonan.show', $t->permohonan_id) }}" class="kode no-underline hover:underline">{{ $t->permohonan->kode_sampel ?: $t->permohonan->kode }}</a><span class="block text-xs text-kabut-500">{{ $t->permohonan->nama_sampel }}</span></td>
             <td class="whitespace-nowrap" data-label="Lab">Lab {{ $t->lab->nama }}</td>
             <td class="text-sm" data-label="Ditangani">{{ $t->operator->pluck('nama')->join(', ') ?: 'Belum ada' }}</td>
             <td class="num whitespace-nowrap text-kabut-600" data-label="Batas">{{ tanggal($t->batas_at, false) }}</td>
@@ -68,10 +68,10 @@
         @forelse ($rows as $r)
           <li>
             <a href="{{ route('permohonan.show', $r) }}" class="block px-5 py-3.5 text-tinta no-underline hover:bg-kabut-50 hover:no-underline">
-              <span class="flex items-center justify-between gap-2"><span class="kode text-sm">{{ $r->kode }}</span><span class="text-xs text-kabut-500" title="{{ tanggal($r->updated_at) }}">{{ $r->updated_at->locale('id')->diffForHumans() }}</span></span>
+              <span class="flex items-center justify-between gap-2"><span class="kode text-sm">{{ $r->kode_sampel ?: $r->kode }}</span><span class="text-xs text-kabut-500" title="{{ tanggal($r->updated_at) }}">{{ $r->updated_at->locale('id')->diffForHumans() }}</span></span>
               <span class="mt-0.5 block text-sm font-semibold">{{ $r->nama_sampel }}</span>
-              <span class="block text-xs text-kabut-500">{{ $r->pemohon?->instansi ?: $r->pemohon?->nama }}, {{ $r->jumlah_sampel }} sampel</span>
-              @if ($r->lhu)<span class="mt-1.5 inline-block {{ $r->lhu->status_izin === \App\Enums\StatusIzin::Lulus ? 'badge-ok' : 'badge-bad' }}">Rekap: {{ $r->lhu->status_izin->label() }}</span>@endif
+              <span class="block text-xs text-kabut-500">{{ $r->pelanggan ?: ($r->pemohon?->instansi ?: $r->pemohon?->nama) }}, {{ $r->jumlah_sampel }} sampel</span>
+              @if ($r->lhu && $r->lhu->status_izin === \App\Enums\StatusIzin::TidakLulus)<span class="mt-1.5 inline-block badge-bad">Ada parameter melebihi persyaratan</span>@endif
             </a>
           </li>
         @empty

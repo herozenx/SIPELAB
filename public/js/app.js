@@ -100,8 +100,12 @@
   if (est && jumlah) {
     const per = Number(est.dataset.perSampel);
     const adm = Number(est.dataset.admin);
+    // Jumlah sampel = kotak angka, atau jumlah baris sampel yang sudah diisi.
+    const hitung = () => (jumlah.matches('input')
+      ? parseInt(jumlah.value, 10)
+      : $$('input', jumlah).filter((i) => i.value.trim() !== '').length);
     const upd = () => {
-      const n = Math.max(1, Math.min(500, parseInt(jumlah.value, 10) || 1));
+      const n = Math.max(1, Math.min(500, hitung() || 1));
       $('[data-estimasi-jumlah]', est).textContent = n;
       $('[data-estimasi-subtotal]', est).textContent = rupiah(per * n);
       $('[data-estimasi-total]', est).textContent = rupiah(per * n + adm);
@@ -139,7 +143,97 @@
     }
   });
 
-  // Cetak LHU
+  // ---------- Isian operator: centang parameter seperti Buku Sampel ----------
+  const setAktif = (box, on) => {
+    box.hidden = !on;
+    $$('input, textarea, select', box).forEach((f) => { f.disabled = !on; });
+  };
+  $$('[data-param]').forEach((cb) => {
+    const isi = $('[data-param-isi]', cb.closest('[data-param-baris]'));
+    if (!isi) return;
+    cb.addEventListener('change', () => {
+      setAktif(isi, cb.checked);
+      if (cb.checked) $('[data-ulangan] input', isi)?.focus();
+    });
+  });
+  document.addEventListener('click', (e) => {
+    const tambah = e.target.closest('[data-ulangan-tambah]');
+    const kurang = e.target.closest('[data-ulangan-kurang]');
+    const semua = e.target.closest('[data-isi-semua]');
+    if (tambah || kurang) {
+      const wadah = (tambah || kurang).closest('[data-ulangan]');
+      const inputs = $$('input', wadah);
+      if (tambah && inputs.length < 20) {
+        const baru = inputs[inputs.length - 1].cloneNode();
+        baru.value = '';
+        baru.setAttribute('aria-label', baru.getAttribute('aria-label').replace(/\d+/, String(inputs.length + 1)));
+        inputs[inputs.length - 1].after(baru);
+        baru.focus();
+      }
+      if (kurang && inputs.length > 1) inputs[inputs.length - 1].remove();
+    }
+    if (semua) {
+      const isi = semua.closest('[data-param-isi]');
+      $$('[data-ulangan] input', isi).forEach((i) => { i.value = semua.dataset.isiSemua; });
+      cekMelebihi(isi);
+      dirty = true;
+    }
+  });
+  // Hasil "Positif" otomatis ditandai melebihi persyaratan (bisa diubah operator).
+  const cekMelebihi = (isi) => {
+    const cb = $('[data-melebihi]', isi);
+    if (!cb) return;
+    if ($$('[data-ulangan] input', isi).some((i) => /^positif/i.test(i.value.trim()))) cb.checked = true;
+  };
+  document.addEventListener('change', (e) => {
+    const isi = e.target.closest('[data-ulangan]')?.closest('[data-param-isi]');
+    if (isi) cekMelebihi(isi);
+  });
+  const tanpaUji = $('[data-tanpa-uji]');
+  const daftarIsian = $('[data-isian]');
+  if (tanpaUji && daftarIsian) {
+    const sync = () => {
+      daftarIsian.hidden = tanpaUji.checked;
+      $$('[data-param]', daftarIsian).forEach((cb) => {
+        cb.disabled = tanpaUji.checked;
+        const isi = $('[data-param-isi]', cb.closest('[data-param-baris]'));
+        if (isi) setAktif(isi, !tanpaUji.checked && cb.checked);
+      });
+    };
+    tanpaUji.addEventListener('change', sync);
+    sync();
+  }
+
+  // ---------- Baris dinamis (daftar sampel di form pengajuan) ----------
+  $$('[data-baris]').forEach((wadah) => {
+    const tpl = $('template', wadah);
+    const list = $('[data-baris-list]', wadah);
+    const maks = Number(wadah.dataset.baris || 26);
+    let n = $$('[data-baris-item]', list).length;
+    const nomori = () => $$('[data-baris-item]', list).forEach((row, i) => {
+      const no = $('[data-baris-no]', row);
+      if (no) no.textContent = $$('[data-baris-item]', list).length > 1 ? String.fromCharCode(65 + i) : '1';
+      const hapus = $('[data-baris-hapus]', row);
+      if (hapus) hapus.hidden = $$('[data-baris-item]', list).length === 1;
+    });
+    $('[data-baris-tambah]', wadah)?.addEventListener('click', () => {
+      if ($$('[data-baris-item]', list).length >= maks) return;
+      list.insertAdjacentHTML('beforeend', tpl.innerHTML.replaceAll('__i__', String(n++)));
+      nomori();
+      $$('[data-baris-item]', list).pop()?.querySelector('input')?.focus();
+      list.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    list.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-baris-hapus]');
+      if (!btn) return;
+      btn.closest('[data-baris-item]').remove();
+      nomori();
+      list.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    nomori();
+  });
+
+  // Cetak LHP
   $('[data-print]')?.addEventListener('click', () => window.print());
 
   // Pembaruan real-time: cek sidik versi data berkala; muat ulang bila berubah.

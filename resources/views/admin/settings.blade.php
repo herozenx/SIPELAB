@@ -2,15 +2,42 @@
 @section('title', 'Pengaturan')
 @section('content')
 <h1>Pengaturan</h1>
-<p class="mt-1 text-kabut-600">Identitas instansi dicetak di kop LHU. Norma waktu dan hari libur dipakai menghitung batas pengujian.</p>
+<p class="mt-1 text-kabut-600">Format nomor, kota, dan penandatangan dipakai di file LHP. Norma waktu dan hari libur dipakai menghitung batas pengujian.</p>
 <form method="post" action="{{ route('admin.settings.save') }}" class="panel mt-6 max-w-2xl" novalidate data-guard>
   @csrf @method('put')
   <div class="panel-body space-y-5">
     <div><label for="nama_instansi" class="label">Nama instansi</label><input id="nama_instansi" name="nama_instansi" value="{{ old('nama_instansi', $s['nama_instansi']) }}" class="input" required></div>
     <div><label for="alamat_instansi" class="label">Alamat instansi</label><input id="alamat_instansi" name="alamat_instansi" value="{{ old('alamat_instansi', $s['alamat_instansi']) }}" class="input" required></div>
-    <div class="grid gap-5 sm:grid-cols-2">
-      <div><label for="biaya_admin" class="label">Biaya administrasi (Rp)</label><input id="biaya_admin" name="biaya_admin" type="number" min="0" step="1000" value="{{ old('biaya_admin', $s['biaya_admin']) }}" class="input num" required><p class="hint">Ditambahkan sekali per permohonan.</p></div>
-      <div><label for="prefix_lhu" class="label">Prefiks nomor LHU</label><input id="prefix_lhu" name="prefix_lhu" value="{{ old('prefix_lhu', $s['prefix_lhu']) }}" class="input num" required><p class="hint">Contoh hasil: 0001/{{ $s['prefix_lhu'] }}/{{ now()->year }}</p></div>
+    <div><label for="biaya_admin" class="label">Biaya administrasi (Rp)</label><input id="biaya_admin" name="biaya_admin" type="number" min="0" step="1000" value="{{ old('biaya_admin', $s['biaya_admin']) }}" class="input num max-w-xs" required><p class="hint">Ditambahkan sekali per permohonan.</p></div>
+  </div>
+  <div class="border-t border-kabut-200 px-5 py-5 space-y-5">
+    <h2>LHP</h2>
+    <div>
+      <p class="label">Format nomor LHP per layanan</p>
+      <p class="hint !mt-0 mb-3"><span class="kode">{NNNN}</span> nomor urut 4 digit (berlanjut sepanjang tahun, semua layanan), <span class="kode">{BULAN}</span> bulan romawi, <span class="kode">{TAHUN}</span> tahun.</p>
+      <div class="space-y-3">
+        @foreach (\App\Enums\JenisBayar::cases() as $j)
+          @php $k = $j->kunciNomor(); @endphp
+          <div class="grid items-center gap-1 sm:grid-cols-[150px_1fr] sm:gap-3">
+            <label for="{{ $k }}" class="text-sm font-semibold">{{ $j->label() }} <span class="font-normal text-kabut-500">(SP.{{ $j->kodeSampel() }})</span></label>
+            <input id="{{ $k }}" name="{{ $k }}" value="{{ old($k, $s[$k]) }}" class="input num" required>
+          </div>
+          @error($k)<p class="error sm:ml-[162px]">{{ $message }}</p>@enderror
+        @endforeach
+      </div>
+      <p class="hint">Contoh hasil: {{ strtr($s['nomor_lhp_mandiri'], ['{NNNN}' => '0001', '{BULAN}' => \App\Support\FormatLhp::romawi(now()->month), '{TAHUN}' => now()->year]) }}</p>
+    </div>
+    <div>
+      <label for="kota_lhp" class="label">Kota tanda tangan</label>
+      <input id="kota_lhp" name="kota_lhp" value="{{ old('kota_lhp', $s['kota_lhp']) }}" class="input max-w-xs" required>
+      <p class="hint">Dicetak di atas tanda tangan, mis. "{{ $s['kota_lhp'] }}, {{ \App\Support\FormatLhp::tanggal(now()) }}".</p>
+      @error('kota_lhp')<p class="error">{{ $message }}</p>@enderror
+    </div>
+    <div>
+      <label for="penandatangan" class="label">Penandatangan LHP</label>
+      <textarea id="penandatangan" name="penandatangan" rows="6" class="input num" required>{{ old('penandatangan', $s['penandatangan']) }}</textarea>
+      <p class="hint">Satu orang per baris dengan format <span class="kode">Nama|NIP</span>. Admin Lab memilih penandatangan dan jabatannya (Kepala UPT atau Penanggung jawab Laboratorium) saat menerbitkan LHP. Orang pertama menjadi pilihan awal.</p>
+      @error('penandatangan')<p class="error">{{ $message }}</p>@enderror
     </div>
   </div>
   <div class="border-t border-kabut-200 px-5 py-5 space-y-5">

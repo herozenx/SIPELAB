@@ -13,9 +13,9 @@
     <tbody>
     @foreach ($rows as $h)
       <tr data-href="{{ route('permohonan.show', $h->permohonan) }}">
-        <td><a href="{{ route('permohonan.show', $h->permohonan) }}" class="kode no-underline hover:underline">{{ $h->permohonan->kode }}</a></td>
+        <td><a href="{{ route('permohonan.show', $h->permohonan) }}" class="kode no-underline hover:underline">{{ $h->permohonan->kode_sampel ?: $h->permohonan->kode }}</a></td>
         <td>{{ $h->permohonan->nama_sampel }}</td>
-        <td data-label="Hasil"><span class="{{ $h->positif() ? 'badge-bad' : 'badge-ok' }}">{{ $h->positif() ? 'Positif' : 'Negatif' }}</span></td>
+        <td data-label="Hasil"><span class="{{ $h->positif() ? 'badge-bad' : 'badge-ok' }}">{{ $h->label() }}</span></td>
         <td class="max-w-[280px] truncate text-kabut-600" data-label="Catatan">{{ $h->catatan ?: '–' }}</td>
         <td class="num whitespace-nowrap text-right text-kabut-500" data-label="Diinput">{{ tanggal($h->created_at) }}</td>
       </tr>

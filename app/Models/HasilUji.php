@@ -21,8 +21,29 @@ class HasilUji extends Model
         return $this->belongsTo(User::class, 'petugas_id');
     }
 
+    /** Ringkasan per lab: MEMENUHI | MELEBIHI | TANPA_UJI (data lama: NEGATIF | POSITIF). */
+    public const MEMENUHI = 'MEMENUHI';
+    public const MELEBIHI = 'MELEBIHI';
+    public const TANPA_UJI = 'TANPA_UJI';
+
     public function positif(): bool
     {
-        return $this->hasil === 'POSITIF';
+        return in_array($this->hasil, ['POSITIF', self::MELEBIHI], true);
+    }
+
+    public function label(): string
+    {
+        return match ($this->hasil) {
+            'POSITIF' => 'Positif',
+            'NEGATIF' => 'Negatif',
+            self::MELEBIHI => 'Ada yang melebihi persyaratan',
+            self::TANPA_UJI => 'Tidak ada uji di lab ini',
+            default => 'Sudah diuji',
+        };
+    }
+
+    public function permohonan(): BelongsTo
+    {
+        return $this->belongsTo(Permohonan::class);
     }
 }

@@ -10,7 +10,8 @@
       $nav[] = ['panduan', 'Panduan', 'buku', 'panduan'];
   }
   if ($u->isStaff()) {
-      $nav[] = ['permohonan.index', 'Semua permohonan', 'daftar', 'permohonan.index|permohonan.show|permohonan.lhu'];
+      $nav[] = ['permohonan.index', 'Semua permohonan', 'daftar', 'permohonan.index|permohonan.show|permohonan.lhu|permohonan.pratinjau'];
+      $nav[] = ['permohonan.internal', 'Sampel internal', 'tambah', 'permohonan.internal'];
       $nav[] = ['chat', 'Chat pengguna', 'chat', 'chat'];
       $nav[] = ['tim.index', 'Tim operator', 'tim', 'tim.*'];
       $nav[] = ['laporan', 'Laporan', 'grafik', 'laporan'];
@@ -19,10 +20,14 @@
       $nav[] = ['riwayat', 'Riwayat uji', 'riwayat', 'riwayat'];
       $nav[] = ['chat', 'Chat pengguna', 'chat', 'chat'];
   }
+  if ($u->role === $R::Administrasi) {
+      $nav[] = ['permohonan.index', 'Semua sampel', 'daftar', 'permohonan.index|permohonan.show|permohonan.lhu|permohonan.pratinjau'];
+  }
   $chatBelum = app(\App\Services\Chat::class)->belum($u);
   $admin = $u->role === $R::Superadmin ? [
       ['admin.users', 'Pengguna', 'pengguna', 'admin.users'],
       ['admin.labs', 'Lab & tarif', 'lab', 'admin.labs'],
+      ['admin.parameter', 'Katalog parameter', 'berkas', 'admin.parameter'],
       ['admin.settings', 'Pengaturan', 'atur', 'admin.settings'],
       ['admin.audit', 'Log aktivitas', 'log', 'admin.audit'],
   ] : [];

@@ -28,7 +28,7 @@
           @php $t = $r->tahapAktif; @endphp
           <tr data-href="{{ route('permohonan.show', $r) }}">
             <td class="num text-kabut-500 hp-sembunyi">{{ $i + 1 }}</td>
-            <td class="kode"><span class="sm:hidden text-kabut-500">{{ $i + 1 }}. </span>{{ $r->kode }}</td>
+            <td class="kode"><span class="sm:hidden text-kabut-500">{{ $i + 1 }}. </span>{{ $r->kode_sampel ?: $r->kode }}</td>
             <td><span class="font-semibold">{{ $r->nama_sampel }}</span><span class="block text-xs text-kabut-500">{{ $r->jenis_komoditas }}, asal {{ $r->asal_sampel }}</span></td>
             <td class="num" data-label="Jumlah">{{ $r->jumlah_sampel }} sampel</td>
             <td class="whitespace-nowrap" data-label="Norma waktu">

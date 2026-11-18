@@ -20,9 +20,23 @@ class DashboardController extends Controller
 
         return match ($u->role) {
             Role::Superadmin, Role::AdminLab => $this->admin(),
+            Role::Administrasi => $this->administrasi($request),
             Role::PetugasLab => $this->petugas($request),
             Role::PenggunaJasa => $this->pengguna($request),
         };
+    }
+
+    /** Administrasi: antrean pemeriksaan isian operator & file LHP, plus yang sedang diperbaiki lab. */
+    private function administrasi(Request $request)
+    {
+        $antrean = Permohonan::query()->with(['pemohon', 'sampel'])
+            ->where('status', Status::MenungguCekAdministrasi->value)->oldest('updated_at')->get();
+        $diperbaiki = Permohonan::query()->with(['labSaatIni', 'lhu'])
+            ->where('status', Status::DiLab->value)->where('dikembalikan', true)->oldest('updated_at')->get();
+        $riwayat = Lhu::query()->with('permohonan')->where('cek_by', $request->user()->id)
+            ->latest('cek_at')->limit(10)->get();
+
+        return view('dashboard.administrasi', ['antrean' => $antrean, 'diperbaiki' => $diperbaiki, 'riwayat' => $riwayat]);
     }
 
     private function admin()
@@ -47,6 +61,7 @@ class DashboardController extends Controller
             'labs' => Lab::query()->aktif()->get(),
             'diLab' => $diLab,
             'menungguBayar' => Permohonan::query()->where('status', Status::MenungguPembayaran->value)->count(),
+            'diCek' => Permohonan::query()->where('status', Status::MenungguCekAdministrasi->value)->count(),
         ]);
     }
 
@@ -87,7 +102,7 @@ class DashboardController extends Controller
     {
         $st = Permohonan::query()->select('status', DB::raw('COUNT(*) as n'))->groupBy('status')->pluck('n', 'status');
         $iz = Lhu::query()->whereNotNull('nomor')->select('status_izin', DB::raw('COUNT(*) as n'))->groupBy('status_izin')->pluck('n', 'status_izin');
-        $pnbp = (int) Permohonan::query()->whereIn('status', [Status::DiLab->value, Status::MenungguValidasi->value, Status::Selesai->value])->sum('tagihan');
+        $pnbp = (int) Permohonan::query()->whereIn('status', [Status::DiLab->value, Status::MenungguCekAdministrasi->value, Status::MenungguValidasi->value, Status::Selesai->value])->sum('tagihan');
 
         $durasi = Lhu::query()->whereNotNull('validated_at')->with('permohonan:id,created_at')->get(['permohonan_id', 'validated_at'])
             ->map(fn ($l) => $l->permohonan->created_at->diffInMinutes($l->validated_at) / 1440);
@@ -95,8 +110,9 @@ class DashboardController extends Controller
 
         $perLab = Lab::query()->orderBy('urutan')->get()->map(fn ($l) => [
             'nama' => $l->nama,
-            'negatif' => HasilUji::query()->where('lab_id', $l->id)->where('hasil', 'NEGATIF')->count(),
-            'positif' => HasilUji::query()->where('lab_id', $l->id)->where('hasil', 'POSITIF')->count(),
+            // Data lama: NEGATIF/POSITIF; isian parameter: MEMENUHI/MELEBIHI (TANPA_UJI tidak dihitung).
+            'negatif' => HasilUji::query()->where('lab_id', $l->id)->whereIn('hasil', ['NEGATIF', HasilUji::MEMENUHI])->count(),
+            'positif' => HasilUji::query()->where('lab_id', $l->id)->whereIn('hasil', ['POSITIF', HasilUji::MELEBIHI])->count(),
         ]);
 
         $bulan = collect(range(11, 0))->map(fn ($i) => now()->startOfMonth()->subMonths($i));

@@ -34,7 +34,12 @@ class PermohonanPolicy
 
     public function inputHasil(User $u, Permohonan $p): bool
     {
-        return $u->role === Role::PetugasLab && $p->status === Status::DiLab && $p->current_lab_id === $u->lab_id;
+        if ($p->status !== Status::DiLab || ! $p->current_lab_id) {
+            return false;
+        }
+
+        // Admin Lab = kepala tim operator: boleh mengisi di lab mana pun sampel sedang berada.
+        return $u->role === Role::AdminLab || ($u->role === Role::PetugasLab && $p->current_lab_id === $u->lab_id);
     }
 
     /**
@@ -46,10 +51,35 @@ class PermohonanPolicy
         if ($u->role === Role::PetugasLab || ! $this->view($u, $p)) {
             return false;
         }
-        if ($u->isStaff()) {
+        if ($u->isStaff() || $u->role === Role::Administrasi) {
             return $p->lhu?->nomor !== null;
         }
 
         return $p->status === Status::Selesai;
+    }
+
+    /** Administrasi memeriksa isian operator & file LHP sebelum diterbitkan. */
+    public function cek(User $u, Permohonan $p): bool
+    {
+        return in_array($u->role, [Role::Administrasi, Role::Superadmin], true) && $p->status === Status::MenungguCekAdministrasi;
+    }
+
+    /**
+     * Unduh file Word LHP.
+     * - Administrasi/Admin/Superadmin: draf sejak masuk pemeriksaan Administrasi, dan LHP terbit.
+     * - Pengguna jasa: hanya LHP terbit yang sudah boleh diambil (status SELESAI).
+     * - Petugas lab: tidak (uji independen).
+     */
+    public function unduhLhp(User $u, Permohonan $p): bool
+    {
+        if ($u->role === Role::PetugasLab || ! $this->view($u, $p)) {
+            return false;
+        }
+        if ($u->role === Role::PenggunaJasa) {
+            return $p->status === Status::Selesai && $p->lhu?->nomor !== null;
+        }
+
+        return $p->lhu?->nomor !== null
+            || in_array($p->status, [Status::MenungguCekAdministrasi, Status::MenungguValidasi], true);
     }
 }

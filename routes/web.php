@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\LabController;
+use App\Http\Controllers\Admin\ParameterController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\TimController;
 use App\Http\Controllers\Admin\UserController;
@@ -34,18 +35,25 @@ Route::middleware('auth')->group(function () {
 
     // Permohonan
     Route::get('/permohonan', [PermohonanController::class, 'index'])
-        ->middleware('role:pengguna_jasa,admin_lab,superadmin')->name('permohonan.index');
+        ->middleware('role:pengguna_jasa,admin_lab,administrasi,superadmin')->name('permohonan.index');
     Route::get('/permohonan/baru', [PermohonanController::class, 'create'])->middleware('role:pengguna_jasa')->name('permohonan.create');
     Route::post('/permohonan', [PermohonanController::class, 'store'])->middleware(['role:pengguna_jasa', 'throttle:aksi'])->name('permohonan.store');
+    // Sampel internal Balai (Monitoring, Test Result, Uji Banding): dicatat Admin Lab.
+    Route::get('/sampel-internal', [PermohonanController::class, 'createInternal'])->middleware('role:admin_lab,superadmin')->name('permohonan.internal');
+    Route::post('/sampel-internal', [PermohonanController::class, 'storeInternal'])->middleware(['role:admin_lab,superadmin', 'throttle:aksi'])->name('permohonan.internal.store');
     Route::get('/permohonan/{permohonan}', [PermohonanController::class, 'show'])->whereNumber('permohonan')->name('permohonan.show');
     Route::get('/permohonan/{permohonan}/dokumen/{dokumen}', [PermohonanController::class, 'dokumen'])
         ->whereNumber(['permohonan', 'dokumen'])->name('permohonan.dokumen');
     Route::get('/permohonan/{permohonan}/lhu', [PermohonanController::class, 'lhu'])->whereNumber('permohonan')->name('permohonan.lhu');
+    Route::get('/permohonan/{permohonan}/pratinjau-lhp', [PermohonanController::class, 'pratinjau'])->whereNumber('permohonan')->name('permohonan.pratinjau');
+    Route::get('/permohonan/{permohonan}/lhp.docx', [PermohonanController::class, 'lhpWord'])->whereNumber('permohonan')->middleware('throttle:aksi')->name('permohonan.word');
 
     Route::middleware('throttle:aksi')->whereNumber('permohonan')->group(function () {
         Route::post('/permohonan/{permohonan}/bayar', [PermohonanController::class, 'bayar'])->middleware('role:pengguna_jasa')->name('permohonan.bayar');
-        Route::post('/permohonan/{permohonan}/hasil', [PermohonanController::class, 'inputHasil'])->middleware('role:petugas_lab')->name('permohonan.hasil');
-        Route::post('/permohonan/{permohonan}/tangani', [PermohonanController::class, 'tangani'])->middleware('role:petugas_lab')->name('permohonan.tangani');
+        // Operator lab mengisi lab-nya; Admin Lab (kepala tim operator) bisa mengisi di lab mana pun sampel berada.
+        Route::post('/permohonan/{permohonan}/hasil', [PermohonanController::class, 'inputHasil'])->middleware('role:petugas_lab,admin_lab')->name('permohonan.hasil');
+        Route::post('/permohonan/{permohonan}/tangani', [PermohonanController::class, 'tangani'])->middleware('role:petugas_lab,admin_lab')->name('permohonan.tangani');
+        Route::post('/permohonan/{permohonan}/cek', [PermohonanController::class, 'cek'])->middleware('role:administrasi,superadmin')->name('permohonan.cek');
         Route::middleware('role:admin_lab,superadmin')->group(function () {
             Route::post('/permohonan/{permohonan}/verifikasi', [PermohonanController::class, 'verifikasi'])->name('permohonan.verifikasi');
             Route::post('/permohonan/{permohonan}/konfirmasi-bayar', [PermohonanController::class, 'konfirmasiBayar'])->name('permohonan.konfirmasi');
@@ -81,6 +89,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/lab', [LabController::class, 'index'])->name('labs');
         Route::post('/lab', [LabController::class, 'save'])->name('labs.store');
         Route::put('/lab/{lab}', [LabController::class, 'save'])->whereNumber('lab')->name('labs.update');
+        // Katalog parameter uji (kolom Buku Sampel + teks persyaratan/metode LHP)
+        Route::get('/parameter', [ParameterController::class, 'index'])->name('parameter');
+        Route::post('/parameter', [ParameterController::class, 'save'])->name('parameter.store');
+        Route::put('/parameter/{parameter}', [ParameterController::class, 'save'])->whereNumber('parameter')->name('parameter.update');
         Route::get('/pengaturan', [SettingController::class, 'index'])->name('settings');
         Route::put('/pengaturan', [SettingController::class, 'save'])->name('settings.save');
         Route::get('/log-aktivitas', [SettingController::class, 'audit'])->name('audit');

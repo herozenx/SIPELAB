@@ -1,7 +1,7 @@
 # SIPELAB — Panduan Pemakaian & Pengubahan
 
 **Sistem Pelayanan, Pengujian & Sertifikasi Laboratorium** — BPPMHKP Surabaya II
-Laravel 11 · PHP 8.3 · SQLite (laptop) · Neon Postgres (demo Vercel) · MySQL/MariaDB (server instansi)
+Laravel 12 · PHP 8.4 · SQLite (laptop) · Neon Postgres (demo Vercel) · MySQL/MariaDB (server instansi)
 
 > Cara membaca file ini dengan rapi: buka di **VS Code** lalu tekan `Ctrl+Shift+V` (preview).
 
@@ -43,7 +43,7 @@ Jendela hitam **jangan ditutup** selama aplikasi dipakai. Tutup jendela = aplika
 ### Cara manual (terminal)
 ```powershell
 cd C:\laragon\www\sipelab
-$php = "C:\laragon\bin\php\php-8.3.30-Win32-vs16-x64\php.exe"
+$php = "C:\laragon\bin\php\php-8.4.27-Win32-vs17-x64\php.exe"
 & $php artisan serve                    # jalankan
 & $php artisan migrate:fresh --seed     # reset data demo
 ```
@@ -307,7 +307,7 @@ Untuk **demo online** (bukan server resmi — server production dikelola instans
 
 | Bagian | Di Vercel |
 |---|---|
-| PHP / Laravel | Runtime komunitas `vercel-php` (PHP 8.3), diatur di `vercel.json` + `api/index.php` |
+| PHP / Laravel | Runtime komunitas `vercel-php@0.8.0` (PHP 8.4), diatur di `vercel.json` + `api/index.php` |
 | Database | **Neon Postgres** gratis (Vercel → Storage → Neon), otomatis mengisi `DATABASE_URL` |
 | Berkas unggahan | Disimpan di database (`SIPELAB_BERKAS_DB=true`), karena Vercel tidak punya disk permanen |
 | Rahasia | `APP_KEY` dan `SEED_PASSWORD` disimpan di **Environment Variables** Vercel, bukan di kode |

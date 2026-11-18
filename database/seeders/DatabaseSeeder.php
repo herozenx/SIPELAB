@@ -17,10 +17,13 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // [nama, urutan, tarif per sampel, norma hari kerja] — total norma 6 hari kerja
-        foreach ([['Nekropsi', 1, 75000, 1], ['Mikrobiologi', 2, 150000, 3], ['Kimia', 3, 200000, 2]] as [$nama, $urut, $tarif, $norma]) {
+        // Lab mengikuti LHPS instansi. [nama, urutan, tarif per sampel, norma hari kerja]
+        // Tarif Organoleptik & Radionuklida diisi Superadmin di menu Lab & tarif.
+        foreach ([['Mikrobiologi', 1, 150000, 3], ['Kimia', 2, 200000, 2], ['Organoleptik', 3, 0, 1], ['Radionuklida', 4, 0, 1]] as [$nama, $urut, $tarif, $norma]) {
             Lab::query()->firstOrCreate(['nama' => $nama], ['urutan' => $urut, 'tarif' => $tarif, 'norma_hari' => $norma, 'aktif' => true]);
         }
+        // Katalog parameter (kolom Buku Sampel + teks LHP asli); tidak menimpa yang sudah diedit.
+        (require __DIR__.'/katalog_parameter.php')();
         foreach (Setting::DEFAULTS as $k => $v) {
             Setting::query()->firstOrCreate(['key' => $k], ['value' => $v]);
         }
@@ -37,10 +40,12 @@ class DatabaseSeeder extends Seeder
         $akun = [
             ['Super Admin', 'superadmin@lab.local', Role::Superadmin, null, null, null],
             ['Admin Lab', 'admin@lab.local', Role::AdminLab, null, null, null],
-            ['Petugas Nekropsi', 'nekropsi@lab.local', Role::PetugasLab, $lab('Nekropsi'), null, null],
+            ['Petugas Administrasi', 'administrasi@lab.local', Role::Administrasi, null, null, null],
             ['Petugas Mikrobiologi', 'mikro@lab.local', Role::PetugasLab, $lab('Mikrobiologi'), null, null],
             ['Dewi Mikrobiologi', 'mikro2@lab.local', Role::PetugasLab, $lab('Mikrobiologi'), null, null],
             ['Petugas Kimia', 'kimia@lab.local', Role::PetugasLab, $lab('Kimia'), null, null],
+            ['Petugas Organoleptik', 'organoleptik@lab.local', Role::PetugasLab, $lab('Organoleptik'), null, null],
+            ['Petugas Radionuklida', 'radio@lab.local', Role::PetugasLab, $lab('Radionuklida'), null, null],
             ['Rini Hapsari', 'pengguna@lab.local', Role::PenggunaJasa, null, 'CV Bahari Demo', JenisBayar::Mandiri],
             ['Agus Santoso', 'eksternal@lab.local', Role::PenggunaJasa, null, 'PT Samudra Eksternal Demo', JenisBayar::Eksternal],
         ];

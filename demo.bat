@@ -2,10 +2,10 @@
 setlocal
 title SIPELAB - Demo
 cd /d "%~dp0"
-set "PHP=C:\laragon\bin\php\php-8.3.30-Win32-vs16-x64\php.exe"
+set "PHP=C:\laragon\bin\php\php-8.4.27-Win32-vs17-x64\php.exe"
 if not exist "%PHP%" (
   where php >nul 2>nul || (
-    echo PHP 8.2+ tidak ditemukan. Pasang Laragon/XAMPP/Herd, atau ubah baris "set PHP=" di demo.bat.
+    echo PHP 8.4+ tidak ditemukan. Pasang Laragon/XAMPP/Herd, atau ubah baris "set PHP=" di demo.bat.
     pause & exit /b 1
   )
   set "PHP=php"

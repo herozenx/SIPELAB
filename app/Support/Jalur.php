@@ -18,16 +18,17 @@ class Jalur
     public static function untuk(Permohonan $p, Collection $labs): array
     {
         $eksternal = $p->eksternal();
-        $st = [['nama' => 'Diajukan', 'sub' => 'Verifikasi sampel', 'kunci' => 'ajukan']];
-        if (! $eksternal) {
+        $st = [['nama' => 'Diajukan', 'sub' => $p->internal() ? 'Sampel internal' : 'Verifikasi sampel', 'kunci' => 'ajukan']];
+        if (! $eksternal && ! $p->internal()) {
             $st[] = ['nama' => 'Pembayaran', 'sub' => 'SIMPONI', 'kunci' => 'bayar'];
         }
         foreach ($labs as $l) {
             $st[] = ['nama' => $l->nama, 'sub' => 'Lab', 'lab_id' => $l->id, 'kunci' => 'lab'];
         }
-        $st[] = ['nama' => 'LHU', 'sub' => $eksternal ? 'Validasi' : 'Validasi & terbit', 'kunci' => 'lhu'];
+        $st[] = ['nama' => 'Administrasi', 'sub' => 'Cek isian & LHP', 'kunci' => 'cek'];
+        $st[] = ['nama' => 'LHP', 'sub' => 'Terbit', 'kunci' => 'lhu'];
         if ($eksternal) {
-            $st[] = ['nama' => 'Pelunasan', 'sub' => 'LHU diambil', 'kunci' => 'bayar'];
+            $st[] = ['nama' => 'Pelunasan', 'sub' => 'LHP diambil', 'kunci' => 'bayar'];
         }
         $last = count($st) - 1;
         $idx = fn (string $kunci) => collect($st)->search(fn ($s) => $s['kunci'] === $kunci);
@@ -45,6 +46,7 @@ class Jalur
 
                 return $labPertama === false ? 1 : $labPertama;
             })(),
+            Status::MenungguCekAdministrasi => $idx('cek'),
             Status::MenungguValidasi => $idx('lhu'),
             Status::Selesai => $last + 1,
         };

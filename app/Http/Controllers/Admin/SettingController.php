@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\JenisBayar;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Setting;
@@ -17,19 +18,38 @@ class SettingController extends Controller
 
     public function save(Request $request)
     {
+        $nomor = [];
+        foreach (JenisBayar::cases() as $j) {
+            $nomor[$j->kunciNomor()] = ['required', 'string', 'max:80', 'regex:/\{NNNN\}/'];
+        }
         $data = $request->validate([
             'nama_instansi' => ['required', 'string', 'min:3', 'max:200'],
             'alamat_instansi' => ['required', 'string', 'min:3', 'max:300'],
             'biaya_admin' => ['required', 'integer', 'min:0', 'max:100000000'],
-            'prefix_lhu' => ['required', 'regex:/^[A-Za-z0-9\-\/]{2,40}$/'],
+            'kota_lhp' => ['required', 'string', 'min:3', 'max:40'],
+            'penandatangan' => ['required', 'string', 'max:2000'],
             'norma_total_hari' => ['required', 'integer', 'min:1', 'max:60'],
             'hari_libur' => ['nullable', 'string', 'max:3000'],
             'whatsapp_center' => ['nullable', 'regex:/^[0-9+\-\s]{8,20}$/'],
-        ], [
-            'prefix_lhu.regex' => 'Prefiks hanya boleh huruf, angka, tanda - dan /.',
+        ] + $nomor, [
+            'regex' => 'Format nomor wajib memuat {NNNN} (nomor urut).',
             'whatsapp_center.regex' => 'Nomor WhatsApp 8–20 digit, boleh memakai + atau -.',
         ]);
         $data['whatsapp_center'] = trim((string) ($data['whatsapp_center'] ?? ''));
+        $ttd = [];
+        foreach (preg_split('/\R/', $data['penandatangan']) ?: [] as $baris) {
+            if (trim($baris) === '') {
+                continue;
+            }
+            if (! str_contains($baris, '|')) {
+                return back()->withInput()->withErrors(['penandatangan' => "Baris \"{$baris}\" harus berformat Nama|NIP."]);
+            }
+            $ttd[] = implode('|', array_map('trim', explode('|', $baris, 2)));
+        }
+        if (! $ttd) {
+            return back()->withInput()->withErrors(['penandatangan' => 'Isi minimal satu penandatangan.']);
+        }
+        $data['penandatangan'] = implode("\n", $ttd);
 
         // Hari libur: satu tanggal YYYY-MM-DD per baris (atau dipisah koma); disimpan rapi & urut.
         $tanggal = preg_split('/[\s,;]+/', (string) ($data['hari_libur'] ?? ''), -1, PREG_SPLIT_NO_EMPTY) ?: [];

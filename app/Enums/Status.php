@@ -9,6 +9,7 @@ enum Status: string
     case MenungguPembayaran = 'MENUNGGU_PEMBAYARAN';
     case MenungguKonfirmasiBayar = 'MENUNGGU_KONFIRMASI_BAYAR';
     case DiLab = 'DI_LAB';
+    case MenungguCekAdministrasi = 'MENUNGGU_CEK_ADM';
     case MenungguValidasi = 'MENUNGGU_VALIDASI';
     case Selesai = 'SELESAI';
 
@@ -20,8 +21,9 @@ enum Status: string
             self::MenungguPembayaran => 'Menunggu pembayaran',
             self::MenungguKonfirmasiBayar => 'Cek pembayaran',
             self::DiLab => 'Sedang diuji',
-            self::MenungguValidasi => 'Menunggu validasi LHU',
-            self::Selesai => 'LHU terbit',
+            self::MenungguCekAdministrasi => 'Dicek administrasi',
+            self::MenungguValidasi => 'Menunggu terbit LHP',
+            self::Selesai => 'LHP terbit',
         };
     }
 
@@ -29,11 +31,17 @@ enum Status: string
     public function tone(): string
     {
         return match ($this) {
-            self::Diajukan, self::MenungguKonfirmasiBayar, self::MenungguValidasi => 'wait',
+            self::Diajukan, self::MenungguKonfirmasiBayar, self::MenungguCekAdministrasi, self::MenungguValidasi => 'wait',
             self::MenungguPembayaran => 'info',
             self::DiLab => 'lab',
             self::Selesai => 'ok',
             self::Ditolak => 'bad',
         };
+    }
+
+    /** Tahapan internal Balai yang tampil ke pengguna jasa sebagai "sedang diproses". */
+    public function internalLab(): bool
+    {
+        return in_array($this, [self::DiLab, self::MenungguCekAdministrasi, self::MenungguValidasi], true);
     }
 }

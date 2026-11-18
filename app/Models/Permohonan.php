@@ -8,6 +8,7 @@ use App\Enums\Tujuan;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Permohonan extends Model
@@ -26,7 +27,27 @@ class Permohonan extends Model
             'tagihan' => 'integer',
             'masuk_lab_at' => 'datetime',
             'target_selesai_at' => 'datetime',
+            'diterima_at' => 'datetime',
+            'kode_tanggal' => 'date',
+            'dikembalikan' => 'boolean',
         ];
+    }
+
+    /** Sampel dalam permohonan ini (baris Buku Sampel; satu halaman LHP per sampel). */
+    public function sampel(): HasMany
+    {
+        return $this->hasMany(Sampel::class)->orderBy('urut');
+    }
+
+    public function hasilParameter(): HasManyThrough
+    {
+        return $this->hasManyThrough(HasilParameter::class, Sampel::class);
+    }
+
+    /** Sampel internal Balai (Monitoring, Test Result, Uji Banding): tanpa tagihan. */
+    public function internal(): bool
+    {
+        return (bool) $this->jenis_bayar?->internal();
     }
 
     public function pemohon(): BelongsTo

@@ -27,7 +27,12 @@
         <div><dt class="text-kabut-500">Tanggal terbit</dt><dd class="mt-0.5 font-semibold">{{ tanggal($lhu->validated_at) }}</dd></div>
         <div><dt class="text-kabut-500">Sampel</dt><dd class="mt-0.5 font-semibold">{{ $p->nama_sampel }} ({{ $p->jenis_komoditas }})</dd></div>
         <div><dt class="text-kabut-500">Jumlah dan tujuan</dt><dd class="mt-0.5 font-semibold">{{ $p->jumlah_sampel }} sampel, {{ $p->tujuan->label() }}</dd></div>
-        <div class="sm:col-span-2"><dt class="text-kabut-500">Keputusan</dt><dd class="mt-1"><span class="{{ $lulus ? 'badge-ok' : 'badge-bad' }} text-sm">{{ $lhu->status_izin->keputusan($p->tujuan) }}</span></dd></div>
+        @if ($lhu->urut !== null)
+          <div class="sm:col-span-2"><dt class="text-kabut-500">Kode sampel</dt><dd class="kode mt-0.5">{{ $p->sampel()->pluck('kode')->filter()->join(', ') ?: $p->kode_sampel }}</dd></div>
+        @else
+          {{-- LHU lama (sebelum format LHP instansi) --}}
+          <div class="sm:col-span-2"><dt class="text-kabut-500">Keputusan</dt><dd class="mt-1"><span class="{{ $lulus ? 'badge-ok' : 'badge-bad' }} text-sm">{{ $lhu->status_izin->keputusan($p->tujuan) }}</span></dd></div>
+        @endif
       </dl>
       <p class="border-t border-kabut-200 px-5 py-3 text-2xs text-kabut-500">Sidik SHA-256: <span class="num break-all">{{ $lhu->hash }}</span></p>
     </div>

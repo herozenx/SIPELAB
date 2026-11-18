@@ -10,9 +10,15 @@
   <div class="panel">
     <div class="panel-body grid gap-5 sm:grid-cols-2">
       <div class="sm:col-span-2">
-        <label for="nama_sampel" class="label">Nama sampel</label>
+        <label for="nama_sampel" class="label">Nama produk</label>
         <input id="nama_sampel" name="nama_sampel" value="{{ old('nama_sampel') }}" class="input" placeholder="Contoh: Udang vaname beku size 40" required maxlength="120" @error('nama_sampel') aria-invalid="true" @enderror>
         @error('nama_sampel')<p class="error">{{ $message }}</p>@enderror
+        <p class="hint">Petugas Balai yang mencatat rincian sampel saat sampel diterima di loket.</p>
+      </div>
+      <div>
+        <label for="jumlah_sampel" class="label">Jumlah sampel</label>
+        <input id="jumlah_sampel" name="jumlah_sampel" type="number" min="1" max="500" value="{{ old('jumlah_sampel', 1) }}" class="input num" required data-jumlah @error('jumlah_sampel') aria-invalid="true" @enderror>
+        @error('jumlah_sampel')<p class="error">{{ $message }}</p>@enderror
       </div>
       <div>
         <label for="jenis_komoditas" class="label">Jenis komoditas</label>
@@ -20,10 +26,17 @@
         <datalist id="komoditas"><option value="Ikan segar"><option value="Ikan beku"><option value="Krustasea"><option value="Moluska"><option value="Rumput laut"><option value="Produk olahan"></datalist>
         @error('jenis_komoditas')<p class="error">{{ $message }}</p>@enderror
       </div>
-      <div>
-        <label for="jumlah_sampel" class="label">Jumlah sampel</label>
-        <input id="jumlah_sampel" name="jumlah_sampel" type="number" min="1" max="500" value="{{ old('jumlah_sampel', 1) }}" class="input num" required data-jumlah @error('jumlah_sampel') aria-invalid="true" @enderror>
-        @error('jumlah_sampel')<p class="error">{{ $message }}</p>@enderror
+      <div class="sm:col-span-2">
+        <label for="pelanggan" class="label">Nama pelanggan</label>
+        <input id="pelanggan" name="pelanggan" value="{{ old('pelanggan', auth()->user()->instansi ?: auth()->user()->nama) }}" class="input" placeholder="Contoh: PT. Bahari Biru Nusantara" required maxlength="150" @error('pelanggan') aria-invalid="true" @enderror>
+        @error('pelanggan')<p class="error">{{ $message }}</p>@enderror
+        <p class="hint">Nama perusahaan/perorangan, dicetak di LHP sebagai Pelanggan/<i>Customer</i>.</p>
+      </div>
+      <div class="sm:col-span-2">
+        <label for="alamat" class="label">Alamat</label>
+        <input id="alamat" name="alamat" value="{{ old('alamat') }}" class="input" placeholder="Contoh: Jl. Daendels KM 82,6 No.88, Ds. Sedayulawas, Brondong, Lamongan" required maxlength="300" @error('alamat') aria-invalid="true" @enderror>
+        @error('alamat')<p class="error">{{ $message }}</p>@enderror
+        <p class="hint">Alamat pelanggan, dicetak di LHP sebagai Alamat/<i>Address</i>.</p>
       </div>
       <div class="sm:col-span-2">
         <label for="asal_sampel" class="label">Asal sampel</label>
@@ -33,7 +46,7 @@
       <fieldset class="sm:col-span-2">
         <legend class="label">Jenis pengguna jasa</legend>
         <div class="grid gap-2 sm:grid-cols-3">
-          @foreach (\App\Enums\JenisBayar::cases() as $jb)
+          @foreach (\App\Enums\JenisBayar::publik() as $jb)
             <label class="choice"><input type="radio" name="jenis_bayar" value="{{ $jb->value }}" required @checked(old('jenis_bayar', $jenisTerakhir) === $jb->value)><span><span class="block font-semibold">{{ $jb->label() }}</span><span class="text-xs text-kabut-500">{{ $jb->keterangan() }}</span></span></label>
           @endforeach
         </div>

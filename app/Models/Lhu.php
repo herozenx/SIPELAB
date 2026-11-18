@@ -14,7 +14,16 @@ class Lhu extends Model
 
     protected function casts(): array
     {
-        return ['status_izin' => StatusIzin::class, 'validated_at' => 'datetime'];
+        return ['status_izin' => StatusIzin::class, 'validated_at' => 'datetime', 'cek_at' => 'datetime'];
+    }
+
+    public const JABATAN_KEPALA = 'KEPALA';
+    public const JABATAN_PJ = 'PJ';
+
+    /** Petugas Administrasi yang memeriksa isian operator dan file LHP. */
+    public function pemeriksa(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cek_by');
     }
 
     public function permohonan(): BelongsTo
