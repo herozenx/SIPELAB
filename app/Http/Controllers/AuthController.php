@@ -9,7 +9,6 @@ use App\Support\Audit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 
@@ -25,12 +24,11 @@ class AuthController extends Controller
         $data = $request->validate([
             'email' => ['required', 'email', 'max:120'],
             'password' => ['required', 'string', 'max:128'],
-            'portal' => ['required', Rule::in(['pengguna_jasa', 'operator', 'superadmin'])],
-        ], [], ['portal' => 'masuk sebagai']);
+        ]);
 
         $email = mb_strtolower(trim($data['email']));
         $user = User::query()->where('email', $email)->first();
-        $fail = fn () => throw ValidationException::withMessages(['email' => 'Email, kata sandi, atau pilihan "masuk sebagai" tidak cocok.']);
+        $fail = fn () => throw ValidationException::withMessages(['email' => 'Email atau kata sandi tidak cocok.']);
 
         if (! $user) {
             // Hash tiruan agar waktu respons sama dengan akun yang ada (cegah user enumeration).
@@ -45,7 +43,7 @@ class AuthController extends Controller
             throw ValidationException::withMessages(['email' => "Akun dikunci sementara karena terlalu banyak percobaan gagal. Coba lagi dalam {$menit} menit."]);
         }
 
-        if (! Hash::check($data['password'], $user->password) || $user->role->portal() !== $data['portal'] || ! $user->aktif) {
+        if (! Hash::check($data['password'], $user->password) || ! $user->aktif) {
             $n = $user->failed_attempts + 1;
             $lock = $n >= config('sipelab.lockout_attempts');
             $user->forceFill($lock

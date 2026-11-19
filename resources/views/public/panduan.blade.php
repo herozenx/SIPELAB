@@ -25,7 +25,7 @@
         'Klik <b>Daftar</b> di halaman depan.',
         'Isi <b>nama penanggung jawab</b>, <b>nama usaha/instansi</b> (dicetak di LHU), <b>email</b>, dan <b>nomor telepon/WA</b>.',
         'Buat kata sandi minimal 8 karakter berisi huruf besar, huruf kecil, dan angka, lalu klik <b>Buat akun</b>.',
-        'Untuk masuk berikutnya, klik <b>Masuk</b>, pilih <b>Masuk sebagai: Pengguna jasa</b>, isi email dan kata sandi.',
+        'Untuk masuk berikutnya, klik <b>Masuk</b>, lalu isi email dan kata sandi.',
       ],
       [['penting', 'Setelah 5 kali salah kata sandi, akun dikunci 15 menit demi keamanan.'], ['info', 'Jenis pengguna jasa dipilih di formulir <b>Ajukan uji</b>. Admin Lab dapat menyesuaikan jenis saat verifikasi sampel.']], 'jenis'],
     ['ajukan', 'Mengajukan permohonan uji', 'tambah',

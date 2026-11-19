@@ -12,23 +12,24 @@ class KeamananAkunTest extends TestCase
 
     protected bool $seed = true;
 
-    public function test_login_berhasil_dan_salah_portal_ditolak(): void
+    public function test_login_tanpa_pilihan_peran(): void
     {
-        $this->post('/masuk', ['email' => 'admin@lab.local', 'password' => 'Lab12345!', 'portal' => 'pengguna_jasa'])->assertSessionHasErrors('email');
+        $this->get('/masuk')->assertOk()->assertDontSee('Masuk sebagai')->assertDontSee('Superadmin');
+        $this->post('/masuk', ['email' => 'admin@lab.local', 'password' => 'salah'])->assertSessionHasErrors('email');
         $this->assertGuest();
-        $this->post('/masuk', ['email' => 'admin@lab.local', 'password' => 'Lab12345!', 'portal' => 'operator'])->assertRedirect('/beranda');
+        $this->post('/masuk', ['email' => 'admin@lab.local', 'password' => 'Lab12345!'])->assertRedirect('/beranda');
         $this->assertAuthenticated();
     }
 
     public function test_akun_terkunci_setelah_lima_kali_gagal(): void
     {
         for ($i = 0; $i < 5; $i++) {
-            $this->post('/masuk', ['email' => 'kimia@lab.local', 'password' => 'salah', 'portal' => 'operator']);
+            $this->post('/masuk', ['email' => 'kimia@lab.local', 'password' => 'salah']);
         }
         $this->assertNotNull(User::query()->where('email', 'kimia@lab.local')->value('locked_until'));
         \Illuminate\Support\Facades\RateLimiter::clear('login'); // lepas pembatas laju agar penguncian akun yang diuji
         $this->app['cache']->store()->flush();
-        $this->post('/masuk', ['email' => 'kimia@lab.local', 'password' => 'Lab12345!', 'portal' => 'operator'])->assertSessionHasErrors('email');
+        $this->post('/masuk', ['email' => 'kimia@lab.local', 'password' => 'Lab12345!'])->assertSessionHasErrors('email');
         $this->assertGuest();
     }
 

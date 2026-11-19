@@ -55,15 +55,18 @@ $php = "C:\laragon\bin\php\php-8.4.27-Win32-vs17-x64\php.exe"
 
 Akun demo (hanya ada di laptop/demo), sandi semua: **`Lab12345!`**
 
-| Peran | Pilih "Masuk sebagai" | Email | Bisa apa |
-|---|---|---|---|
-| **Superadmin** | Superadmin | `superadmin@lab.local` | Semua fitur Admin Lab + kelola pengguna, lab & tarif, pengaturan, log aktivitas |
-| **Admin Lab** | Operator | `admin@lab.local` | Verifikasi sampel, beri kode billing, konfirmasi bayar, validasi & terbitkan LHU, laporan |
-| **Petugas Nekropsi** | Operator | `nekropsi@lab.local` | Input hasil uji sampel yang sedang di lab Nekropsi |
-| **Petugas Mikrobiologi** | Operator | `mikro@lab.local`, `mikro2@lab.local` | Input hasil di lab Mikrobiologi (2 operator dalam satu tim) |
-| **Petugas Kimia** | Operator | `kimia@lab.local` | Input hasil di lab Kimia |
-| **Pengguna Jasa Mandiri** | Pengguna jasa | `pengguna@lab.local` | **Bayar di awal**, lalu sampel diuji |
-| **Pengguna Jasa Eksternal** | Pengguna jasa | `eksternal@lab.local` | Sampel langsung diuji, **bayar setelah LHU jadi**; LHU terkunci sampai lunas |
+| Peran | Email | Bisa apa |
+|---|---|---|
+| **Superadmin** | `superadmin@lab.local` | Semua fitur Admin Lab + kelola pengguna, lab & tarif, pengaturan, log aktivitas |
+| **Admin Lab** | `admin@lab.local` | Verifikasi sampel, beri kode billing, konfirmasi bayar, isi hasil di lab mana pun, terbitkan LHP, laporan |
+| **Petugas Administrasi** | `administrasi@lab.local` | Memeriksa hasil lab sebelum LHP diterbitkan Admin |
+| **Petugas Mikrobiologi** | `mikro@lab.local`, `mikro2@lab.local` | Input hasil di lab Mikrobiologi (2 operator dalam satu tim) |
+| **Petugas Kimia** | `kimia@lab.local` | Input hasil di lab Kimia |
+| **Petugas Organoleptik** | `organoleptik@lab.local` | Input hasil di lab Organoleptik |
+| **Petugas Radionuklida** | `radio@lab.local` | Input hasil di lab Radionuklida |
+| **Pengguna Jasa** | `pengguna@lab.local`, `eksternal@lab.local` | Ajukan uji; jenis Mandiri/Eksternal/Surveilen dipilih per permohonan |
+
+Halaman **Masuk** cukup email + kata sandi; peran (pengguna jasa, operator, superadmin) dikenali otomatis dari akunnya.
 
 Perbedaan tampilan:
 - **Admin Lab & Superadmin** → beranda berisi antrean tindakan (verifikasi, cek bayar, validasi LHU), jumlah sampel per lab, dan daftar **sampel yang lewat norma waktu**. Menu tambahan **Tim operator** dan **Chat pengguna**.

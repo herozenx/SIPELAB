@@ -21,16 +21,6 @@ enum Role: string
         };
     }
 
-    /** Pilihan "Masuk sebagai" pada form login (sesuai SKPL). */
-    public function portal(): string
-    {
-        return match ($this) {
-            self::Superadmin => 'superadmin',
-            self::AdminLab, self::Administrasi, self::PetugasLab => 'operator',
-            self::PenggunaJasa => 'pengguna_jasa',
-        };
-    }
-
     /** Admin Lab & Superadmin: verifikasi, pembayaran, penerbitan LHP. Administrasi bukan staff (hanya memeriksa). */
     public function isStaff(): bool
     {

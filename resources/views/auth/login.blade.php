@@ -9,17 +9,6 @@
 
   <form method="post" action="{{ url('/masuk') }}" class="space-y-5" novalidate>
     @csrf
-    <fieldset>
-      <legend class="label">Masuk sebagai</legend>
-      <div class="grid grid-cols-3 gap-1 rounded-lg bg-kabut-100 p-1 text-sm">
-        @foreach (['pengguna_jasa' => 'Pengguna jasa', 'operator' => 'Operator', 'superadmin' => 'Superadmin'] as $v => $l)
-          <label class="cursor-pointer rounded-md px-2 py-2 text-center font-semibold text-kabut-600 has-[:checked]:bg-white has-[:checked]:text-laut-700 has-[:checked]:shadow-sm has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-laut-400">
-            <input type="radio" name="portal" value="{{ $v }}" class="sr-only" @checked(old('portal', 'pengguna_jasa') === $v)>{{ $l }}
-          </label>
-        @endforeach
-      </div>
-      <p class="hint">Operator: Admin Lab dan petugas laboratorium.</p>
-    </fieldset>
     <div>
       <label for="email" class="label">Email</label>
       <input id="email" name="email" type="email" value="{{ old('email') }}" class="input" autocomplete="username" required autofocus @error('email') aria-invalid="true" @enderror>
