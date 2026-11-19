@@ -144,7 +144,7 @@ class PermohonanController extends Controller
         $riwayat = $p->riwayat;
         $lhu = $p->lhu;
         $tampilHasil = true;
-        $tampilPemohon = $u->isStaff() || $u->role === Role::Administrasi;
+        $tampilPemohon = $u->isStaff() || $u->role === Role::Administrasi || $u->role === Role::Admin;
 
         if ($u->role === Role::PenggunaJasa) {
             // Nilai hasil baru tampil setelah LHP terbit; lampiran internal lab disembunyikan.
@@ -219,7 +219,7 @@ class PermohonanController extends Controller
 
     public function verifikasi(Request $request, Permohonan $permohonan)
     {
-        Gate::authorize('kelola', $permohonan);
+        Gate::authorize('verifikasi', $permohonan);
         $request->validate(['keputusan' => ['required', Rule::in(['valid', 'tolak'])]]);
 
         if ($request->input('keputusan') === 'valid') {
@@ -289,7 +289,7 @@ class PermohonanController extends Controller
 
     public function konfirmasiBayar(Request $request, Permohonan $permohonan)
     {
-        Gate::authorize('kelola', $permohonan);
+        Gate::authorize('verifikasi', $permohonan);
         $data = $request->validate([
             'keputusan' => ['required', Rule::in(['terima', 'tolak'])],
             'catatan' => ['nullable', 'required_if:keputusan,tolak', 'string', 'max:500'],

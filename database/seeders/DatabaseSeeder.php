@@ -40,6 +40,7 @@ class DatabaseSeeder extends Seeder
         $akun = [
             ['Super Admin', 'superadmin@lab.local', Role::Superadmin, null, null, null],
             ['Admin Lab', 'admin@lab.local', Role::AdminLab, null, null, null],
+            ['Admin Verifikasi', 'verifikasi@lab.local', Role::Admin, null, null, null],
             ['Petugas Administrasi', 'administrasi@lab.local', Role::Administrasi, null, null, null],
             ['Petugas Mikrobiologi', 'mikro@lab.local', Role::PetugasLab, $lab('Mikrobiologi'), null, null],
             ['Dewi Mikrobiologi', 'mikro2@lab.local', Role::PetugasLab, $lab('Mikrobiologi'), null, null],

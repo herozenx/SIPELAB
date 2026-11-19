@@ -32,6 +32,12 @@ class PermohonanPolicy
         return $u->isStaff();
     }
 
+    /** Verifikasi pengajuan & konfirmasi pembayaran: Admin, Admin Lab, Superadmin (siapa pun yang lebih dulu). */
+    public function verifikasi(User $u, Permohonan $p): bool
+    {
+        return $u->role->bolehVerifikasi();
+    }
+
     public function inputHasil(User $u, Permohonan $p): bool
     {
         if ($p->status !== Status::DiLab || ! $p->current_lab_id) {
@@ -51,7 +57,7 @@ class PermohonanPolicy
         if ($u->role === Role::PetugasLab || ! $this->view($u, $p)) {
             return false;
         }
-        if ($u->isStaff() || $u->role === Role::Administrasi) {
+        if ($u->isStaff() || $u->role === Role::Administrasi || $u->role === Role::Admin) {
             return $p->lhu?->nomor !== null;
         }
 

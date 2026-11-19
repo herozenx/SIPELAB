@@ -7,6 +7,7 @@
   $R = \App\Enums\Role::class;
   $F = \App\Support\FormatLhp::class;
   $staff = $u->isStaff();
+  $bisaVerif = $u->role->bolehVerifikasi(); // Admin, Admin Lab, Superadmin
   $pengguna = $u->role === $R::PenggunaJasa;
   $petugas = $u->role === $R::PetugasLab;
   $adm = $u->role === $R::Administrasi;
@@ -66,7 +67,7 @@
       </section>
     @endif
 
-    @if ($staff && $p->status === $S::Diajukan)
+    @if ($bisaVerif && $p->status === $S::Diajukan)
       <section class="panel">
         <div class="panel-head"><h2>Verifikasi sampel fisik</h2></div>
         <form method="post" action="{{ route('permohonan.verifikasi', $p) }}" class="panel-body space-y-5" data-guard>
@@ -206,7 +207,7 @@
       </div></section>
     @endif
 
-    @if ($staff && $p->status === $S::MenungguKonfirmasiBayar)
+    @if ($bisaVerif && $p->status === $S::MenungguKonfirmasiBayar)
       <section class="panel">
         <div class="panel-head"><h2>Konfirmasi pembayaran SIMPONI</h2></div>
         <div class="panel-body space-y-5">

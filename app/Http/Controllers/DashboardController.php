@@ -19,7 +19,7 @@ class DashboardController extends Controller
         $u = $request->user();
 
         return match ($u->role) {
-            Role::Superadmin, Role::AdminLab => $this->admin(),
+            Role::Superadmin, Role::AdminLab, Role::Admin => $this->admin($u->isStaff()),
             Role::Administrasi => $this->administrasi($request),
             Role::PetugasLab => $this->petugas($request),
             Role::PenggunaJasa => $this->pengguna($request),
@@ -39,7 +39,8 @@ class DashboardController extends Controller
         return view('dashboard.administrasi', ['antrean' => $antrean, 'diperbaiki' => $diperbaiki, 'riwayat' => $riwayat]);
     }
 
-    private function admin()
+    /** @param bool $penuh Admin Lab/Superadmin; Admin (verifikasi & bayar) tanpa antrean terbit LHP. */
+    private function admin(bool $penuh = true)
     {
         $tindakan = Permohonan::query()->with(['pemohon', 'labSaatIni', 'lhu'])
             ->whereIn('status', [Status::Diajukan->value, Status::MenungguKonfirmasiBayar->value, Status::MenungguValidasi->value])
@@ -62,6 +63,7 @@ class DashboardController extends Controller
             'diLab' => $diLab,
             'menungguBayar' => Permohonan::query()->where('status', Status::MenungguPembayaran->value)->count(),
             'diCek' => Permohonan::query()->where('status', Status::MenungguCekAdministrasi->value)->count(),
+            'penuh' => $penuh,
         ]);
     }
 

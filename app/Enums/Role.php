@@ -6,6 +6,7 @@ enum Role: string
 {
     case Superadmin = 'superadmin';
     case AdminLab = 'admin_lab';
+    case Admin = 'admin';
     case Administrasi = 'administrasi';
     case PetugasLab = 'petugas_lab';
     case PenggunaJasa = 'pengguna_jasa';
@@ -15,6 +16,7 @@ enum Role: string
         return match ($this) {
             self::Superadmin => 'Superadmin',
             self::AdminLab => 'Admin Lab',
+            self::Admin => 'Admin',
             self::Administrasi => 'Administrasi',
             self::PetugasLab => 'Petugas Lab',
             self::PenggunaJasa => 'Pengguna Jasa',
@@ -25,5 +27,11 @@ enum Role: string
     public function isStaff(): bool
     {
         return $this === self::AdminLab || $this === self::Superadmin;
+    }
+
+    /** Boleh memverifikasi pengajuan (boleh diuji / ditolak) dan mengonfirmasi pembayaran: Admin, Admin Lab, Superadmin. */
+    public function bolehVerifikasi(): bool
+    {
+        return $this === self::Admin || $this->isStaff();
     }
 }

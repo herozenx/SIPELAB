@@ -54,7 +54,7 @@
             <h2 class="truncate">{{ $thread->pengguna?->nama }}</h2>
             <p class="truncate text-xs text-kabut-500">{{ $thread->pengguna?->instansi }} · <span data-chat-pengguna-online>{{ $thread->pengguna?->online() ? 'online' : 'offline' }}</span></p>
           </div>
-          @if ($u->isStaff())
+          @if ($u->role->bolehVerifikasi())
             <a href="{{ route('permohonan.index', ['cari' => $thread->pengguna?->instansi ?: $thread->pengguna?->nama]) }}" class="btn-ghost btn-sm shrink-0">Permohonannya</a>
           @endif
         @else

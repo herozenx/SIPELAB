@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Permohonan')
 @section('content')
-@php $staff = auth()->user()->isStaff(); @endphp
+@php $staff = auth()->user()->role !== \App\Enums\Role::PenggunaJasa; // semua petugas Balai @endphp
 <div class="flex flex-wrap items-end justify-between gap-3">
   <div>
     <h1>{{ $staff ? 'Semua permohonan' : 'Permohonan saya' }}</h1>
