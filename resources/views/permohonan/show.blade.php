@@ -10,7 +10,6 @@
   $bisaVerif = $u->role->bolehVerifikasi(); // Admin, Admin Lab, Superadmin
   $pengguna = $u->role === $R::PenggunaJasa;
   $petugas = $u->role === $R::PetugasLab;
-  $adm = $u->role === $R::Administrasi;
   $bisaInput = $bisaIsi; // operator lab ini, atau Admin Lab (kepala tim operator)
   $labIsi = $p->labSaatIni?->nama;
   $bisaCek = \Illuminate\Support\Facades\Gate::allows('cek', $p);
@@ -23,7 +22,7 @@
   $pelanggan = $p->pelanggan ?: ($p->pemohon?->instansi ?: $p->pemohon?->nama);
 @endphp
 
-<a href="{{ $petugas || $adm ? route('dashboard') : route('permohonan.index') }}" class="no-print inline-flex items-center gap-1 text-sm font-semibold no-underline"><x-ikon n="kembali" class="h-4 w-4" />{{ $petugas ? 'Antrean lab' : ($adm ? 'Antrean pemeriksaan' : 'Daftar permohonan') }}</a>
+<a href="{{ $petugas ? route('dashboard') : route('permohonan.index') }}" class="no-print inline-flex items-center gap-1 text-sm font-semibold no-underline"><x-ikon n="kembali" class="h-4 w-4" />{{ $petugas ? 'Antrean lab' : 'Daftar permohonan' }}</a>
 
 <div class="mt-3 flex flex-wrap items-start justify-between gap-3">
   <div>
@@ -624,7 +623,7 @@
       </section>
     @endif
 
-    @if (! $petugas && ! $adm && $p->tagihan)
+    @if (! $petugas && $p->tagihan)
       <section class="panel">
         <div class="panel-head"><h2>Pembayaran</h2></div>
         <dl class="panel-body grid gap-3 text-sm">

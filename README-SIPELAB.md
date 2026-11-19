@@ -59,8 +59,7 @@ Akun demo (hanya ada di laptop/demo), sandi semua: **`Lab12345!`**
 |---|---|---|
 | **Superadmin** | `superadmin@lab.local` | Semua fitur Admin Lab + kelola pengguna, lab & tarif, pengaturan, log aktivitas |
 | **Admin Lab** | `admin@lab.local` | Verifikasi sampel, beri kode billing, konfirmasi bayar, isi hasil di lab mana pun, terbitkan LHP, laporan |
-| **Admin** | `verifikasi@lab.local` | Verifikasi pengajuan (boleh diuji / ditolak) dan konfirmasi pembayaran, sama seperti Admin Lab; tidak mengisi hasil lab atau menerbitkan LHP |
-| **Petugas Administrasi** | `administrasi@lab.local` | Memeriksa hasil lab sebelum LHP diterbitkan Admin |
+| **Administrator** | `administrasi@lab.local` | Verifikasi pengajuan (boleh diuji / ditolak) dan konfirmasi pembayaran (bersama Admin Lab, siapa pun yang lebih dulu); memeriksa isian lab & LHP sebelum diterbitkan Admin Lab |
 | **Petugas Mikrobiologi** | `mikro@lab.local`, `mikro2@lab.local` | Input hasil di lab Mikrobiologi (2 operator dalam satu tim) |
 | **Petugas Kimia** | `kimia@lab.local` | Input hasil di lab Kimia |
 | **Petugas Organoleptik** | `organoleptik@lab.local` | Input hasil di lab Organoleptik |

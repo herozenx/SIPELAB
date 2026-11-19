@@ -16,16 +16,13 @@
       $nav[] = ['tim.index', 'Tim operator', 'tim', 'tim.*'];
       $nav[] = ['laporan', 'Laporan', 'grafik', 'laporan'];
   }
-  if ($u->role === $R::Admin) {
-      $nav[] = ['permohonan.index', 'Semua permohonan', 'daftar', 'permohonan.index|permohonan.show|permohonan.lhu|permohonan.pratinjau'];
-      $nav[] = ['chat', 'Chat pengguna', 'chat', 'chat'];
-  }
   if ($u->role === $R::PetugasLab) {
       $nav[] = ['riwayat', 'Riwayat uji', 'riwayat', 'riwayat'];
       $nav[] = ['chat', 'Chat pengguna', 'chat', 'chat'];
   }
   if ($u->role === $R::Administrasi) {
-      $nav[] = ['permohonan.index', 'Semua sampel', 'daftar', 'permohonan.index|permohonan.show|permohonan.lhu|permohonan.pratinjau'];
+      $nav[] = ['permohonan.index', 'Semua permohonan', 'daftar', 'permohonan.index|permohonan.show|permohonan.lhu|permohonan.pratinjau'];
+      $nav[] = ['chat', 'Chat pengguna', 'chat', 'chat'];
   }
   $chatBelum = app(\App\Services\Chat::class)->belum($u);
   $admin = $u->role === $R::Superadmin ? [

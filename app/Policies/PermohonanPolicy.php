@@ -57,7 +57,7 @@ class PermohonanPolicy
         if ($u->role === Role::PetugasLab || ! $this->view($u, $p)) {
             return false;
         }
-        if ($u->isStaff() || $u->role === Role::Administrasi || $u->role === Role::Admin) {
+        if ($u->isStaff() || $u->role === Role::Administrasi) {
             return $p->lhu?->nomor !== null;
         }
 

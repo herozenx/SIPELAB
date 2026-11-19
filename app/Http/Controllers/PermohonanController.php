@@ -32,8 +32,6 @@ class PermohonanController extends Controller
 
         if ($u->role === Role::PenggunaJasa) {
             $q->where('user_id', $u->id);
-        } elseif ($u->role === Role::Administrasi) {
-            $q->whereNotNull('masuk_lab_at');
         }
         $status = Status::tryFrom((string) $request->query('status'));
         if ($status) {
@@ -144,7 +142,7 @@ class PermohonanController extends Controller
         $riwayat = $p->riwayat;
         $lhu = $p->lhu;
         $tampilHasil = true;
-        $tampilPemohon = $u->isStaff() || $u->role === Role::Administrasi || $u->role === Role::Admin;
+        $tampilPemohon = $u->isStaff() || $u->role === Role::Administrasi;
 
         if ($u->role === Role::PenggunaJasa) {
             // Nilai hasil baru tampil setelah LHP terbit; lampiran internal lab disembunyikan.
@@ -170,16 +168,6 @@ class PermohonanController extends Controller
             $riwayat = $riwayat->filter(fn ($r) => in_array($r->status, [Status::DiLab, Status::MenungguCekAdministrasi], true))
                 ->map(function ($r) {
                     $r->keterangan = preg_replace('/\s*\(pengguna jasa eksternal[^)]*\)|\.?\s*Tagihan Rp[\d.]+(, kode billing SIMPONI \d+)?/u', '', (string) $r->keterangan);
-
-                    return $r;
-                });
-        } elseif ($u->role === Role::Administrasi) {
-            // Administrasi memeriksa isian lab, bukan pembayaran: tanpa bukti bayar, tagihan, kode billing, dan NTPN.
-            $dokumen = $dokumen->where('jenis', '!=', Dokumen::BUKTI_BAYAR);
-            $riwayat = $riwayat
-                ->reject(fn ($r) => in_array($r->status, [Status::MenungguPembayaran, Status::MenungguKonfirmasiBayar], true))
-                ->map(function ($r) {
-                    $r->keterangan = preg_replace('/\.?\s*Tagihan Rp[\d.]+(, kode billing SIMPONI \d+)?/u', '', (string) $r->keterangan);
 
                     return $r;
                 });
@@ -419,7 +407,6 @@ class PermohonanController extends Controller
         $u = $request->user();
         abort_if($dokumen->permohonan_id !== $permohonan->id, 404);
         abort_if($u->role === Role::PenggunaJasa && $dokumen->jenis === Dokumen::LAMPIRAN_LAB, 404);
-        abort_if($u->role === Role::Administrasi && $dokumen->jenis === Dokumen::BUKTI_BAYAR, 404);
         abort_if($u->role === Role::PetugasLab && ! ($dokumen->jenis === Dokumen::PENDUKUNG
             || ($dokumen->jenis === Dokumen::LAMPIRAN_LAB && $dokumen->lab_id === $u->lab_id)), 404);
 
@@ -503,8 +490,6 @@ class PermohonanController extends Controller
                 $q->where('user_id', $u->id);
             } elseif ($u->role === Role::PetugasLab) {
                 $q->where('status', Status::DiLab->value)->where('current_lab_id', $u->lab_id);
-            } elseif ($u->role === Role::Administrasi) {
-                $q->where('status', Status::MenungguCekAdministrasi->value);
             }
             $v = $q->max('updated_at').'|'.$q->count();
         }

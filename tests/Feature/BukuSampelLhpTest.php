@@ -192,7 +192,7 @@ class BukuSampelLhpTest extends TestCase
         $this->sebagai('administrasi@lab.local')->get('/beranda')->assertOk()->assertSee($p->kode_sampel);
         $this->sebagai('administrasi@lab.local')->get("/permohonan/{$p->id}")->assertOk()
             ->assertSee('Pemeriksaan administrasi')->assertSee('Angka Lempeng Total')->assertSee('Petugas Mikrobiologi')
-            ->assertDontSee('820250000000001')->assertDontSee('Rp360.000');
+            ->assertSee('820250000000001')->assertSee('Rp360.000'); // Administrator juga mengurus pembayaran
         $this->sebagai('administrasi@lab.local')->get("/permohonan/{$p->id}/pratinjau-lhp")->assertOk()->assertSee('This is certify that');
 
         $this->sebagai('administrasi@lab.local')->post("/permohonan/{$p->id}/cek", ['keputusan' => 'kembalikan', 'lab_id' => $mikro])->assertSessionHasErrors('catatan');
@@ -214,14 +214,14 @@ class BukuSampelLhpTest extends TestCase
 
         $this->cekSesuai($p);
         $this->assertSame(Status::MenungguValidasi, $p->fresh()->status);
-        $this->assertSame('Petugas Administrasi', Lhu::query()->where('permohonan_id', $p->id)->first()->pemeriksa->nama);
+        $this->assertSame('Administrator', Lhu::query()->where('permohonan_id', $p->id)->first()->pemeriksa->nama);
     }
 
     public function test_hak_akses_administrasi_dan_unduh_word(): void
     {
         $p = $this->ajukanSebagai('pengguna@lab.local');
-        $this->sebagai('administrasi@lab.local')->get("/permohonan/{$p->id}")->assertNotFound(); // belum masuk lab
-        $this->sebagai('administrasi@lab.local')->post("/permohonan/{$p->id}/verifikasi", ['keputusan' => 'valid'])->assertForbidden();
+        // Administrator juga memverifikasi pengajuan, jadi permohonan baru sudah terlihat.
+        $this->sebagai('administrasi@lab.local')->get("/permohonan/{$p->id}")->assertOk()->assertSee('Verifikasi sampel fisik');
 
         $p = $this->sampaiLabMandiri([], '820250000000002', 'ABCD1234EFGH0002');
         $this->ujiSemuaLab($p);

@@ -35,7 +35,7 @@ Route::middleware('auth')->group(function () {
 
     // Permohonan
     Route::get('/permohonan', [PermohonanController::class, 'index'])
-        ->middleware('role:pengguna_jasa,admin,admin_lab,administrasi,superadmin')->name('permohonan.index');
+        ->middleware('role:pengguna_jasa,admin_lab,administrasi,superadmin')->name('permohonan.index');
     Route::get('/permohonan/baru', [PermohonanController::class, 'create'])->middleware('role:pengguna_jasa')->name('permohonan.create');
     Route::post('/permohonan', [PermohonanController::class, 'store'])->middleware(['role:pengguna_jasa', 'throttle:aksi'])->name('permohonan.store');
     // Sampel internal Balai (Monitoring, Test Result, Uji Banding): dicatat Admin Lab.
@@ -54,8 +54,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/permohonan/{permohonan}/hasil', [PermohonanController::class, 'inputHasil'])->middleware('role:petugas_lab,admin_lab')->name('permohonan.hasil');
         Route::post('/permohonan/{permohonan}/tangani', [PermohonanController::class, 'tangani'])->middleware('role:petugas_lab,admin_lab')->name('permohonan.tangani');
         Route::post('/permohonan/{permohonan}/cek', [PermohonanController::class, 'cek'])->middleware('role:administrasi,superadmin')->name('permohonan.cek');
-        // Verifikasi pengajuan & konfirmasi bayar: Admin atau Admin Lab (siapa pun yang lebih dulu).
-        Route::middleware('role:admin,admin_lab,superadmin')->group(function () {
+        // Verifikasi pengajuan & konfirmasi bayar: Administrator atau Admin Lab (siapa pun yang lebih dulu).
+        Route::middleware('role:administrasi,admin_lab,superadmin')->group(function () {
             Route::post('/permohonan/{permohonan}/verifikasi', [PermohonanController::class, 'verifikasi'])->name('permohonan.verifikasi');
             Route::post('/permohonan/{permohonan}/konfirmasi-bayar', [PermohonanController::class, 'konfirmasiBayar'])->name('permohonan.konfirmasi');
         });

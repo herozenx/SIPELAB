@@ -19,16 +19,22 @@ class DashboardController extends Controller
         $u = $request->user();
 
         return match ($u->role) {
-            Role::Superadmin, Role::AdminLab, Role::Admin => $this->admin($u->isStaff()),
+            Role::Superadmin, Role::AdminLab => $this->admin(),
             Role::Administrasi => $this->administrasi($request),
             Role::PetugasLab => $this->petugas($request),
             Role::PenggunaJasa => $this->pengguna($request),
         };
     }
 
-    /** Administrasi: antrean pemeriksaan isian operator & file LHP, plus yang sedang diperbaiki lab. */
+    /**
+     * Administrator: verifikasi pengajuan, cek pembayaran, lalu pemeriksaan isian operator & file LHP
+     * (plus yang sedang diperbaiki lab).
+     */
     private function administrasi(Request $request)
     {
+        $loket = Permohonan::query()->with(['pemohon'])
+            ->whereIn('status', [Status::Diajukan->value, Status::MenungguKonfirmasiBayar->value])
+            ->oldest('updated_at')->get()->groupBy(fn ($p) => $p->status->value);
         $antrean = Permohonan::query()->with(['pemohon', 'sampel'])
             ->where('status', Status::MenungguCekAdministrasi->value)->oldest('updated_at')->get();
         $diperbaiki = Permohonan::query()->with(['labSaatIni', 'lhu'])
@@ -36,11 +42,14 @@ class DashboardController extends Controller
         $riwayat = Lhu::query()->with('permohonan')->where('cek_by', $request->user()->id)
             ->latest('cek_at')->limit(10)->get();
 
-        return view('dashboard.administrasi', ['antrean' => $antrean, 'diperbaiki' => $diperbaiki, 'riwayat' => $riwayat]);
+        return view('dashboard.administrasi', [
+            'verifikasi' => $loket->get(Status::Diajukan->value, collect()),
+            'bayar' => $loket->get(Status::MenungguKonfirmasiBayar->value, collect()),
+            'antrean' => $antrean, 'diperbaiki' => $diperbaiki, 'riwayat' => $riwayat,
+        ]);
     }
 
-    /** @param bool $penuh Admin Lab/Superadmin; Admin (verifikasi & bayar) tanpa antrean terbit LHP. */
-    private function admin(bool $penuh = true)
+    private function admin()
     {
         $tindakan = Permohonan::query()->with(['pemohon', 'labSaatIni', 'lhu'])
             ->whereIn('status', [Status::Diajukan->value, Status::MenungguKonfirmasiBayar->value, Status::MenungguValidasi->value])
@@ -63,7 +72,6 @@ class DashboardController extends Controller
             'diLab' => $diLab,
             'menungguBayar' => Permohonan::query()->where('status', Status::MenungguPembayaran->value)->count(),
             'diCek' => Permohonan::query()->where('status', Status::MenungguCekAdministrasi->value)->count(),
-            'penuh' => $penuh,
         ]);
     }
 

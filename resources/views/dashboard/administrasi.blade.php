@@ -4,13 +4,41 @@
 <div class="flex flex-wrap items-end justify-between gap-3">
   <div>
     <h1>Halo, {{ auth()->user()->nama }}</h1>
-    <p class="mt-1 text-kabut-600">{{ $antrean->count() }} sampel menunggu pemeriksaan isian operator dan file LHP.</p>
+    <p class="mt-1 text-kabut-600">{{ $verifikasi->count() + $bayar->count() + $antrean->count() }} permohonan menunggu tindakan Anda.</p>
   </div>
-  <a href="{{ route('permohonan.index') }}" class="btn-ghost">Semua sampel</a>
+  <a href="{{ route('permohonan.index') }}" class="btn-ghost">Semua permohonan</a>
+</div>
+
+{{-- Loket: pengajuan baru & pembayaran (bersama Admin Lab, siapa pun yang lebih dulu) --}}
+<div class="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
+  @foreach ([
+    ['Perlu verifikasi sampel', 'Periksa sampel fisik di loket, lengkapi jenis & berat sampel, lalu putuskan boleh diuji atau ditolak.', $verifikasi],
+    ['Cek pembayaran SIMPONI', 'Cocokkan NTPN dengan dana masuk di SIMPONI sebelum mengonfirmasi.', $bayar],
+  ] as [$judul, $ket, $rows])
+    <section class="panel flex flex-col">
+      <div class="border-b border-kabut-200 px-5 py-4">
+        <div class="flex items-center justify-between gap-2"><h2>{{ $judul }}</h2><span class="num rounded-full bg-kabut-100 px-2 py-0.5 text-xs font-bold text-kabut-600">{{ $rows->count() }}</span></div>
+        <p class="mt-1 text-xs text-kabut-500">{{ $ket }}</p>
+      </div>
+      <ul class="flex-1 divide-y divide-kabut-100">
+        @forelse ($rows as $r)
+          <li>
+            <a href="{{ route('permohonan.show', $r) }}" class="block px-5 py-3.5 text-tinta no-underline hover:bg-kabut-50 hover:no-underline">
+              <span class="flex items-center justify-between gap-2"><span class="kode text-sm">{{ $r->kode_sampel ?: $r->kode }}</span><span class="text-xs text-kabut-500" title="{{ tanggal($r->updated_at) }}">{{ $r->updated_at->locale('id')->diffForHumans() }}</span></span>
+              <span class="mt-0.5 block text-sm font-semibold">{{ $r->nama_sampel }}</span>
+              <span class="block text-xs text-kabut-500">{{ $r->pelanggan ?: ($r->pemohon?->instansi ?: $r->pemohon?->nama) }}, {{ $r->jumlah_sampel }} sampel</span>
+            </a>
+          </li>
+        @empty
+          <li class="px-5 py-8 text-center text-sm text-kabut-500">Tidak ada yang menunggu.</li>
+        @endforelse
+      </ul>
+    </section>
+  @endforeach
 </div>
 
 <section class="panel mt-6 overflow-hidden">
-  <div class="panel-head"><h2>Perlu diperiksa</h2><span class="num rounded-full bg-kabut-100 px-2 py-0.5 text-xs font-bold text-kabut-600">{{ $antrean->count() }}</span></div>
+  <div class="panel-head"><h2>Perlu diperiksa (isian lab &amp; LHP)</h2><span class="num rounded-full bg-kabut-100 px-2 py-0.5 text-xs font-bold text-kabut-600">{{ $antrean->count() }}</span></div>
   @if ($antrean->isEmpty())
     <p class="px-5 py-10 text-center text-sm text-kabut-500">Tidak ada yang menunggu pemeriksaan.</p>
   @else

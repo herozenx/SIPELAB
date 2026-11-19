@@ -616,9 +616,7 @@ class Workflow
     public function bolehLihat(User $u, Permohonan $p): bool
     {
         return match ($u->role) {
-            Role::Superadmin, Role::AdminLab, Role::Admin => true,
-            // Administrasi memeriksa isian lab: permohonan yang sudah pernah masuk lab.
-            Role::Administrasi => $p->masuk_lab_at !== null,
+            Role::Superadmin, Role::AdminLab, Role::Administrasi => true,
             Role::PenggunaJasa => $p->user_id === $u->id,
             Role::PetugasLab => ($p->status === Status::DiLab && $p->current_lab_id === $u->lab_id)
                 || HasilUji::query()->where('permohonan_id', $p->id)->where('lab_id', $u->lab_id)->exists(),

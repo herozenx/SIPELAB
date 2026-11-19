@@ -91,25 +91,25 @@ class AlurPermohonanTest extends TestCase
         $this->sebagai('mikro@lab.local')->get("/permohonan/{$p->id}")->assertNotFound(); // belum di lab-nya
     }
 
-    public function test_admin_boleh_verifikasi_dan_konfirmasi_bayar_tapi_tidak_terbit_lhp(): void
+    public function test_administrator_boleh_verifikasi_dan_konfirmasi_bayar_tapi_tidak_terbit_lhp(): void
     {
         $p = $this->ajukanSebagai('pengguna@lab.local');
-        $this->sebagai('verifikasi@lab.local')->get('/beranda')->assertOk()
+        $this->sebagai('administrasi@lab.local')->get('/beranda')->assertOk()
             ->assertSee('Perlu verifikasi sampel')->assertSee($p->kode)->assertDontSee('Pilih penandatangan');
-        $this->sebagai('verifikasi@lab.local')->get("/permohonan/{$p->id}")->assertOk()->assertSee('Verifikasi sampel fisik');
-        $this->sebagai('verifikasi@lab.local')->post("/permohonan/{$p->id}/verifikasi", ['keputusan' => 'valid', 'kode_billing' => '820250000000001'])->assertSessionHas('success');
+        $this->sebagai('administrasi@lab.local')->get("/permohonan/{$p->id}")->assertOk()->assertSee('Verifikasi sampel fisik');
+        $this->sebagai('administrasi@lab.local')->post("/permohonan/{$p->id}/verifikasi", ['keputusan' => 'valid', 'kode_billing' => '820250000000001'])->assertSessionHas('success');
         $this->assertSame(Status::MenungguPembayaran, $p->fresh()->status);
 
         $this->sebagai('pengguna@lab.local')->post("/permohonan/{$p->id}/bayar", ['ntpn' => 'ABCD1234EFGH5678', 'bukti' => $this->gambar()])->assertSessionHas('success');
-        $this->sebagai('verifikasi@lab.local')->get("/permohonan/{$p->id}")->assertOk()->assertSee('Konfirmasi pembayaran SIMPONI');
-        $this->sebagai('verifikasi@lab.local')->post("/permohonan/{$p->id}/konfirmasi-bayar", ['keputusan' => 'terima'])->assertSessionHas('success');
+        $this->sebagai('administrasi@lab.local')->get("/permohonan/{$p->id}")->assertOk()->assertSee('Konfirmasi pembayaran SIMPONI');
+        $this->sebagai('administrasi@lab.local')->post("/permohonan/{$p->id}/konfirmasi-bayar", ['keputusan' => 'terima'])->assertSessionHas('success');
         $this->assertSame(Status::DiLab, $p->fresh()->status);
 
-        // Di luar wewenang Admin: isi hasil lab, terbit LHP, sampel internal, tim, laporan, menu Superadmin.
-        $this->sebagai('verifikasi@lab.local')->post("/permohonan/{$p->id}/hasil", [])->assertForbidden();
-        $this->sebagai('verifikasi@lab.local')->post("/permohonan/{$p->id}/validasi-lhu", [])->assertForbidden();
+        // Di luar wewenang Administrator: isi hasil lab, terbit LHP, sampel internal, tim, laporan, menu Superadmin.
+        $this->sebagai('administrasi@lab.local')->post("/permohonan/{$p->id}/hasil", [])->assertForbidden();
+        $this->sebagai('administrasi@lab.local')->post("/permohonan/{$p->id}/validasi-lhu", [])->assertForbidden();
         foreach (['/sampel-internal', '/tim', '/laporan', '/admin/pengguna'] as $url) {
-            $this->sebagai('verifikasi@lab.local')->get($url)->assertForbidden();
+            $this->sebagai('administrasi@lab.local')->get($url)->assertForbidden();
         }
     }
 

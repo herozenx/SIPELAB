@@ -12,16 +12,11 @@
     ['Cek pembayaran SIMPONI', 'Cocokkan NTPN dengan dana masuk di SIMPONI sebelum mengonfirmasi.', $bayar],
     ['Terbitkan LHP', 'Sudah diperiksa Administrasi. Pilih penandatangan, lalu terbitkan LHP bernomor.', $validasi],
   ];
-  // Admin (bukan Admin Lab): hanya verifikasi pengajuan & cek pembayaran.
-  if (! $penuh) {
-      array_pop($antrean);
-  }
-  $menunggu = $verifikasi->count() + $bayar->count() + ($penuh ? $validasi->count() : 0);
 @endphp
 <div class="flex flex-wrap items-end justify-between gap-3">
   <div>
     <h1>Halo, {{ auth()->user()->nama }}</h1>
-    <p class="mt-1 text-kabut-600">{{ $menunggu }} permohonan menunggu tindakan Anda.</p>
+    <p class="mt-1 text-kabut-600">{{ $verifikasi->count() + $bayar->count() + $validasi->count() }} permohonan menunggu tindakan Anda.</p>
   </div>
   <a href="{{ route('permohonan.index') }}" class="btn-ghost">Semua permohonan</a>
 </div>
@@ -41,7 +36,7 @@
 
 @if ($lewatNorma->isNotEmpty())
   <section class="panel mt-6 overflow-hidden border-l-4 border-karang-600">
-    <div class="panel-head"><h2>Sampel melewati norma waktu</h2>@if ($penuh)<a href="{{ route('tim.index') }}" class="text-sm font-semibold">Atur tim operator</a>@endif</div>
+    <div class="panel-head"><h2>Sampel melewati norma waktu</h2><a href="{{ route('tim.index') }}" class="text-sm font-semibold">Atur tim operator</a></div>
     <div class="overflow-x-auto">
     <table class="tabel tabel-hp">
       <thead><tr><th>Kode</th><th>Lab</th><th>Ditangani</th><th>Batas</th><th>Keterlambatan</th></tr></thead>
@@ -62,7 +57,7 @@
   </section>
 @endif
 
-<div class="mt-6 grid grid-cols-1 gap-6 {{ $penuh ? 'xl:grid-cols-3' : 'xl:grid-cols-2' }}">
+<div class="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
   @foreach ($antrean as [$judul, $ket, $rows])
     <section class="panel flex flex-col">
       <div class="border-b border-kabut-200 px-5 py-4">

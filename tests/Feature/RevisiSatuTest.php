@@ -330,7 +330,7 @@ class RevisiSatuTest extends TestCase
         $this->as('superadmin@lab.local')->get('/admin/lab')->assertOk()->assertSee('Norma (hari kerja)');
         $this->as('superadmin@lab.local')->get('/admin/parameter')->assertOk()->assertSee('Katalog parameter');
         $this->as('superadmin@lab.local')->get('/admin/pengaturan')->assertOk()->assertSee('Hari libur nasional')->assertSee('Penandatangan LHP');
-        $this->as('superadmin@lab.local')->get('/admin/pengguna?edit='.$this->u('eksternal@lab.local')->id)->assertOk()->assertDontSee('name="tipe_pengguna"', false)->assertSee('Administrasi');
+        $this->as('superadmin@lab.local')->get('/admin/pengguna?edit='.$this->u('eksternal@lab.local')->id)->assertOk()->assertDontSee('name="tipe_pengguna"', false)->assertSee('Administrator');
         $this->as('superadmin@lab.local')->get('/tim')->assertOk();
         $this->as('superadmin@lab.local')->get('/laporan')->assertOk();
         $this->as('mikro@lab.local')->get('/chat')->assertOk();
