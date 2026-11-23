@@ -5,10 +5,21 @@ namespace App\Support;
 /**
  * Daftar parameter uji bawaan, diambil dari FPPCU 2026 (FL/OK/SUB II/8.5.2.a) dan LHP Balai 2026.
  * Bidang di LHP: Organoleptik, Biologi, Kimia, Radionuklida. akreditasi=false dicetak dengan tanda * di LHP.
- * Tarif belum tercantum di FPPCU, jadi diisi 0: atur di menu "Parameter & tarif".
+ * Tarif mengikuti daftar Jenis dan Tarif PNBP Laboratorium (PMK 1 Tahun 2025) yang dipasang di BPPMHKP Surabaya II.
+ * Air/Es proses UPI "E. coli & Coliform" satu tarif Rp100.000 per contoh: dibagi rata ke CM dan ECM.
+ * Kadar air, kadar garam, dan Listeria tidak ada di daftar tarif: 0.
  */
 class ParameterBawaan
 {
+    /** Tarif PNBP per contoh (Rp), PMK 1 Tahun 2025. */
+    public const TARIF = [
+        'O' => 200000, 'A' => 100000, 'E1' => 245000, 'E2' => 245000, 'EK' => 300000, 'S' => 350000,
+        'VC' => 375000, 'VP' => 375000, 'SA' => 360000, 'H' => 555000,
+        'CAP' => 400000, 'AOZ' => 400000, 'AMOZ' => 400000, 'AHD' => 400000, 'SEM' => 400000,
+        'C' => 75000, 'CK' => 166000, 'F' => 66000, 'CM' => 50000, 'ECM' => 50000, 'ENTM' => 100000,
+        'HG' => 150000, 'PB' => 150000, 'CD' => 150000, 'CS' => 500000,
+    ];
+
     /** Lab/bidang pengujian: [nama lab, urutan, norma hari kerja]. */
     public const LAB = [
         ['Organoleptik', 1, 1],
@@ -21,13 +32,13 @@ class ParameterBawaan
      * Nama, metode, persyaratan, dan keterangan (LoD/LoQ, CCβ) disamakan dengan yang tercetak di LHP Balai 2026.
      * Persyaratan bergantung komoditas: nilai di sini hanya bawaan dan bisa diubah per parameter.
      *
-     * @return array<int, array{kode:string, nama:string, bidang:string, lab:string, metode:string, persyaratan:?string, satuan:?string, akreditasi:bool, keterangan:?string}>
+     * @return array<int, array{kode:string, nama:string, bidang:string, lab:string, metode:string, persyaratan:?string, satuan:?string, akreditasi:bool, keterangan:?string, tarif:int}>
      */
     public static function daftar(): array
     {
         $p = fn ($kode, $nama, $bidang, $lab, $metode, $syarat = null, $ket = null, $akr = true) => [
             'kode' => $kode, 'nama' => $nama, 'bidang' => $bidang, 'lab' => $lab, 'metode' => $metode,
-            'persyaratan' => $syarat, 'satuan' => null, 'akreditasi' => $akr, 'keterangan' => $ket,
+            'persyaratan' => $syarat, 'satuan' => null, 'akreditasi' => $akr, 'keterangan' => $ket, 'tarif' => self::TARIF[$kode] ?? 0,
         ];
 
         return [
@@ -37,13 +48,15 @@ class ParameterBawaan
             $p('E1', 'Escherichia coli', 'Biologi', 'Mikrobiologi', 'ISO 16649-3-2015', 'Negatif/25 g'),
             $p('E2', 'Escherichia coli (APM)', 'Biologi', 'Mikrobiologi', 'SNI 2332.1-2015', '< 3 APM/g'),
             $p('C', 'Coliform', 'Biologi', 'Mikrobiologi', 'SNI 2332.1-2015', '< 3 APM/g'),
+            $p('EK', 'Escherichia coli (produk kekerangan)', 'Biologi', 'Mikrobiologi', 'SNI 2332.1-2015'),
+            $p('CK', 'Total Coliform (produk kekerangan)', 'Biologi', 'Mikrobiologi', 'SNI 2332.1-2015'),
             $p('S', 'Salmonella spp.', 'Biologi', 'Mikrobiologi', 'SNI ISO 6579-1:2017', 'Negatif/25 g'),
             $p('VP', 'Vibrio parahaemolyticus', 'Biologi', 'Mikrobiologi', 'SNI 01-2332.5-2006', '< 3,0 APM/g'),
             $p('VC', 'Vibrio cholerae', 'Biologi', 'Mikrobiologi', 'SNI 01-2332.4-2006', 'Negatif/25 g'),
             $p('SA', 'Staphylococcus aureus', 'Biologi', 'Mikrobiologi', 'SNI 2332.9-2015', 'Maks. 1,0 x 10³ kol/g'),
             $p('ENTM', 'Enterococci', 'Biologi', 'Mikrobiologi', 'SNI ISO 7899-2-2010', '0 kol/100 ml'),
-            $p('CM', 'Coliform (membran filter)', 'Biologi', 'Mikrobiologi', 'ISO 9308-1:2014 / Amd.1:2016(E)', '0 kol/100 ml'),
-            $p('ECM', 'Escherichia coli (membran filter)', 'Biologi', 'Mikrobiologi', 'ISO 9308-1:2014 / Amd.1:2016(E)', '0 kol/100 ml'),
+            $p('CM', 'Coliform (membran filter)', 'Biologi', 'Mikrobiologi', 'SNI ISO 9308-1:2014', '0 kol/100 ml'),
+            $p('ECM', 'Escherichia coli (membran filter)', 'Biologi', 'Mikrobiologi', 'SNI ISO 9308-1:2014', '0 kol/100 ml'),
             $p('LM', 'Listeria monocytogenes', 'Biologi', 'Mikrobiologi', '-', 'Negatif/25 g', null, false),
 
             $p('F', 'Formalin', 'Kimia', 'Kimia', 'IKM/OK/LP/SUB II/6', 'Negatif', 'LoD 1,5 mg/kg'),

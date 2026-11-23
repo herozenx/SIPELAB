@@ -25,7 +25,7 @@ class DatabaseSeeder extends Seeder
         }
         foreach (ParameterBawaan::daftar() as $i => $p) {
             ParameterUji::query()->firstOrCreate(['kode' => $p['kode']], collect($p)->except(['kode', 'lab'])->all() + [
-                'lab_id' => Lab::query()->where('nama', $p['lab'])->value('id'), 'tarif' => 0, 'aktif' => true, 'urutan' => $i + 1,
+                'lab_id' => Lab::query()->where('nama', $p['lab'])->value('id'), 'aktif' => true, 'urutan' => $i + 1,
             ]);
         }
         foreach (Setting::DEFAULTS as $k => $v) {

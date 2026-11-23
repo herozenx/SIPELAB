@@ -174,7 +174,7 @@ return new class extends Migration
             DB::table('parameter_uji')->insert([
                 'kode' => $p['kode'], 'nama' => $p['nama'], 'bidang' => $p['bidang'], 'lab_id' => $labId[$p['lab']],
                 'metode' => $p['metode'], 'persyaratan' => $p['persyaratan'], 'satuan' => $p['satuan'], 'keterangan' => $p['keterangan'],
-                'tarif' => 0, 'akreditasi' => $p['akreditasi'], 'aktif' => true, 'urutan' => $i + 1,
+                'tarif' => $p['tarif'], 'akreditasi' => $p['akreditasi'], 'aktif' => true, 'urutan' => $i + 1,
                 'created_at' => $now, 'updated_at' => $now,
             ]);
         }
