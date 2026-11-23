@@ -2,7 +2,6 @@
   // Mengikuti template "Surat Tugas Pengujian" Laboratorium Penguji (FL/OK/SUB II/8.5.3.d).
   $S = \App\Models\Setting::class;
   $tgl = $surat->first()->created_at->copy()->setTimezone(config('app.timezone'))->locale('id')->translatedFormat('j F Y');
-  $logo = 'data:image/svg+xml;base64,'.base64_encode((string) @file_get_contents(public_path('favicon.svg')));
   $dipilih = $surat->pluck('lab_id');
   $centang = fn (bool $ya) => '<span style="display:inline-block;width:10px;height:10px;border:1px solid #111;text-align:center;line-height:10px;font-size:9px">'.($ya ? '✓' : '&nbsp;').'</span>';
 @endphp
@@ -24,12 +23,12 @@
 <body>
   <table style="width:100%">
     <tr>
-      <td style="width:22mm"><img src="{{ $logo }}" style="width:18mm;height:18mm"></td>
+      <td style="width:26mm"><img src="{{ \App\Support\Pdf::logo('kkp') }}" style="width:21mm;height:19.1mm"></td>
       <td class="tengah" style="vertical-align:middle">
         <div style="font-size:12pt;font-weight:bold">LABORATORIUM PENGUJI</div>
         <div style="font-size:9.5pt">UPT BADAN PENGENDALIAN DAN PENGAWASAN<br>MUTU HASIL KELAUTAN DAN PERIKANAN<br>SURABAYA II</div>
       </td>
-      <td style="width:22mm"></td>
+      <td style="width:26mm;text-align:center;font-size:5.5pt;line-height:1.1;vertical-align:middle"><img src="{{ \App\Support\Pdf::logo('kan') }}" style="width:25mm;height:10.2mm"><br>Laboratorium Penguji<br>LP-573-IDN</td>
     </tr>
   </table>
 

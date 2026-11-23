@@ -36,6 +36,14 @@ class Pdf
         ]);
     }
 
+    /** Logo resmi sebagai data URI: 'kkp' (Kementerian Kelautan dan Perikanan) atau 'kan' (Komite Akreditasi Nasional). */
+    public static function logo(string $nama): string
+    {
+        $isi = @file_get_contents(public_path("img/logo-{$nama}.png"));
+
+        return $isi ? 'data:image/png;base64,'.base64_encode($isi) : '';
+    }
+
     /** Gambar SVG sebagai data URI untuk <img> di PDF. */
     public static function svg(string $svg): string
     {

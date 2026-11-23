@@ -11,7 +11,6 @@
       $baris->push(['Biaya administrasi', $admin, 1, 'Per Permohonan', $admin]);
   }
   $nomorAju = trim(($p->nomor_aju ?: '-').' / '.($p->nomor_pnbp ?: '-'));
-  $logo = 'data:image/svg+xml;base64,'.base64_encode((string) @file_get_contents(public_path('favicon.svg')));
 @endphp
 <!doctype html>
 <html lang="id">
@@ -34,7 +33,7 @@
 <body>
   <table>
     <tr>
-      <td style="width:22mm"><img src="{{ $logo }}" style="width:19mm;height:19mm"></td>
+      <td style="width:22mm"><img src="{{ \App\Support\Pdf::logo('kkp') }}" style="width:20mm;height:18.2mm"></td>
       <td style="vertical-align:middle;font-weight:bold;font-size:8.5pt;line-height:1.25">
         KEMENTERIAN KELAUTAN DAN PERIKANAN<br>
         BADAN PENGENDALIAN DAN PENGAWASAN MUTU<br>

@@ -10,7 +10,7 @@
     }
   },
   "routes": [
-    { "src": "/(css|js|fonts)/(.*)", "dest": "/$1/$2" },
+    { "src": "/(css|js|fonts|img)/(.*)", "dest": "/$1/$2" },
     { "src": "/(favicon\\.svg|robots\\.txt)", "dest": "/$1" },
     { "src": "/(.*)", "dest": "/api/index.php" }
   ],

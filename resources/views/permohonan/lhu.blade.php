@@ -35,13 +35,13 @@
 
   <article class="mx-auto min-h-[297mm] max-w-[210mm] bg-white px-[16mm] py-[12mm] text-[12px] leading-snug text-tinta shadow-xl print:min-h-0 print:shadow-none">
     <header class="flex items-center gap-4 border-b-2 border-tinta pb-3">
-      <img src="{{ asset('favicon.svg') }}" alt="" class="h-14 w-14">
+      <img src="{{ asset('img/logo-kkp.png') }}" alt="Logo KKP" class="h-14 w-auto">
       <div class="flex-1 text-center">
         <p class="text-[11px] font-bold uppercase">Kementerian Kelautan dan Perikanan</p>
         <p class="text-[13px] font-extrabold uppercase leading-tight">{{ $S::get('nama_instansi') }}</p>
         <p class="text-[10px]">{{ $S::get('alamat_instansi') }}</p>
       </div>
-      <div class="h-14 w-14"></div>
+      <div class="text-center text-[7px] leading-tight"><img src="{{ asset('img/logo-kan.png') }}" alt="Logo KAN" class="h-9 w-auto">Laboratorium Penguji<br>LP-573-IDN</div>
     </header>
 
     <h1 class="mt-4 text-center text-[15px] font-extrabold uppercase tracking-wide underline underline-offset-4">Laporan Hasil Pengujian</h1>

@@ -2,7 +2,6 @@
   $S = \App\Models\Setting::class;
   $pemohon = $p->pemohon;
   $tgl = fn ($d) => $d ? $d->copy()->setTimezone(config('app.timezone'))->locale('id')->translatedFormat('j F Y, H.i') : '-';
-  $logo = 'data:image/svg+xml;base64,'.base64_encode((string) @file_get_contents(public_path('favicon.svg')));
 @endphp
 <!doctype html>
 <html lang="id">
@@ -24,13 +23,13 @@
 <body>
   <table class="kop">
     <tr>
-      <td style="width:18mm"><img src="{{ $logo }}" style="width:16mm;height:16mm"></td>
+      <td style="width:22mm"><img src="{{ \App\Support\Pdf::logo('kkp') }}" style="width:18mm;height:16.4mm"></td>
       <td class="tengah">
         <div style="font-weight:bold">KEMENTERIAN KELAUTAN DAN PERIKANAN</div>
         <div style="font-size:10.5pt;font-weight:bold;text-transform:uppercase">{{ $S::get('nama_instansi') }}</div>
         <div style="font-size:7.5pt">{{ $S::get('alamat_instansi') }}</div>
       </td>
-      <td style="width:18mm"></td>
+      <td style="width:22mm;text-align:center;font-size:5pt;line-height:1.1"><img src="{{ \App\Support\Pdf::logo('kan') }}" style="width:21mm;height:8.6mm"><br>Laboratorium Penguji<br>LP-573-IDN</td>
     </tr>
   </table>
 
