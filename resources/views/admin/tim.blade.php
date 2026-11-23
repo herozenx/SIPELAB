@@ -1,9 +1,9 @@
 @extends('layouts.app')
-@section('title', 'Tim operator')
+@section('title', 'Tim lab')
 @section('content')
 @php $e = $edit; @endphp
-<h1>Tim operator lab</h1>
-<p class="mt-1 max-w-prose text-kabut-600">Tambahkan operator untuk tiap tim lab. Operator masuk lewat pilihan <span class="font-semibold">Operator</span> di halaman login, hanya melihat antrean lab timnya, dan namanya tercatat pada sampel yang ia tangani.</p>
+<h1>Tim laboratorium</h1>
+<p class="mt-1 max-w-prose text-kabut-600">Atur analis/laboran dan penyelia setiap lab. Mereka masuk dengan email dan kata sandi, dan hanya melihat sampel lab timnya. Surat tugas ditujukan ke penyelia; penyelia juga memaraf LHP bidangnya.</p>
 
 @if (session('sandi_sementara'))
   <div class="alert-warning mt-5" role="status"><x-ikon n="kunci" class="mt-0.5 h-4 w-4 shrink-0" />
@@ -23,7 +23,7 @@
           </div>
         </div>
         @if ($lab->operator->isEmpty())
-          <p class="px-5 py-6 text-sm text-kabut-500">Belum ada operator di tim ini. Tambahkan lewat formulir di samping.</p>
+          <p class="px-5 py-6 text-sm text-kabut-500">Belum ada anggota di tim ini. Tambahkan lewat formulir di samping.</p>
         @else
           <ul class="divide-y divide-kabut-100">
             @foreach ($lab->operator as $op)
@@ -33,7 +33,7 @@
                     <span class="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ring-2 ring-white {{ $op->online() ? 'bg-lamun-500' : 'bg-kabut-300' }}" title="{{ $op->online() ? 'Online' : 'Offline' }}"></span>
                   </span>
                   <span class="min-w-0">
-                    <span class="block truncate font-semibold">{{ $op->nama }}</span>
+                    <span class="block truncate font-semibold">{{ $op->nama }} <span class="ml-1 align-middle {{ $op->role === \App\Enums\Role::Penyelia ? 'badge-info' : 'badge-lab' }}">{{ $op->role->label() }}</span></span>
                     <span class="block truncate text-xs text-kabut-500">{{ $op->email }} · {{ $op->online() ? 'online' : ($op->last_seen_at ? 'terakhir aktif '.$op->last_seen_at->locale('id')->diffForHumans() : 'belum pernah masuk') }}</span>
                   </span>
                 </span>
@@ -53,7 +53,7 @@
 
     @if ($tanpaLab->isNotEmpty())
       <section class="panel">
-        <div class="panel-head"><h2>Operator tanpa tim</h2></div>
+        <div class="panel-head"><h2>Anggota tanpa tim</h2></div>
         <ul class="divide-y divide-kabut-100">
           @foreach ($tanpaLab as $op)
             <li class="flex items-center justify-between gap-3 px-5 py-3"><span><span class="font-semibold">{{ $op->nama }}</span><span class="block text-xs text-kabut-500">{{ $op->email }}</span></span><a href="{{ route('tim.index', ['edit' => $op->id]) }}" class="btn-ghost btn-sm">Tempatkan</a></li>
@@ -64,11 +64,11 @@
   </div>
 
   <section class="panel self-start xl:sticky xl:top-6">
-    <div class="panel-head"><h2>{{ $e ? 'Ubah operator' : 'Tambah operator' }}</h2>@if($e)<a href="{{ route('tim.index') }}" class="text-sm font-semibold">Batal</a>@endif</div>
+    <div class="panel-head"><h2>{{ $e ? 'Ubah anggota tim' : 'Tambah anggota tim' }}</h2>@if($e)<a href="{{ route('tim.index') }}" class="text-sm font-semibold">Batal</a>@endif</div>
     <form method="post" action="{{ $e ? route('tim.update', $e) : route('tim.store') }}" class="panel-body space-y-4" novalidate data-guard>
       @csrf @if($e) @method('put') @endif
       <div>
-        <label for="t-nama" class="label">Nama operator</label>
+        <label for="t-nama" class="label">Nama</label>
         <input id="t-nama" name="nama" value="{{ old('nama', $e?->nama) }}" class="input" required @error('nama') aria-invalid="true" @enderror>
         @error('nama')<p class="error">{{ $message }}</p>@enderror
       </div>
@@ -84,6 +84,20 @@
           @foreach ($labs as $l)<option value="{{ $l->id }}" @selected((int) old('lab_id', $e?->lab_id ?? request('lab')) === $l->id)>Lab {{ $l->nama }}</option>@endforeach
         </select>
         @error('lab_id')<p class="error">{{ $message }}</p>@enderror
+      </div>
+      <fieldset>
+        <legend class="label">Peran</legend>
+        <div class="grid grid-cols-2 gap-2">
+          @foreach ([\App\Enums\Role::PetugasLab, \App\Enums\Role::Penyelia] as $r)
+            <label class="choice"><input type="radio" name="role" value="{{ $r->value }}" @checked(old('role', $e?->role->value ?? 'petugas_lab') === $r->value)><span class="text-sm font-semibold">{{ $r->label() }}</span></label>
+          @endforeach
+        </div>
+        @error('role')<p class="error">{{ $message }}</p>@enderror
+      </fieldset>
+      <div>
+        <label for="t-nip" class="label">NIP <span class="font-normal text-kabut-500">(opsional)</span></label>
+        <input id="t-nip" name="nip" value="{{ old('nip', $e?->nip) }}" class="input num">
+        @error('nip')<p class="error">{{ $message }}</p>@enderror
       </div>
       <div>
         <label for="t-telp" class="label">Telepon/WA <span class="font-normal text-kabut-500">(opsional)</span></label>

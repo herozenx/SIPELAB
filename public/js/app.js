@@ -1,4 +1,4 @@
-/* SIPELAB: interaksi ringan tanpa framework. Tidak ada script inline (CSP script-src 'self'). */
+/* SILANTRO: interaksi ringan tanpa framework. Tidak ada script inline (CSP script-src 'self'). */
 (() => {
   'use strict';
   const $ = (s, el = document) => el.querySelector(s);
@@ -95,18 +95,34 @@
   }));
 
   // Perkiraan tagihan di form pengajuan
+  // Perkiraan tagihan: tarif tiap parameter terpilih × jumlah pengujian + biaya administrasi.
   const est = $('[data-estimasi]');
-  const jumlah = $('[data-jumlah]');
-  if (est && jumlah) {
-    const per = Number(est.dataset.perSampel);
+  if (est) {
     const adm = Number(est.dataset.admin);
+    const jumlahSampel = $('[data-jumlah]');
+    const params = $$('input[data-param]');
     const upd = () => {
-      const n = Math.max(1, Math.min(500, parseInt(jumlah.value, 10) || 1));
-      $('[data-estimasi-jumlah]', est).textContent = n;
-      $('[data-estimasi-subtotal]', est).textContent = rupiah(per * n);
-      $('[data-estimasi-total]', est).textContent = rupiah(per * n + adm);
+      let total = 0;
+      let n = 0;
+      params.forEach((cb) => {
+        const qty = $(`[data-param-jumlah="${cb.value}"]`);
+        if (qty) qty.disabled = !cb.checked;
+        if (!cb.checked) return;
+        n += 1;
+        const j = Math.max(1, Math.min(500, parseInt(qty?.value, 10) || 1));
+        total += Number(cb.dataset.tarif) * j;
+      });
+      $('[data-estimasi-n]', est).textContent = n;
+      $('[data-estimasi-subtotal]', est).textContent = rupiah(total);
+      $('[data-estimasi-total]', est).textContent = rupiah(total + adm);
     };
-    jumlah.addEventListener('input', upd);
+    // Jumlah sampel diubah: isi ulang jumlah pengujian yang belum diubah manual.
+    jumlahSampel?.addEventListener('input', () => {
+      $$('[data-param-jumlah]').forEach((q) => { if (!q.dataset.manual) q.value = jumlahSampel.value; });
+      upd();
+    });
+    $$('[data-param-jumlah]').forEach((q) => q.addEventListener('input', () => { q.dataset.manual = '1'; upd(); }));
+    params.forEach((cb) => cb.addEventListener('change', upd));
     upd();
   }
 
@@ -118,6 +134,12 @@
       const btn = e.submitter;
       if (btn?.dataset.confirm && !window.confirm(btn.dataset.confirm)) { e.preventDefault(); return; }
       dirty = false;
+      // Tombol yang dinonaktifkan tidak ikut terkirim: salin nama/nilainya ke input tersembunyi.
+      if (btn?.name) {
+        const h = document.createElement('input');
+        h.type = 'hidden'; h.name = btn.name; h.value = btn.value;
+        form.appendChild(h);
+      }
       $$('button', form).forEach((b) => { b.disabled = true; });
       if (btn) btn.setAttribute('aria-busy', 'true');
     });

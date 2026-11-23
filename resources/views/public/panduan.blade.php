@@ -3,97 +3,87 @@
 @section('content')
 @php
   $masuk = auth()->check();
-  $wa = wa_link('Halo Balai, saya ingin bertanya tentang layanan uji SIPELAB.');
+  $wa = wa_link('Halo Balai, saya ingin bertanya tentang layanan uji SILANTRO.');
   $labNama = $labs->pluck('nama')->join(' → ');
   /*
    * Setiap bab: id, judul, ikon, pengantar, langkah (boleh <b>), catatan [jenis, teks], khusus (blok tambahan).
    * Teks ditulis tim Balai; ubah di sini untuk memperbarui panduan.
    */
   $bab = [
-    ['mengenal', 'Mengenal SIPELAB & beranda', 'beranda',
-      'SIPELAB adalah layanan online Balai untuk permohonan uji mutu hasil perikanan: dari pengajuan, pembayaran SIMPONI, pengujian di laboratorium, sampai Laporan Hasil Uji (LHU) digital.',
+    ['mengenal', 'Mengenal SILANTRO & beranda', 'beranda',
+      'SILANTRO adalah layanan online Balai untuk permohonan uji mutu hasil perikanan: dari pengajuan, pembayaran SIMPONI, pengujian di laboratorium, sampai Laporan Hasil Pengujian (LHP).',
       [
-        'Buka halaman depan SIPELAB. Di sana tersedia menu <b>Masuk</b>, <b>Daftar</b>, <b>Panduan</b>, dan <b>Cek keaslian LHU</b>.',
+        'Buka halaman depan SILANTRO. Di sana tersedia menu <b>Masuk</b>, <b>Daftar</b>, <b>Panduan</b>, dan <b>Cek keaslian LHP</b>.',
         'Setelah masuk, menu di sisi kiri berisi <b>Beranda</b>, <b>Ajukan uji</b>, <b>Permohonan saya</b>, <b>Chat petugas</b>, dan <b>Panduan</b>.',
         '<b>Beranda</b> menampilkan permohonan terbaru dan pengingat tindakan, misalnya tagihan yang perlu dibayar.',
         'Semua halaman diperbarui otomatis ketika status sampel berubah; Anda tidak perlu menekan muat ulang.',
       ],
       [['info', 'Di HP, menu dibuka lewat tombol <b>Menu</b> di kanan atas.']], null],
-    ['jenis', 'Akun, pendaftaran & jenis pengguna jasa', 'akun',
-      'Satu akun dipakai untuk semua permohonan instansi/usaha Anda. Jenis pengguna jasa (Mandiri, Eksternal, atau Surveilen) dipilih setiap kali mengajukan permohonan dan menentukan kapan membayar.',
+    ['jenis', 'Akun, pendaftaran & jenis layanan', 'akun',
+      'Satu akun dipakai untuk semua permohonan instansi/usaha Anda. Permohonan online diajukan sebagai layanan Mandiri; layanan Pengujian Eksternal dan Surveilen ditetapkan petugas Balai.',
       [
         'Klik <b>Daftar</b> di halaman depan.',
-        'Isi <b>nama penanggung jawab</b>, <b>nama usaha/instansi</b> (dicetak di LHU), <b>email</b>, dan <b>nomor telepon/WA</b>.',
+        'Isi <b>nama penanggung jawab</b>, <b>nama usaha/instansi</b> (dicetak di LHP), <b>email</b>, dan <b>nomor telepon/WA</b>.',
         'Buat kata sandi minimal 8 karakter berisi huruf besar, huruf kecil, dan angka, lalu klik <b>Buat akun</b>.',
-        'Untuk masuk berikutnya, klik <b>Masuk</b>, pilih <b>Masuk sebagai: Pengguna jasa</b>, isi email dan kata sandi.',
+        'Untuk masuk berikutnya, klik <b>Masuk</b>, lalu isi email dan kata sandi.',
       ],
-      [['penting', 'Setelah 5 kali salah kata sandi, akun dikunci 15 menit demi keamanan.'], ['info', 'Jenis pengguna jasa dipilih di formulir <b>Ajukan uji</b>. Admin Lab dapat menyesuaikan jenis saat verifikasi sampel.']], 'jenis'],
+      [['penting', 'Setelah 5 kali salah kata sandi, akun dikunci 15 menit demi keamanan.'], ['info', 'Operator Balai menetapkan jenis layanan saat memverifikasi sampel.']], 'jenis'],
     ['ajukan', 'Mengajukan permohonan uji', 'tambah',
       'Permohonan diajukan online sebelum sampel dibawa ke Balai.',
       [
         'Klik menu <b>Ajukan uji</b>.',
-        'Isi <b>nama sampel</b>, <b>jenis komoditas</b>, <b>jumlah sampel</b> (1–500), dan <b>asal sampel</b>.',
-        'Pilih <b>jenis pengguna jasa</b>: <b>Mandiri</b>, <b>Eksternal</b>, atau <b>Surveilen</b> (lihat perbandingan di bab Akun).',
-        'Pilih <b>tujuan distribusi</b>: Domestik atau Ekspor. Tujuan menentukan kalimat keputusan di LHU.',
+        'Isi <b>nama/jenis sampel</b>, <b>jenis komoditas</b>, <b>jumlah sampel</b>, <b>asal sampel</b>, dan <b>alamat</b> (dicetak di LHP).',
+        'Centang <b>parameter uji</b> yang diminta (Organoleptik, Mikrobiologi, Kimia, Radionuklida) dan atur <b>jumlah pengujian</b> tiap parameter.',
+        'Pilih <b>tujuan distribusi</b>: Domestik atau Ekspor.',
         'Lampirkan dokumen pendukung bila ada (PDF/JPG/PNG, maksimal 3 berkas, masing-masing 5 MB).',
         'Periksa <b>perkiraan tagihan</b> di samping formulir, lalu klik <b>Kirim permohonan</b>.',
-        'Anda mendapat kode permohonan, misalnya <span class="kode">PMH-2026-00001</span>. Catat kode ini.',
+        'Anda langsung mendapat kode permohonan sesuai buku sampel, misalnya <span class="kode">SP.M/221126.01</span> (Mandiri / tanggal / nomor urut). Catat kode ini.',
       ],
-      [['info', 'Angka tagihan final ditetapkan Admin Lab saat verifikasi sampel.']], null],
+      [['info', 'Angka tagihan final mengikuti billing SIMPONI resmi yang diterbitkan Operator Bendahara.']], null],
     ['sampel', 'Menyerahkan sampel & verifikasi', 'lab',
       'Sampel fisik diperiksa petugas loket sebelum diuji.',
       [
+        'Administrator Balai memverifikasi berkas dan data permohonan. Bila diterima, status menjadi <b>Diterima, serahkan sampel</b>.',
         'Bawa sampel ke loket penerimaan Balai dan sebutkan <b>kode permohonan</b>.',
-        'Admin Lab mencocokkan jenis, jumlah, dan kondisi sampel dengan data permohonan.',
-        '<b>Mandiri/Surveilen:</b> bila sesuai, kode billing SIMPONI dan tagihan muncul di halaman permohonan Anda.',
-        '<b>Eksternal:</b> bila sesuai, sampel langsung diproses tanpa menunggu pembayaran.',
-        'Bila tidak sesuai, permohonan <b>ditolak</b> beserta alasannya. Perbaiki lalu ajukan permohonan baru.',
+        'Operator atau Admin Laboratorium mencocokkan sampel dengan permohonan, lalu meregistrasinya dengan <b>kode sampel</b>, misalnya <span class="kode">SP.M/221126.01</span>. <b>Bukti terima sampel</b> (PDF) bisa diunduh dari halaman permohonan.',
+        '<b>Mandiri:</b> status menjadi <b>Menunggu kode billing</b>, lalu billing SIMPONI resmi muncul di halaman permohonan.',
+        '<b>Pengujian Eksternal/Surveilen:</b> sampel langsung diproses; tagihan diterbitkan setelah LHP disahkan.',
+        'Bila berkas/data tidak sesuai, permohonan <b>ditolak</b> beserta alasannya. Perbaiki lalu ajukan permohonan baru.',
       ],
       [], null],
-    ['bayar', 'Pembayaran SIMPONI (Mandiri & Surveilen)', 'berkas',
-      'Pengguna jasa Mandiri dan Surveilen membayar sebelum sampel diuji.',
+    ['bayar', 'Pembayaran SIMPONI', 'berkas',
+      'Layanan Mandiri membayar sebelum sampel diuji; layanan lain membayar setelah LHP disahkan.',
       [
         'Buka permohonan berstatus <b>Menunggu pembayaran</b> (juga muncul sebagai pengingat di Beranda).',
-        'Salin <b>kode billing</b> (15 digit) dan <b>jumlah setor</b>.',
+        'Lihat <b>kode billing</b> (15 digit) dan <b>jumlah setor</b>, lalu klik <b>Lihat billing resmi</b> untuk membuka dokumen billing.',
         'Bayar lewat teller bank, ATM, internet/mobile banking, atau kantor pos yang melayani SIMPONI.',
-        'Isi <b>NTPN</b> (16 huruf/angka) persis seperti di bukti setor, unggah foto/PDF bukti setor, lalu klik <b>Kirim bukti pembayaran</b>.',
-        'Admin Lab mencocokkan dana masuk. Setelah terkonfirmasi, sampel mulai diproses di laboratorium.',
+        'Unggah foto/PDF <b>bukti setor</b>, lalu klik <b>Kirim bukti pembayaran</b>. Nomor NTPN tidak perlu diketik.',
+        'Operator Bendahara mencocokkan dana masuk. Setelah terkonfirmasi, sampel mulai diuji (Mandiri) atau LHP siap diambil (layanan lain).',
       ],
-      [['penting', 'Satu NTPN hanya berlaku untuk satu permohonan.'], ['info', 'Bila bukti ditolak, alasannya tampil di halaman permohonan dan Anda bisa mengunggah ulang.']], null],
-    ['eksternal', 'Eksternal: pelunasan & pengambilan LHU', 'kunci',
-      'Pengguna jasa Eksternal membayar setelah LHU jadi. LHU baru bisa diambil setelah lunas.',
-      [
-        'Setelah pengujian selesai dan LHU divalidasi, status berubah menjadi <b>LHU jadi, menunggu pelunasan</b>.',
-        'Buka permohonan: tampil <b>nomor LHU</b>, <b>kode billing</b> pelunasan, dan <b>jumlah setor</b>.',
-        'Bayar lewat SIMPONI, lalu isi <b>NTPN</b> dan unggah bukti setor seperti pada pembayaran Mandiri.',
-        'Setelah Admin Lab mengonfirmasi dana masuk, status menjadi <b>LHU terbit</b> dan LHU bisa dilihat serta diunduh.',
-      ],
-      [['penting', 'Sebelum lunas, LHU dan nilai hasil uji belum bisa dibuka atau diunduh.']], null],
-    ['pantau', 'Memantau permohonan & norma waktu', 'jam',
+      [['info', 'Bila bukti ditolak, alasannya tampil di halaman permohonan dan Anda bisa mengunggah ulang.']], null],
+    ['pantau', 'Memantau status permohonan', 'jam',
       'Status permohonan bisa Anda pantau kapan saja dari akun Anda.',
       [
-        'Buka menu <b>Permohonan saya</b> lalu klik permohonan.',
-        'Selama sampel diuji, status menampilkan <b>Sedang diproses</b>.',
-        "Bagian <b>Perkiraan selesai</b> menunjukkan target tanggal sampel jadi ({$normaTotal} hari kerja sejak sampel mulai diproses).",
-        'Halaman diperbarui sendiri. Begitu LHU terbit (Eksternal: begitu tagihan pelunasan terbit), statusnya langsung berubah.',
-        'Nilai hasil uji ditampilkan setelah LHU divalidasi.',
+        'Buka menu <b>Permohonan saya</b> lalu klik permohonan. Tahapannya tampil di bagian atas: Verifikasi, Pembayaran, Pengujian, Penyusunan LHP, LHP selesai.',
+        'Status yang mungkin: <b>Menunggu verifikasi</b>, <b>Diterima, serahkan sampel</b>, <b>Menunggu kode billing</b>, <b>Menunggu pembayaran</b>, <b>Pembayaran sedang dicek</b>, <b>Sedang diproses/pengujian</b>, <b>Penyusunan LHP</b>, dan <b>LHP selesai</b>.',
+        "Bagian <b>Perkiraan selesai</b> menunjukkan target tanggal sampel jadi ({$normaTotal} hari kerja sejak sampel mulai diuji).",
+        'Halaman diperbarui sendiri setiap kali status berubah.',
       ],
       [['info', 'Hari kerja = Senin–Jumat di luar hari libur nasional dan cuti bersama.']], 'norma'],
-    ['lhu', 'LHU & cek keaslian', 'perisai',
-      'LHU diterbitkan digital, bernomor, dan dilengkapi kode verifikasi.',
+    ['lhu', 'LHP & cek keaslian', 'perisai',
+      'LHP bernomor disahkan Penanggung Jawab Laboratorium dan dilengkapi QR Code keaslian.',
       [
-        'Buka permohonan berstatus <b>LHU terbit</b>, lalu klik <b>Lihat dan cetak LHU</b>.',
-        'Klik <b>Cetak atau simpan PDF</b> untuk menyimpan LHU.',
-        'Siapa pun (misalnya pembeli atau instansi lain) bisa mengecek keaslian LHU di menu <b>Cek keaslian LHU</b> dengan 12 karakter kode verifikasi yang tercetak.',
-        'Keputusan: semua hasil <b>Negatif</b> → <b>Lulus uji</b>; ada hasil <b>Positif</b> → <b>Tidak lulus uji</b>.',
+        'Setelah pengujian selesai, hasil divalidasi Administrator, diparaf penyelia, lalu disahkan Penanggung Jawab Laboratorium. Status berubah menjadi <b>LHP selesai</b>.',
+        'Buka permohonan berstatus <b>LHP selesai</b>, lalu klik <b>LHP (PDF)</b> untuk melihat atau mengunduh LHP. Layanan yang dibayar di belakang: LHP bisa diunduh setelah pembayaran dikonfirmasi.',
+        'Siapa pun (misalnya pembeli atau instansi lain) bisa mengecek keaslian LHP dengan memindai <b>QR Code</b> atau memasukkan 12 karakter <b>kode verifikasi</b> di menu <b>Cek keaslian LHP</b>.',
       ],
-      [['penting', 'Jangan mengubah isi LHU. Perubahan apa pun akan terdeteksi "tidak cocok" saat dicek keasliannya.']], null],
+      [['penting', 'Jangan mengubah isi LHP. Perubahan apa pun akan terdeteksi "tidak cocok" saat dicek keasliannya.']], null],
     ['chat', 'Chat petugas & bantuan', 'chat',
-      'Tanyakan apa saja langsung kepada petugas Balai lewat chat di dalam SIPELAB.',
+      'Tanyakan apa saja langsung kepada petugas Balai lewat chat di dalam SILANTRO.',
       [
         'Klik tombol <b>Chat petugas</b> di pojok kanan bawah, atau menu <b>Chat petugas</b> di sisi kiri.',
         'Tulis pertanyaan, sebutkan <b>kode permohonan</b> bila terkait sampel tertentu, lalu tekan <b>Enter</b> atau <b>Kirim</b>.',
-        'Pesan dibalas oleh admin atau operator lab; nama dan jabatan pembalas tampil di setiap balasan.',
+        'Pesan dibalas oleh petugas Balai; nama dan jabatan pembalas tampil di setiap balasan.',
         'Daftar <b>Petugas online</b> menunjukkan siapa saja yang sedang bertugas saat ini.',
         'Lencana merah di menu menandakan ada balasan yang belum Anda baca.',
       ],
@@ -102,24 +92,25 @@
         $wa ? ['info', 'Tidak ada petugas online? Hubungi juga <b>WhatsApp Center</b> Balai lewat tombol di bawah.'] : null,
       ])), 'bantuan'],
     ['faq', 'Tanya jawab & istilah', 'info',
-      'Jawaban atas pertanyaan yang sering diajukan dan arti istilah di SIPELAB.',
+      'Jawaban atas pertanyaan yang sering diajukan dan arti istilah di SILANTRO.',
       [], [], 'faq'],
   ];
   $n = count($bab);
   $faq = [
-    ['Apa beda pengguna jasa Mandiri, Surveilen, dan Eksternal?', 'Mandiri dan Surveilen membayar di awal: setelah sampel diverifikasi, bayar dulu, lalu sampel diuji. Eksternal tidak perlu bayar di awal: sampel langsung diuji, tagihan dibayar setelah LHU jadi, dan LHU baru bisa dilihat/diunduh setelah pembayaran dikonfirmasi.'],
-    ['Berapa lama sampai LHU jadi?', "Norma waktu pelayanan {$normaTotal} hari kerja sejak sampel masuk laboratorium. Target tanggal selesai tampil di halaman permohonan Anda."],
-    ['Kenapa nilai hasil uji belum terlihat?', 'Nilai hasil tiap lab ditampilkan setelah LHU divalidasi Admin Lab (Eksternal: setelah lunas), supaya yang Anda terima adalah hasil final.'],
-    ['NTPN saya ditolak, apa yang harus dilakukan?', 'Pastikan NTPN disalin persis (16 huruf/angka, tanpa spasi) dan belum pernah dipakai permohonan lain. Bila bukti ditolak admin, alasannya tampil di halaman permohonan dan Anda bisa mengunggah ulang.'],
+    ['Apa beda layanan Mandiri, Pengujian Eksternal, dan Surveilen?', 'Permohonan online selalu Mandiri: bayar di awal setelah sampel diverifikasi, lalu sampel diuji. Pengujian Eksternal dan Surveilen ditetapkan petugas Balai; sampel langsung diuji dan tagihan dibayar setelah LHP disahkan.'],
+    ['Berapa lama sampai LHP selesai?', "Norma waktu pelayanan {$normaTotal} hari kerja sejak sampel mulai diuji. Target tanggal selesai tampil di halaman permohonan Anda."],
+    ['Kenapa hasil uji belum tampil di akun saya?', 'Hasil uji dan LHP baru bisa dibuka setelah LHP disahkan dan permohonan selesai (termasuk lunas untuk layanan yang dibayar di belakang), supaya yang Anda terima adalah hasil final.'],
+    ['Apakah saya perlu mengetik NTPN?', 'Tidak. Cukup unggah bukti setor SIMPONI. Operator Bendahara mencocokkan pembayaran dari bukti dan sistem SIMPONI.'],
     ['Format berkas apa yang bisa diunggah?', 'PDF, JPG, atau PNG asli, maksimal 5 MB per berkas. Berkas yang hanya diganti ekstensinya akan ditolak.'],
-    ['Lupa kata sandi?', 'Hubungi petugas lewat chat atau WhatsApp Center, atau datang ke loket. Admin akan mereset sandi; Anda wajib menggantinya saat masuk.'],
+    ['Lupa kata sandi?', 'Hubungi petugas lewat chat atau WhatsApp Center, atau datang ke loket. Petugas akan mereset sandi; Anda wajib menggantinya saat masuk.'],
   ];
   $istilah = [
     ['SIMPONI', 'Sistem Informasi PNBP Online milik Kementerian Keuangan untuk menyetor tagihan layanan.'],
     ['Kode billing', '15 digit kode tagihan SIMPONI yang dipakai saat membayar.'],
-    ['NTPN', 'Nomor Transaksi Penerimaan Negara, 16 huruf/angka di bukti setor, tanda pembayaran sah.'],
+    ['NTPN', 'Nomor Transaksi Penerimaan Negara di bukti setor, tanda pembayaran sah.'],
     ['PNBP', 'Penerimaan Negara Bukan Pajak; tarif layanan uji termasuk PNBP.'],
-    ['LHU', 'Laporan Hasil Uji, dokumen resmi hasil pengujian sampel.'],
+    ['Kode sampel', 'Kode registrasi dari buku sampel, mis. SP.M/221126.01 (jenis layanan / tanggal diterima . nomor urut harian).'],
+    ['LHP', 'Laporan Hasil Pengujian, dokumen resmi hasil pengujian sampel.'],
     ['Norma waktu', 'Batas waktu pelayanan dalam hari kerja, per lab maupun total.'],
   ];
   $catatanGaya = ['info' => ['bg-laut-50 text-laut-700', 'info', 'Info'], 'penting' => ['bg-surya-50 text-surya-700', 'info', 'Penting']];
@@ -129,9 +120,9 @@
   {{-- Kepala panduan --}}
   <div class="flex flex-wrap items-end justify-between gap-4">
     <div>
-      <p class="text-xs font-bold uppercase tracking-wider text-laut-600">Panduan resmi SIPELAB</p>
-      <h1 class="mt-1">Panduan Penggunaan SIPELAB</h1>
-      <p class="mt-2 max-w-prose text-kabut-600">Langkah demi langkah untuk pengguna jasa: akun, permohonan, pembayaran, pemantauan, sampai LHU.</p>
+      <p class="text-xs font-bold uppercase tracking-wider text-laut-600">Panduan resmi SILANTRO</p>
+      <h1 class="mt-1">Panduan Penggunaan SILANTRO</h1>
+      <p class="mt-2 max-w-prose text-kabut-600">Langkah demi langkah untuk pengguna jasa: akun, permohonan, pembayaran, pemantauan, sampai LHP.</p>
       <p class="mt-2 text-xs text-kabut-500">Edisi November 2026 · {{ $n }} bagian</p>
     </div>
     <div class="no-print flex flex-wrap gap-2">
@@ -185,9 +176,9 @@
               @case('jenis')
                 <div class="grid gap-4 md:grid-cols-3">
                   @foreach ([
-                    ['Mandiri', 'Bayar di awal', ['Ajukan permohonan', 'Serahkan sampel, diverifikasi', 'Bayar tagihan SIMPONI', 'Sampel diuji di lab', 'LHU terbit, langsung bisa diunduh'], 'bg-laut-600'],
-                    ['Surveilen', 'Bayar di awal', ['Ajukan permohonan', 'Serahkan sampel, diverifikasi', 'Bayar tagihan SIMPONI', 'Sampel diuji di lab', 'LHU terbit, langsung bisa diunduh'], 'bg-laut-800'],
-                    ['Eksternal', 'Bayar saat LHU jadi', ['Ajukan permohonan', 'Serahkan sampel, diverifikasi', 'Sampel langsung diuji di lab', 'LHU jadi, kode billing dikirim', 'Bayar, lalu LHU bisa diambil'], 'bg-lamun-600'],
+                    ['Mandiri', 'Diajukan online · bayar di awal', ['Ajukan permohonan online', 'Sampel diverifikasi, kode SP.M', 'Bayar billing SIMPONI, unggah bukti', 'Sampel diuji di lab', 'LHP selesai, unduh PDF'], 'bg-laut-600'],
+                    ['Pengujian Eksternal', 'Ditetapkan petugas · bayar di belakang', ['Permohonan diterima Balai', 'Sampel diverifikasi, kode SP.PE', 'Sampel langsung diuji di lab', 'LHP disahkan, billing terbit', 'Bayar, lalu unduh LHP PDF'], 'bg-lamun-600'],
+                    ['Surveilen', 'Ditetapkan petugas · bayar di belakang', ['Permohonan diterima Balai', 'Sampel diverifikasi, kode SP.S', 'Sampel langsung diuji di lab', 'LHP disahkan, billing terbit', 'Bayar, lalu unduh LHP PDF'], 'bg-laut-800'],
                   ] as [$nama, $sub, $alur, $warna])
                     <div class="overflow-hidden rounded-xl ring-1 ring-kabut-200">
                       <div class="{{ $warna }} px-4 py-3 text-white"><p class="font-extrabold">{{ $nama }}</p><p class="text-xs opacity-90">{{ $sub }}</p></div>
@@ -213,7 +204,7 @@
                 <div class="flex flex-wrap gap-2">
                   <a href="{{ $masuk ? route('chat') : route('login') }}" class="btn-primary"><x-ikon n="chat" class="h-4 w-4" />Chat petugas</a>
                   @if ($wa)<a href="{{ $wa }}" target="_blank" rel="noopener" class="btn-ghost"><x-ikon n="chat" class="h-4 w-4" />Chat WhatsApp Center</a>@endif
-                  <a href="{{ route('verifikasi') }}" class="btn-ghost"><x-ikon n="perisai" class="h-4 w-4" />Cek keaslian LHU</a>
+                  <a href="{{ route('verifikasi') }}" class="btn-ghost"><x-ikon n="perisai" class="h-4 w-4" />Cek keaslian LHP</a>
                 </div>
                 @break
               @case('faq')
@@ -251,6 +242,6 @@
     </div>
   </div>
 
-  <p class="mt-2 text-center text-xs text-kabut-500">SIPELAB · {{ \App\Models\Setting::get('nama_instansi') }} · Panduan Edisi November 2026</p>
+  <p class="mt-2 text-center text-xs text-kabut-500">SILANTRO · {{ \App\Models\Setting::get('nama_instansi') }} · Panduan Edisi November 2026</p>
 </div>
 @endsection

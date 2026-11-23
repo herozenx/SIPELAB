@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>@yield('judul') · SIPELAB</title>
+  <title>@yield('judul') · SILANTRO</title>
   <link rel="stylesheet" href="{{ asset('css/app.css') }}">
 </head>
 <body class="grid min-h-screen place-items-center bg-kabut-100 px-4">

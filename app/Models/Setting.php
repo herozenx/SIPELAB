@@ -11,8 +11,20 @@ class Setting extends Model
     public const DEFAULTS = [
         'nama_instansi' => 'Balai Pengendalian dan Pengawasan Mutu Hasil Kelautan dan Perikanan Surabaya II',
         'alamat_instansi' => 'Jl. Sawunggaling 177-183, Jemundo, Taman, Sidoarjo',
-        'biaya_admin' => '10000',
-        'prefix_lhu' => 'LHU/BPPMHKP-SBY2',
+        'biaya_admin' => '0', // PNBP SIMPONI hanya memuat tarif parameter
+        // Nomor LHP & surat tugas. {urut} = nomor urut agenda per tahun (4 digit), {bulan} = bulan Romawi, {tahun}.
+        'format_nomor_lhp' => '{urut}/LAB/BPPMHKP.SBY.II/KI.310/{bulan}/{tahun}',
+        // Surat tugas pengujian (template FL/OK/SUB II/8.5.3.d). {kode_sampel} = kode sampel, mis. SP.S/050126.02.
+        'format_nomor_surat_tugas' => '{kode_sampel}/FPPCU/SUB II/{bulan}/{tahun}',
+        'kota_surat_tugas' => 'Surabaya',
+        'kode_formulir_surat_tugas' => 'FL/OK/SUB II/8.5.3.d',
+        'jabatan_kepala_lab' => 'Kepala Laboratorium Penguji',
+        'nama_kepala_lab' => '',
+        'nip_kepala_lab' => '',
+        'kota_lhp' => 'Sidoarjo',
+        // Bukti Tagihan PNBP
+        'satuan_kerja' => 'Balai PPMHKP Surabaya II',
+        'kode_formulir_lhp' => 'FL/OK/LP/SUB II/8.6.d',
         // Norma waktu sampel jadi (hari kerja) sejak masuk lab pertama sampai LHU divalidasi.
         'norma_total_hari' => '6',
         // Tanggal libur nasional/cuti bersama (YYYY-MM-DD), dipisah baris/koma. Sabtu-Minggu otomatis libur.

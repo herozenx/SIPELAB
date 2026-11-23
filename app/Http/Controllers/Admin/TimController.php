@@ -13,16 +13,18 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 /**
- * Admin Lab (dan Superadmin) mengelola operator tiap tim lab sendiri:
- * tambah operator, pindah tim, nonaktifkan, reset sandi, buka kunci.
- * Hanya akun berperan Petugas Lab yang bisa diubah dari sini.
+ * Admin Laboratorium (dan Administrator) mengelola tim tiap lab:
+ * analis/laboran dan penyelia — tambah, pindah tim, nonaktifkan, reset sandi, buka kunci.
+ * Hanya akun berperan Analis atau Penyelia yang bisa diubah dari sini.
  */
 class TimController extends Controller
 {
+    private const PERAN = ['petugas_lab', 'penyelia'];
+
     public function index(Request $request)
     {
         $labs = Lab::query()->orderBy('urutan')->with(['operator' => fn ($q) => $q->orderByDesc('aktif')->orderBy('nama')])->get();
-        $tanpaLab = User::query()->where('role', Role::PetugasLab->value)->whereNull('lab_id')->orderBy('nama')->get();
+        $tanpaLab = User::query()->whereIn('role', self::PERAN)->whereNull('lab_id')->orderBy('nama')->get();
 
         // Beban kerja: jumlah sampel yang sedang ditangani tiap operator.
         $beban = TahapLab::query()->whereNull('selesai_at')
@@ -31,7 +33,7 @@ class TimController extends Controller
 
         $edit = null;
         if ($request->query('edit')) {
-            $edit = User::query()->where('role', Role::PetugasLab->value)->find((int) $request->query('edit'));
+            $edit = User::query()->whereIn('role', self::PERAN)->find((int) $request->query('edit'));
         }
 
         return view('admin.tim', compact('labs', 'tanpaLab', 'beban', 'edit'));
@@ -42,12 +44,12 @@ class TimController extends Controller
         $data = $this->validated($request, null);
         $sementara = Str::password(12, symbols: false);
         $user = User::query()->create($data + [
-            'role' => Role::PetugasLab, 'password' => $sementara, 'wajib_ganti_password' => true, 'aktif' => true,
+            'password' => $sementara, 'wajib_ganti_password' => true, 'aktif' => true,
         ]);
-        Audit::log('OPERATOR_TAMBAH', 'user', $user->id, ['email' => $user->email, 'lab_id' => $user->lab_id]);
+        Audit::log('OPERATOR_TAMBAH', 'user', $user->id, ['email' => $user->email, 'lab_id' => $user->lab_id, 'role' => $user->role->value]);
 
         return redirect()->route('tim.index')
-            ->with('success', "Operator {$user->nama} ditambahkan ke tim Lab {$user->lab->nama}.")
+            ->with('success', "{$user->role->label()} {$user->nama} ditambahkan ke tim Lab {$user->lab->nama}.")
             ->with('sandi_sementara', $sementara)->with('sandi_untuk', $user->email);
     }
 
@@ -57,14 +59,14 @@ class TimController extends Controller
         $request->merge(['aktif' => $request->boolean('aktif')]);
         $data = $this->validated($request, $user) + $request->validate(['aktif' => ['boolean']]);
 
-        $sensitif = $user->lab_id !== (int) $data['lab_id'] || $user->aktif !== (bool) $data['aktif'];
+        $sensitif = $user->lab_id !== (int) $data['lab_id'] || $user->aktif !== (bool) $data['aktif'] || $user->role->value !== $data['role'];
         $user->fill($data)->save();
         if ($sensitif) {
             $user->revokeSessions(); // pindah tim / nonaktif berlaku seketika
         }
         Audit::log('OPERATOR_UBAH', 'user', $user->id, ['lab_id' => $user->lab_id, 'aktif' => $user->aktif]);
 
-        return redirect()->route('tim.index')->with('success', "Data operator {$user->nama} disimpan.");
+        return redirect()->route('tim.index')->with('success', "Data {$user->nama} disimpan.");
     }
 
     public function resetPassword(User $user)
@@ -89,10 +91,10 @@ class TimController extends Controller
         return back()->with('success', "Akun {$user->nama} dibuka kembali.");
     }
 
-    /** Admin Lab tidak boleh mengubah akun admin/superadmin/pengguna jasa lewat menu ini. */
+    /** Admin Lab tidak boleh mengubah akun selain analis/penyelia lewat menu ini. */
     private function pastikanOperator(User $user): void
     {
-        abort_unless($user->role === Role::PetugasLab, 404);
+        abort_unless($user->role->isLab(), 404);
     }
 
     private function validated(Request $request, ?User $user): array
@@ -103,7 +105,9 @@ class TimController extends Controller
             'nama' => ['required', 'string', 'min:3', 'max:100'],
             'email' => ['required', 'email:rfc', 'max:120', Rule::unique('users', 'email')->ignore($user?->id)],
             'lab_id' => ['required', 'exists:labs,id'],
+            'role' => ['required', Rule::in(self::PERAN)],
             'telepon' => ['nullable', 'regex:/^[0-9+\-\s]{8,20}$/'],
-        ], ['lab_id.required' => 'Pilih tim lab untuk operator ini.']);
+            'nip' => ['nullable', 'regex:/^[0-9\s]{8,30}$/'],
+        ], ['lab_id.required' => 'Pilih tim lab.', 'role.required' => 'Pilih peran: analis/laboran atau penyelia.']);
     }
 }

@@ -12,23 +12,23 @@ class KeamananAkunTest extends TestCase
 
     protected bool $seed = true;
 
-    public function test_login_berhasil_dan_salah_portal_ditolak(): void
+    public function test_login_berhasil_dan_sandi_salah_ditolak(): void
     {
-        $this->post('/masuk', ['email' => 'admin@lab.local', 'password' => 'Lab12345!', 'portal' => 'pengguna_jasa'])->assertSessionHasErrors('email');
+        $this->post('/masuk', ['email' => 'admin@lab.local', 'password' => 'salah'])->assertSessionHasErrors('email');
         $this->assertGuest();
-        $this->post('/masuk', ['email' => 'admin@lab.local', 'password' => 'Lab12345!', 'portal' => 'operator'])->assertRedirect('/beranda');
+        $this->post('/masuk', ['email' => 'admin@lab.local', 'password' => 'Lab12345!'])->assertRedirect('/beranda');
         $this->assertAuthenticated();
     }
 
     public function test_akun_terkunci_setelah_lima_kali_gagal(): void
     {
         for ($i = 0; $i < 5; $i++) {
-            $this->post('/masuk', ['email' => 'kimia@lab.local', 'password' => 'salah', 'portal' => 'operator']);
+            $this->post('/masuk', ['email' => 'kimia@lab.local', 'password' => 'salah']);
         }
         $this->assertNotNull(User::query()->where('email', 'kimia@lab.local')->value('locked_until'));
         \Illuminate\Support\Facades\RateLimiter::clear('login'); // lepas pembatas laju agar penguncian akun yang diuji
         $this->app['cache']->store()->flush();
-        $this->post('/masuk', ['email' => 'kimia@lab.local', 'password' => 'Lab12345!', 'portal' => 'operator'])->assertSessionHasErrors('email');
+        $this->post('/masuk', ['email' => 'kimia@lab.local', 'password' => 'Lab12345!'])->assertSessionHasErrors('email');
         $this->assertGuest();
     }
 
@@ -43,7 +43,7 @@ class KeamananAkunTest extends TestCase
 
     public function test_sandi_sementara_wajib_diganti(): void
     {
-        $u = User::query()->where('email', 'nekropsi@lab.local')->firstOrFail();
+        $u = User::query()->where('email', 'organo@lab.local')->firstOrFail();
         $u->forceFill(['wajib_ganti_password' => true])->save();
         $this->actingAs($u)->withSession(['auth_version' => $u->auth_version, 'login_at' => time()])->get('/beranda')->assertRedirect('/akun');
     }

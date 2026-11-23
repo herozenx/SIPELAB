@@ -13,7 +13,7 @@ class PublicController extends Controller
     public function home()
     {
         return view('public.home', [
-            'labs' => Lab::query()->aktif()->get(),
+            'bidang' => app(Workflow::class)->parameterAktif()->groupBy('bidang'),
             'biayaAdmin' => (int) Setting::get('biaya_admin'),
         ]);
     }
@@ -28,7 +28,7 @@ class PublicController extends Controller
         ]);
     }
 
-    /** Cek keaslian LHU (publik, tanpa data pribadi pemohon). */
+    /** Cek keaslian LHP (publik, tanpa data pribadi pemohon). */
     public function verifikasi(Request $request, Workflow $wf, ?string $kode = null)
     {
         $kode = strtoupper(trim((string) ($kode ?? $request->query('kode'))));
@@ -38,13 +38,13 @@ class PublicController extends Controller
 
         if ($kode !== '') {
             if (! preg_match('/^[A-F0-9]{12}$/', $kode)) {
-                $err = 'Kode verifikasi terdiri dari 12 karakter (angka 0–9 dan huruf A–F). Periksa kembali kode yang tercetak di LHU.';
+                $err = 'Kode verifikasi terdiri dari 12 karakter (angka 0–9 dan huruf A–F). Periksa kembali kode yang tercetak di LHP.';
             } else {
                 $lhu = Lhu::query()->with('permohonan')->where('kode_verifikasi', $kode)->whereNotNull('nomor')->first();
                 if ($lhu) {
                     $utuh = $wf->lhuUtuh($lhu);
                 } else {
-                    $err = 'Tidak ada LHU dengan kode ini. Dokumen yang Anda pegang kemungkinan tidak diterbitkan oleh Balai.';
+                    $err = 'Tidak ada LHP dengan kode ini. Dokumen yang Anda pegang kemungkinan tidak diterbitkan oleh Balai.';
                 }
             }
         }

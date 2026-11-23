@@ -1,4 +1,4 @@
-# SIPELAB  Sistem Pelayanan, Pengujian & Sertifikasi Laboratorium
+# SILANTRO
 
 Aplikasi web layanan uji mutu hasil perikanan untuk **BPPMHKP Surabaya II**.
 Alur: permohonan online → verifikasi sampel + kode billing SIMPONI → NTPN + bukti setor → konfirmasi admin →
@@ -33,12 +33,16 @@ php artisan serve                 # buka http://localhost:8000
 Reset data demo: `php artisan migrate:fresh --seed` lalu hapus isi `storage/app/private/dokumen`.
 
 ### Akun demo (hanya bila `SEED_DEMO=true`, sandi `Lab12345!`)
-| Akun | "Masuk sebagai" | Email |
-|---|---|---|
-| Superadmin | Superadmin | superadmin@lab.local |
-| Admin Lab | Operator | admin@lab.local |
-| Petugas Nekropsi / Mikrobiologi / Kimia | Operator | nekropsi@ / mikro@ / kimia@lab.local |
-| Pengguna Jasa | Pengguna jasa | pengguna@lab.local |
+| Peran | Email |
+|---|---|
+| Administrator | superadmin@lab.local |
+| Admin Laboratorium | admin@lab.local |
+| Operator (loket, registrasi, surat tugas) | operator@lab.local |
+| Operator Bendahara (billing SIMPONI) | bendahara@lab.local |
+| Penanggung Jawab Lab (pengesahan) | pj@lab.local |
+| Penyelia Organoleptik / Mikrobiologi / Kimia / Radionuklida | penyelia.organo@ / penyelia.mikro@ / penyelia.kimia@ / penyelia.radio@lab.local |
+| Analis Organoleptik / Mikrobiologi / Kimia / Radionuklida | organo@ / mikro@ (dan mikro2@) / kimia@ / radio@lab.local |
+| Pengguna Jasa | pengguna@lab.local, eksternal@lab.local |
 
 ---
 
@@ -48,7 +52,7 @@ Server production **dikelola oleh instansi**. Kebutuhan aplikasi: PHP 8.2+ (ekst
 `fileinfo`, `intl`), MySQL 8 / MariaDB 10.6+, HTTPS, document root ke folder `public/`, dan cron `php artisan schedule:run` tiap menit.
 Setelah memasang kode: `php artisan migrate --force --seed` lalu `php artisan sipelab:superadmin`.
 
-> **Penting:** `APP_KEY` dipakai untuk HMAC tanda keaslian LHU. Jika diganti, LHU lama akan terbaca "tidak cocok" di halaman verifikasi. Simpan di tempat aman dan ikut dicadangkan.
+> **Penting:** `APP_KEY` dipakai untuk HMAC tanda keaslian LHP. Jika diganti, LHP lama akan terbaca "tidak cocok" di halaman verifikasi. Simpan di tempat aman dan ikut dicadangkan.
 
 Untuk demo online gratis, lihat **Hosting demo di Vercel** di `README-SIPELAB.md`.
 
@@ -57,17 +61,30 @@ Untuk demo online gratis, lihat **Hosting demo di Vercel** di `README-SIPELAB.md
 ## 3. Alur dan aturan bisnis
 
 ```
-DIAJUKAN ─(Admin: sampel sesuai + kode billing)─▶ MENUNGGU_PEMBAYARAN ─(Pengguna: NTPN + bukti)─▶ MENUNGGU_KONFIRMASI_BAYAR
-   └─(Admin: tolak + alasan)─▶ DITOLAK                     ▲──────────(Admin: bukti ditolak + alasan)──────────┤
-                                                                                                    (Admin: dana masuk)
-DI_LAB[lab urutan 1] ─▶ DI_LAB[lab urutan 2] ─▶ … ─▶ MENUNGGU_VALIDASI ─(Admin: terbitkan)─▶ SELESAI (LHU terbit)
+Mandiri (diajukan pengguna jasa secara online):
+DIAJUKAN ─(Administrator: verifikasi berkas & data)─▶ DITERIMA ─(Operator/Admin Lab: registrasi sampel, kaji ulang, kode SP.M)─▶ MENUNGGU_BILLING ─(Bendahara: billing SIMPONI)─▶
+MENUNGGU_PEMBAYARAN ─(Pengguna: unggah bukti, tanpa NTPN)─▶ MENUNGGU_KONFIRMASI_BAYAR ─(Bendahara: dana masuk)─▶ SIAP_UJI
+
+Pengujian Eksternal / Surveilen (ditetapkan Operator saat verifikasi, kode SP.PE / SP.S):
+DIAJUKAN ─▶ DITERIMA ─▶ SIAP_UJI   … lalu setelah LHP disahkan: MENUNGGU_BILLING ─▶ MENUNGGU_PEMBAYARAN ─▶ MENUNGGU_KONFIRMASI_BAYAR ─▶ SELESAI
+
+Semua jenis:
+SIAP_UJI ─(Admin Lab: surat tugas otomatis, template FL/OK/SUB II/8.5.3.d, No. FPPC = kode sampel)─▶ DI_LAB (semua lab terkait paralel; Analis input hasil per parameter)
+  ─▶ MENUNGGU_PEMERIKSAAN ─(Administrator: validasi hasil)─▶ MENUNGGU_PARAF ─(Penyelia tiap bidang: paraf)─▶ MENUNGGU_PENGESAHAN
+  ─(Penanggung Jawab: sahkan → nomor LHP + QR)─▶ SELESAI (Mandiri) / MENUNGGU_BILLING (lainnya)
+Validasi hasil tidak benar/lengkap → kembali ke pengujian (REVISI atau UJI_ULANG).
+Paraf/validasi akhir tidak disetujui → PERBAIKAN (kembali ke validasi Administrator) atau UJI_ULANG (ke lab). Paraf diulang.
 ```
-- Semua hasil **negatif** → *Lulus uji, bisa beredar/ekspor* (sesuai tujuan). Ada **positif** → *Tidak lulus uji*.
-- Lab, urutan, dan tarif diatur Superadmin (menu *Lab & tarif*); tagihan = Σ tarif lab aktif × jumlah sampel + biaya administrasi.
-- Format kode billing (15 digit) dan NTPN (16 huruf/angka) ada di `config/sipelab.php` — sesuaikan bila format Balai berbeda.
-- Pembaruan real-time: halaman memeriksa `/api/versi` tiap 8 detik dan memuat ulang otomatis bila data berubah
-  (tidak memuat ulang saat pengguna sedang mengisi form; muncul tombol "Muat ulang").
-- LHU memiliki nomor urut per tahun, kode verifikasi publik (`/verifikasi/<kode>`), sidik SHA-256, dan HMAC.
+- **Kode sampel** `SP.M|SP.PE|SP.S/DDMMYY.NN`: tanggal sampel diterima, nomor urut harian per jenis layanan (mulai 01).
+  Kode diberikan sejak permohonan diajukan (SP.M); saat registrasi kode tetap, kecuali jenis layanan diubah atau sampel diterima di hari lain (diberi nomor urut jenis/tanggal tersebut).
+- **Parameter uji** (menu Administrator *Parameter & tarif*, data awal dari FPPCU): pengguna memilih parameter + jumlah pengujian;
+  tagihan = Σ tarif parameter × jumlah + biaya administrasi. Hasil diinput per parameter (nilai, memenuhi/tidak, keterangan) dan langsung masuk LHP.
+- **Paraf digital** menyimpan nama, waktu, dan sidik hasil; bila hasil berubah setelah diparaf, pengesahan ditolak.
+- **LHP** bernomor urut agenda per tahun (format di *Pengaturan*, bawaan `0001/LAB/BPPMHKP.SBY.II/KI.310/XI/2026`), QR Code ke
+  `/verifikasi/<kode>`, sidik SHA-256 + HMAC. LHP otomatis tersedia sebagai PDF; petugas kantor (Administrator, Admin Lab, Operator, Penanggung Jawab)
+  bisa membuka sejak disahkan, pengguna jasa setelah permohonan selesai (lunas). Bukti terima sampel (PDF) tersedia setelah registrasi.
+- Format kode billing (15 digit) dan NTPN (16 huruf/angka) ada di `config/sipelab.php`.
+- Pembaruan real-time: halaman memeriksa `/api/versi` tiap 8 detik dan memuat ulang otomatis bila data berubah.
 
 ---
 
@@ -109,7 +126,7 @@ DI_LAB[lab urutan 1] ─▶ DI_LAB[lab urutan 2] ─▶ … ─▶ MENUNGGU_VALI
 | Tampilan | `resources/views/` (Blade) |
 | Gaya | `resources/css/app.css` → dikompilasi ke `public/css/app.css` |
 | Interaksi | `public/js/app.js` |
-| Pengaturan khusus SIPELAB | `config/sipelab.php` |
+| Pengaturan khusus aplikasi | `config/sipelab.php` |
 
 Mengubah tampilan (butuh Node.js 18+): `npm install` lalu `npm run build` (atau `npm run watch` saat mengembangkan).
 

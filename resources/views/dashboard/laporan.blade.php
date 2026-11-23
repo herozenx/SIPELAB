@@ -3,7 +3,7 @@
 @section('content')
 @php
   $S = \App\Enums\Status::class;
-  $menunggu = (int) (($st[$S::Diajukan->value] ?? 0) + ($st[$S::MenungguKonfirmasiBayar->value] ?? 0) + ($st[$S::MenungguValidasi->value] ?? 0));
+  $menunggu = (int) collect([$S::Diajukan, $S::Diterima, $S::MenungguBilling, $S::MenungguKonfirmasiBayar, $S::SiapUji, $S::MenungguPemeriksaan, $S::MenungguParaf, $S::MenungguPengesahan])->sum(fn ($x) => $st[$x->value] ?? 0);
   $maxLab = max(1, $perLab->max(fn ($l) => $l['negatif'] + $l['positif']));
   $maxBln = max(1, $bulanan->max('n'));
   $bln = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
@@ -15,10 +15,10 @@
   @foreach ([
     ['Total permohonan', number_format($total, 0, ',', '.')],
     ['Sedang diuji', (int) ($st[$S::DiLab->value] ?? 0)],
-    ['Menunggu admin', $menunggu],
-    ['LHU lulus', (int) ($iz['LULUS'] ?? 0)],
-    ['LHU tidak lulus', (int) ($iz['TIDAK_LULUS'] ?? 0)],
-    ['Rata-rata sampai LHU', $rata === null ? '–' : str_replace('.', ',', (string) $rata).' hari'],
+    ['Menunggu petugas', $menunggu],
+    ['LHP memenuhi', (int) ($iz['LULUS'] ?? 0)],
+    ['LHP tidak memenuhi', (int) ($iz['TIDAK_LULUS'] ?? 0)],
+    ['Rata-rata sampai LHP', $rata === null ? '–' : str_replace('.', ',', (string) $rata).' hari'],
   ] as [$label, $nilai])
     <div class="px-5 py-4"><dt class="text-xs font-semibold text-kabut-500">{{ $label }}</dt><dd class="num mt-1 text-xl font-extrabold">{{ $nilai }}</dd></div>
   @endforeach
@@ -26,15 +26,15 @@
 
 <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
   <section class="panel">
-    <div class="panel-head"><h2>Hasil per laboratorium</h2>
-      <p class="flex gap-3 text-xs text-kabut-600"><span class="flex items-center gap-1.5"><i class="block h-2.5 w-2.5 rounded-sm bg-lamun-500"></i>Negatif</span><span class="flex items-center gap-1.5"><i class="block h-2.5 w-2.5 rounded-sm bg-karang-500"></i>Positif</span></p>
+    <div class="panel-head"><h2>Hasil parameter per laboratorium</h2>
+      <p class="flex gap-3 text-xs text-kabut-600"><span class="flex items-center gap-1.5"><i class="block h-2.5 w-2.5 rounded-sm bg-lamun-500"></i>Memenuhi</span><span class="flex items-center gap-1.5"><i class="block h-2.5 w-2.5 rounded-sm bg-karang-500"></i>Tidak memenuhi</span></p>
     </div>
     <div class="panel-body space-y-4">
       @forelse ($perLab as $l)
         @php $neg = $l['negatif'] / $maxLab * 100; $pos = $l['positif'] / $maxLab * 100; @endphp
         <div>
-          <div class="flex justify-between text-sm"><span class="font-semibold">{{ $l['nama'] }}</span><span class="num text-kabut-600">{{ $l['negatif'] }} negatif, {{ $l['positif'] }} positif</span></div>
-          <svg class="mt-1.5 h-3 w-full" viewBox="0 0 100 3" preserveAspectRatio="none" role="img" aria-label="{{ $l['nama'] }}: {{ $l['negatif'] }} negatif, {{ $l['positif'] }} positif">
+          <div class="flex justify-between text-sm"><span class="font-semibold">{{ $l['nama'] }}</span><span class="num text-kabut-600">{{ $l['negatif'] }} memenuhi, {{ $l['positif'] }} tidak</span></div>
+          <svg class="mt-1.5 h-3 w-full" viewBox="0 0 100 3" preserveAspectRatio="none" role="img" aria-label="{{ $l['nama'] }}: {{ $l['negatif'] }} memenuhi, {{ $l['positif'] }} tidak memenuhi">
             <rect width="100" height="3" rx="1.5" class="fill-kabut-100"/>
             <rect width="{{ round($neg, 2) }}" height="3" class="fill-lamun-500"/>
             <rect x="{{ round($neg, 2) }}" width="{{ round($pos, 2) }}" height="3" class="fill-karang-500"/>
@@ -63,6 +63,6 @@
 
 <section class="panel mt-6">
   <div class="panel-head"><h2>PNBP terkonfirmasi</h2><p class="num text-xl font-extrabold text-laut-600">{{ rupiah($pnbp) }}</p></div>
-  <p class="panel-body text-sm text-kabut-600">Jumlah tagihan dari permohonan yang pembayarannya sudah dikonfirmasi masuk di SIMPONI (sedang diuji, menunggu validasi, dan selesai).</p>
+  <p class="panel-body text-sm text-kabut-600">Jumlah tagihan yang pembayarannya sudah dikonfirmasi masuk di SIMPONI: Mandiri setelah lunas di awal, layanan lain setelah pelunasan.</p>
 </section>
 @endsection

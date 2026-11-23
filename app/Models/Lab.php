@@ -23,9 +23,20 @@ class Lab extends Model
         return $q->where('aktif', true)->orderBy('urutan');
     }
 
-    /** Operator (petugas) yang ditempatkan di tim lab ini. */
+    /** Analis/laboran dan penyelia yang ditempatkan di tim lab ini. */
     public function operator(): HasMany
     {
-        return $this->hasMany(User::class)->where('role', Role::PetugasLab->value)->orderBy('nama');
+        return $this->hasMany(User::class)->whereIn('role', [Role::PetugasLab->value, Role::Penyelia->value])->orderBy('nama');
+    }
+
+    /** Penyelia bidang ini (penerima surat tugas). */
+    public function penyelia(): HasMany
+    {
+        return $this->hasMany(User::class)->where('role', Role::Penyelia->value)->where('aktif', true)->orderBy('nama');
+    }
+
+    public function parameter(): HasMany
+    {
+        return $this->hasMany(ParameterUji::class)->orderBy('urutan');
     }
 }

@@ -14,7 +14,7 @@ class User extends Authenticatable
     /** Dianggap online bila ada aktivitas dalam N menit terakhir. */
     public const ONLINE_MENIT = 2;
 
-    protected $fillable = ['nama', 'email', 'password', 'role', 'lab_id', 'instansi', 'tipe_pengguna', 'telepon', 'aktif', 'wajib_ganti_password'];
+    protected $fillable = ['nama', 'email', 'password', 'role', 'lab_id', 'instansi', 'alamat', 'tipe_pengguna', 'telepon', 'nip', 'aktif', 'wajib_ganti_password'];
 
     protected $hidden = ['password', 'remember_token'];
 
@@ -75,10 +75,15 @@ class User extends Authenticatable
         return $v !== null && \Illuminate\Support\Carbon::parse($v)->gte(now()->subMinutes(self::ONLINE_MENIT));
     }
 
-    /** Label singkat untuk chat & daftar online, mis. "Petugas Lab Mikrobiologi". */
+    /** Label singkat untuk chat & daftar online, mis. "Penyelia Mikrobiologi". */
     public function jabatan(): string
     {
         return $this->role->label().($this->lab ? ' '.$this->lab->nama : '');
+    }
+
+    public function isLab(): bool
+    {
+        return $this->role->isLab();
     }
 
     public function scopeOnline(Builder $q): Builder

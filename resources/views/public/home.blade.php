@@ -2,7 +2,6 @@
 @section('title', 'Layanan uji mutu hasil perikanan')
 @section('content')
 @php
-  $perSampel = $labs->sum('tarif');
   // Ikon ikan kecil yang dipakai berulang di ilustrasi
   $ikan = 'M4 16C8 10.5 14.5 9 19.5 12L27 7.5C25.5 11 24.8 13.5 24.8 16C24.8 18.5 25.5 21 27 24.5L19.5 20C14.5 23 8 21.5 4 16Z';
 @endphp
@@ -11,14 +10,14 @@
 <section class="relative overflow-hidden bg-laut-700 text-white">
   <div class="mx-auto max-w-6xl px-4 pb-28 pt-12 sm:px-6 sm:pt-16 lg:grid lg:grid-cols-12 lg:items-center lg:gap-10 lg:pb-36">
     <div class="lg:col-span-6">
-      <h1 class="max-w-[18ch] text-[1.9rem] font-extrabold leading-[1.12] tracking-tight text-white sm:text-5xl">Uji mutu hasil perikanan, terpantau sampai LHU terbit.</h1>
+      <h1 class="max-w-[18ch] text-[1.9rem] font-extrabold leading-[1.12] tracking-tight text-white sm:text-5xl">Uji mutu hasil perikanan, terpantau sampai LHP terbit.</h1>
       <p class="mt-5 max-w-[56ch] text-base text-laut-100 sm:text-lg">Ajukan permohonan uji secara online, bayar lewat SIMPONI, dan pantau status permohonan Anda dari mana saja. Laporan Hasil Uji diterbitkan digital dan bisa dicek keasliannya oleh siapa pun.</p>
       <div class="mt-8 flex flex-wrap gap-3 max-sm:[&>a]:flex-1">
         <a href="{{ route('register') }}" class="btn min-h-[48px] bg-white px-6 text-laut-700 hover:bg-laut-50">Daftar sebagai pengguna jasa</a>
         <a href="{{ route('login') }}" class="btn min-h-[48px] px-6 text-white ring-1 ring-inset ring-white/40 hover:bg-white/10">Masuk</a>
       </div>
       <ul class="mt-8 flex flex-wrap gap-x-8 gap-y-3 text-sm text-laut-100">
-        @foreach (['LHU bernomor dengan kode verifikasi', 'Status permohonan bisa dipantau'] as $poin)
+        @foreach (['LHP bernomor dengan kode verifikasi', 'Status permohonan bisa dipantau'] as $poin)
           <li class="flex items-center gap-2">
             <svg viewBox="0 0 24 24" class="h-4 w-4 text-laut-300" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
             {{ $poin }}
@@ -83,16 +82,16 @@
 {{-- Lima langkah --}}
 @php
   $langkah = [
-    ['Ajukan online', 'Isi data sampel, jumlah, asal, dan tujuan distribusi. Lampirkan dokumen pendukung bila ada.', '-rotate-1'],
-    ['Serahkan sampel', 'Bawa sampel fisik ke loket. Admin Lab memeriksa kesesuaiannya.', 'rotate-[1.25deg]'],
-    ['Bayar lewat SIMPONI', 'Mandiri & Surveilen: bayar di awal sebelum diuji. Eksternal: bayar setelah LHU jadi. Kirim NTPN dan bukti setor dari akun Anda.', '-rotate-[0.5deg]'],
+    ['Ajukan online', 'Isi data sampel dan pilih parameter uji beserta jumlah pengujiannya. Lampirkan dokumen pendukung bila ada.', '-rotate-1'],
+    ['Serahkan sampel', 'Bawa sampel fisik ke loket. Operator memverifikasi dan memberi kode sampel.', 'rotate-[1.25deg]'],
+    ['Bayar lewat SIMPONI', 'Layanan Mandiri bayar di awal: lihat billing resmi di akun Anda, lalu unggah bukti setornya. Tidak perlu mengetik NTPN.', '-rotate-[0.5deg]'],
     ['Sampel diproses', 'Sampel diuji oleh laboratorium Balai. Norma waktu '.\App\Models\Setting::get('norma_total_hari').' hari kerja; status bisa dipantau dari akun Anda.', 'rotate-1'],
-    ['Terima LHU digital', 'LHU bernomor dengan kode verifikasi. Siapa pun bisa mengecek keasliannya di situs ini.', '-rotate-[1.25deg]'],
+    ['LHP selesai', 'LHP bernomor dengan QR Code keaslian, bisa diunduh dalam format PDF dari akun Anda. Siapa pun bisa mengecek keasliannya di situs ini.', '-rotate-[1.25deg]'],
   ];
 @endphp
 <section id="langkah" class="scroll-mt-24 py-14 sm:py-20">
   <div class="mx-auto max-w-6xl px-4 sm:px-6">
-    <h2 class="max-w-2xl text-2xl font-extrabold sm:text-3xl">Lima langkah dari pengajuan sampai LHU</h2>
+    <h2 class="max-w-2xl text-2xl font-extrabold sm:text-3xl">Lima langkah dari pengajuan sampai LHP</h2>
     <p class="mt-3 max-w-2xl text-kabut-600">Prosesnya lurus dari awal sampai akhir, tanpa perlu bolak-balik ke kantor untuk mengurus berkas.</p>
 
     <ol class="relative mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-5 lg:gap-5 lg:pt-9">
@@ -174,32 +173,32 @@
   </div>
 </section>
 
-{{-- Tarif + cek LHU --}}
+{{-- Tarif + cek LHP --}}
 <section id="tarif" class="scroll-mt-24 border-t border-kabut-200 bg-kabut-50 py-14 sm:py-20">
   <div class="mx-auto grid max-w-6xl gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:gap-16">
     <div>
       <h2 class="text-2xl font-extrabold sm:text-3xl">Tarif pengujian</h2>
-      <p class="mt-3 max-w-md text-kabut-600">Tagihan dihitung otomatis dari tarif setiap laboratorium dikalikan jumlah sampel, ditambah biaya administrasi.</p>
+      <p class="mt-3 max-w-md text-kabut-600">Tagihan dihitung dari tarif setiap parameter uji yang dipilih dikalikan jumlah pengujian, ditambah biaya administrasi. Billing resmi diterbitkan lewat SIMPONI.</p>
 
       <div class="relative mt-8 max-w-md -rotate-1 rounded-sm bg-white p-6 shadow-[0_1px_2px_rgba(11,61,80,0.10)] sm:p-7">
         <div class="flex items-center justify-between border-b border-dashed border-kabut-300 pb-4">
           <img src="{{ asset('favicon.svg') }}" alt="" class="h-9 w-9">
           <div class="text-right">
             <p class="text-sm font-bold leading-none">Nota tarif uji</p>
-            <p class="mt-1 text-xs text-kabut-500">SIPELAB · BPPMHKP Surabaya II</p>
+            <p class="mt-1 text-xs text-kabut-500">SILANTRO · BPPMHKP Surabaya II</p>
           </div>
         </div>
 
         <div class="mt-2">
-          @foreach ($labs as $l)
-            @php $nm = strtolower($l->nama); @endphp
+          @foreach ($bidang as $namaBidang => $daftar)
+            @php $nm = strtolower($namaBidang); $tarif = $daftar->pluck('tarif')->filter(); @endphp
             <div class="flex items-center gap-3 py-3">
               <svg viewBox="0 0 24 24" class="h-6 w-6 shrink-0" aria-hidden="true">
-                @if (str_contains($nm, 'nekropsi'))
+                @if (str_contains($nm, 'organoleptik'))
                   <g transform="translate(1 8) scale(0.55)"><path d="{{ $ikan }}" fill="#1C6F8C"/><circle cx="9.5" cy="15" r="1.8" fill="#D5E8EE"/></g>
                   <circle cx="17.5" cy="7.5" r="4" fill="none" stroke="#0E4D64" stroke-width="1.8"/>
                   <path d="M20.5 10.5l2.5 2.5" stroke="#0E4D64" stroke-width="1.8" stroke-linecap="round"/>
-                @elseif (str_contains($nm, 'mikro'))
+                @elseif (str_contains($nm, 'mikro') || str_contains($nm, 'biologi'))
                   <ellipse cx="12" cy="12.5" rx="9" ry="4.5" fill="#D5E8EE" stroke="#CBD5DA" stroke-width="1.5"/>
                   <ellipse cx="12" cy="14" rx="9" ry="4.5" fill="#F7F9FA" stroke="#CBD5DA" stroke-width="1.5"/>
                   <g fill="#1C6F8C"><circle cx="9" cy="14" r="1.1"/><circle cx="14" cy="15.5" r="1.1"/><circle cx="12" cy="12.8" r="1.1"/></g>
@@ -209,15 +208,15 @@
                   <circle cx="13" cy="16" r="1" fill="#0E4D64"/>
                 @endif
               </svg>
-              <span>{{ $l->nama }}</span>
+              <span>{{ $namaBidang }} <span class="text-xs text-kabut-500">({{ $daftar->count() }} parameter)</span></span>
               <span aria-hidden="true" class="mx-1 h-0 flex-1 border-t-2 border-dotted border-kabut-300"></span>
-              <span class="num">{{ rupiah($l->tarif) }}</span>
+              <span class="num text-sm">{{ $tarif->isEmpty() ? '–' : ($tarif->min() === $tarif->max() ? rupiah($tarif->min()) : 'mulai '.rupiah($tarif->min())) }}</span>
             </div>
           @endforeach
 
           <div class="mt-1 flex items-end justify-between gap-4 border-t-2 border-laut-700/10 pt-4">
-            <span class="font-bold leading-snug">Total per sampel</span>
-            <span class="num whitespace-nowrap text-xl font-extrabold text-laut-600">{{ rupiah($perSampel) }}</span>
+            <span class="font-bold leading-snug">Tagihan</span>
+            <span class="text-right text-sm font-semibold text-laut-600">Tarif parameter × jumlah pengujian</span>
           </div>
           <div class="mt-2 flex items-center gap-3 border-t border-dashed border-kabut-300 py-3 text-sm text-kabut-500">
             <span>Biaya administrasi per permohonan</span>
@@ -251,15 +250,15 @@
           <path d="M63.5 28l4.5 4.5 8-9" stroke="#0E4D64" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
           <path d="M80.5 38.5l11 11" stroke="#0E4D64" stroke-width="4.5" stroke-linecap="round"/>
         </svg>
-        <h2 class="text-xl font-extrabold sm:text-2xl">Cek keaslian LHU</h2>
+        <h2 class="text-xl font-extrabold sm:text-2xl">Cek keaslian LHP</h2>
       </div>
-      <p class="mt-4 text-kabut-600">Masukkan kode verifikasi yang tercetak di LHU untuk memastikan dokumen diterbitkan oleh Balai. Data pemohon tidak ditampilkan.</p>
+      <p class="mt-4 text-kabut-600">Masukkan kode verifikasi yang tercetak di LHP untuk memastikan dokumen diterbitkan oleh Balai. Data pemohon tidak ditampilkan.</p>
 
       <form action="{{ route('verifikasi') }}" method="get" class="mt-6">
         <label for="kode" class="label">Kode verifikasi</label>
         <input id="kode" name="kode" class="input num min-h-[48px] uppercase tracking-[0.08em] placeholder:normal-case placeholder:tracking-normal" placeholder="Contoh: 3F9A0C12B7E4" maxlength="12" autocomplete="off" spellcheck="false" required aria-describedby="kode-hint">
         <p id="kode-hint" class="hint">12 karakter: angka 0–9 dan huruf A–F.</p>
-        <button class="btn-primary mt-5 min-h-[48px] w-full px-6 sm:w-auto"><x-ikon n="perisai" class="h-4 w-4" />Cek LHU</button>
+        <button class="btn-primary mt-5 min-h-[48px] w-full px-6 sm:w-auto"><x-ikon n="perisai" class="h-4 w-4" />Cek LHP</button>
       </form>
     </div>
   </div>
@@ -267,12 +266,12 @@
 
 {{-- Pusat bantuan --}}
 @php
-  $wa = wa_link('Halo Balai, saya ingin bertanya tentang layanan uji SIPELAB.');
+  $wa = wa_link('Halo Balai, saya ingin bertanya tentang layanan uji SILANTRO.');
   $bantuan = array_values(array_filter([
-    ['buku', 'Panduan penggunaan', 'Langkah demi langkah dari daftar akun sampai LHU, per bagian.', route('panduan'), false],
+    ['buku', 'Panduan penggunaan', 'Langkah demi langkah dari daftar akun sampai LHP, per bagian.', route('panduan'), false],
     ['chat', 'Chat petugas', auth()->check() ? 'Tanya langsung ke admin atau operator lab yang sedang online.' : 'Masuk dulu, lalu tanya langsung ke admin atau operator lab yang sedang online.', auth()->check() ? route('chat') : route('login'), false],
     $wa ? ['chat', 'WhatsApp Center', 'Hubungi Balai lewat WhatsApp pada jam layanan.', $wa, true] : null,
-    ['perisai', 'Cek keaslian LHU', 'Sudah menerima LHU? Pastikan dokumen Anda sah sebelum dipakai untuk keperluan administrasi.', route('verifikasi'), false],
+    ['perisai', 'Cek keaslian LHP', 'Sudah menerima LHP? Pastikan dokumen Anda sah sebelum dipakai untuk keperluan administrasi.', route('verifikasi'), false],
   ]));
 @endphp
 <section id="bantuan" class="scroll-mt-24 py-14 sm:py-20">

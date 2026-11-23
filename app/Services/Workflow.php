@@ -10,20 +10,27 @@ use App\Models\Dokumen;
 use App\Models\HasilUji;
 use App\Models\Lab;
 use App\Models\Lhu;
+use App\Models\ParameterUji;
+use App\Models\Pengembalian;
 use App\Models\Permohonan;
+use App\Models\PermohonanParameter;
+use App\Models\Persetujuan;
 use App\Models\Setting;
 use App\Models\StatusLog;
+use App\Models\SuratTugas;
 use App\Models\TahapLab;
 use App\Models\User;
 use App\Support\HariKerja;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 /**
  * Seluruh aturan alur permohonan ada di sini, bukan di controller:
- * transisi status atomik, perhitungan tagihan, rekap LHU, dan penyimpanan berkas.
+ * transisi status atomik, tagihan, registrasi sampel, surat tugas, hasil per parameter,
+ * pemeriksaan-paraf-pengesahan LHP, pengembalian ke lab, dan penyimpanan berkas.
  */
 class Workflow
 {
@@ -34,15 +41,24 @@ class Workflow
     /** @var string[] berkas yang sudah ditulis dalam transaksi berjalan */
     private array $written = [];
 
-    /** @return \Illuminate\Support\Collection<int, Lab> */
+    /** @return Collection<int, Lab> */
     public function labAktif()
     {
         return Lab::query()->aktif()->get();
     }
 
-    public function tagihan(int $jumlahSampel): int
+    /** @return Collection<int, ParameterUji> */
+    public function parameterAktif()
     {
-        return (int) $this->labAktif()->sum('tarif') * $jumlahSampel + (int) Setting::get('biaya_admin');
+        return ParameterUji::query()->aktif()->with('lab')->get();
+    }
+
+    /** Perkiraan tagihan: tarif tiap parameter × jumlah pengujian, ditambah biaya administrasi. */
+    public function tagihan(Permohonan $p): int
+    {
+        $p->loadMissing('parameter');
+
+        return (int) $p->parameter->sum(fn (PermohonanParameter $x) => $x->subtotal()) + (int) Setting::get('biaya_admin');
     }
 
     /** Jalankan dalam transaksi; berkas yang telanjur ditulis dihapus bila gagal. */
@@ -91,96 +107,136 @@ class Workflow
         ]);
     }
 
-    public function ajukan(User $u, array $data, array $files): Permohonan
+    /** Kunci baris permohonan selama transaksi (dua lab/penyelia menyelesaikan bersamaan). */
+    private function kunci(Permohonan $p): Permohonan
     {
-        return $this->tx(function () use ($u, $data, $files) {
-            $data['jenis_bayar'] ??= $u->jenisBayar()->value;
-            $p = Permohonan::query()->create($data + ['user_id' => $u->id, 'status' => Status::Diajukan]);
-            // Diingat sebagai pilihan awal pada pengajuan berikutnya.
-            $u->forceFill(['tipe_pengguna' => $data['jenis_bayar']])->save();
-            $p->update(['kode' => sprintf('PMH-%s-%05d', now()->format('Y'), $p->id)]);
+        $fresh = Permohonan::query()->whereKey($p->id)->lockForUpdate()->firstOrFail();
+        $p->setRawAttributes($fresh->getAttributes(), true);
+
+        return $p;
+    }
+
+    private function pastikanStatus(Permohonan $p, Status ...$boleh): void
+    {
+        if (! in_array($p->status, $boleh, true)) {
+            throw new WorkflowException('Status permohonan sudah berubah. Muat ulang halaman untuk melihat kondisi terbaru.');
+        }
+    }
+
+    // =====================================================================================
+    // 1. Pengajuan (pengguna jasa, selalu Mandiri)
+    // =====================================================================================
+
+    /**
+     * @param  array<int, int>  $parameter  [parameter_id => jumlah pengujian]
+     * @param  UploadedFile[]  $files
+     */
+    public function ajukan(User $u, array $data, array $parameter, array $files): Permohonan
+    {
+        $master = ParameterUji::query()->aktif()->whereIn('parameter_uji.id', array_keys($parameter))->get()->keyBy('id');
+        if ($master->isEmpty()) {
+            throw new WorkflowException('Pilih minimal satu parameter uji.');
+        }
+
+        return $this->tx(function () use ($u, $data, $parameter, $files, $master) {
+            $p = Permohonan::query()->create($data + [
+                'user_id' => $u->id, 'status' => Status::Diajukan, 'jenis_bayar' => JenisBayar::Mandiri,
+            ]);
+            $this->beriKode($p, JenisBayar::Mandiri, now()->format('dmy'));
+            foreach ($master as $id => $m) {
+                PermohonanParameter::query()->create([
+                    'permohonan_id' => $p->id, 'parameter_id' => $m->id, 'lab_id' => $m->lab_id,
+                    'kode' => $m->kode, 'nama' => $m->nama, 'bidang' => $m->bidang, 'metode' => $m->metode,
+                    'persyaratan' => $m->persyaratan, 'satuan' => $m->satuan, 'akreditasi' => $m->akreditasi,
+                    'jumlah' => max(1, min(500, (int) $parameter[$id])), 'tarif' => $m->tarif, 'keterangan' => $m->keterangan,
+                ]);
+            }
+            if (! empty($data['alamat']) && ! $u->alamat) {
+                $u->forceFill(['alamat' => $data['alamat']])->save();
+            }
             $this->simpanBerkas($files, $p, Dokumen::PENDUKUNG, $u);
-            $this->catat($p, Status::Diajukan, 'Permohonan diajukan secara online', $u);
+            $this->catat($p, Status::Diajukan, 'Permohonan diajukan secara online (layanan Mandiri)', $u);
 
             return $p;
         });
     }
 
+    // =====================================================================================
+    // 2. Verifikasi permohonan (Administrator) & registrasi sampel (Operator/Admin Lab)
+    // =====================================================================================
+
+    /** Administrator: berkas & data permohonan sesuai, permohonan diterima. */
+    public function verifikasi(Permohonan $p, User $admin): void
+    {
+        $this->tx(fn () => $this->transisi($p, Status::Diajukan, ['status' => Status::Diterima->value],
+            'Permohonan diterima: berkas dan data sudah diperiksa. Silakan serahkan sampel ke loket untuk diregistrasi', $admin));
+    }
+
     /**
-     * Sampel fisik sesuai.
-     * - MANDIRI/SURVEILEN: terbitkan kode billing, pengguna bayar dulu.
-     * - EKSTERNAL: sampel langsung masuk lab pertama; kode billing diterbitkan setelah LHU jadi.
+     * Sampel fisik diterima: Operator/Admin Lab menetapkan jenis layanan, sistem meregistrasi sampel
+     * (kode sampel otomatis). Mandiri menunggu billing; lainnya langsung siap diuji (bayar di belakang).
+     *
+     * @param  array{bentuk?:?string, kemasan?:?string, suhu?:?string, berat?:?string}  $kondisi
      */
-    public function verifikasiValid(Permohonan $p, ?string $kodeBilling, User $admin, ?JenisBayar $jenis = null): int
+    public function registrasi(Permohonan $p, User $operator, JenisBayar $jenis, array $kondisi = []): string
     {
-        $jenis ??= $p->jenis_bayar ?? JenisBayar::Mandiri;
-        $tagihan = $this->tagihan($p->jumlah_sampel);
-
-        if ($jenis->bayarDiAwal()) {
-            if (! $kodeBilling) {
-                throw new WorkflowException('Isi kode billing SIMPONI untuk pengguna jasa yang bayar di awal.');
+        return $this->tx(function () use ($p, $operator, $jenis, $kondisi) {
+            $this->kunci($p);
+            $this->pastikanStatus($p, Status::Diterima);
+            $tagihan = $this->tagihan($p);
+            $tgl = now()->format('dmy');
+            $ke = $jenis->bayarDiAwal() ? Status::MenungguBilling : Status::SiapUji;
+            $lama = (string) $p->kode;
+            // Kode tetap sama bila jenis layanan & tanggal terima cocok; selain itu diberi nomor urut jenis/tanggal tersebut.
+            if (! str_starts_with($lama, $jenis->kodeSurat()."/{$tgl}.")) {
+                $this->beriKode($p, $jenis, $tgl);
             }
-            $this->tx(fn () => $this->transisi($p, Status::Diajukan,
-                ['status' => Status::MenungguPembayaran->value, 'tagihan' => $tagihan, 'kode_billing' => $kodeBilling, 'jenis_bayar' => $jenis->value],
-                'Sampel fisik terverifikasi. Tagihan '.rupiah($tagihan).", kode billing SIMPONI {$kodeBilling}", $admin));
+            $kode = (string) $p->kode;
+            $this->transisi($p, Status::Diterima, [
+                'status' => $ke->value, 'jenis_bayar' => $jenis->value, 'kode_sampel' => $kode,
+                'tagihan' => $tagihan, 'diterima_at' => now(), 'diterima_oleh' => $operator->id,
+            ] + array_map(fn ($v) => $v === '' ? null : $v, $kondisi),
+                'Sampel diterima dan diregistrasi dengan kode '.$kode.($kode !== $lama ? " (sebelumnya {$lama})" : '').". Jenis layanan: {$jenis->label()}. "
+                .($jenis->bayarDiAwal() ? 'Menunggu penerbitan kode billing SIMPONI.' : 'Dibayar di belakang; siap dibuatkan surat tugas.'), $operator);
 
-            return $tagihan;
-        }
-
-        $first = $this->labAktif()->first() ?? throw new WorkflowException('Belum ada laboratorium aktif. Atur di menu Lab & tarif.');
-        $this->tx(function () use ($p, $admin, $tagihan, $first, $jenis) {
-            $this->transisi($p, Status::Diajukan,
-                ['status' => Status::DiLab->value, 'current_lab_id' => $first->id, 'tagihan' => $tagihan, 'jenis_bayar' => $jenis->value],
-                'Sampel fisik terverifikasi (pengguna jasa eksternal, bayar setelah LHU jadi). Tagihan '.rupiah($tagihan)
-                .". Sampel diteruskan otomatis ke Lab {$first->nama}", $admin);
-            $this->masukLab($p, $first);
+            return $kode;
         });
-
-        return $tagihan;
     }
 
-    /** Catat sampel masuk sebuah lab beserta batas norma waktunya. */
-    public function masukLab(Permohonan $p, Lab $lab): TahapLab
+    /**
+     * Beri kode SP baru (urut harian per jenis); bila dua proses mendapat nomor sama, unique index
+     * menolak salah satunya dan nomor dihitung ulang (savepoint, transaksi luar tetap utuh).
+     */
+    private function beriKode(Permohonan $p, JenisBayar $jenis, string $tgl): void
     {
-        $now = now();
-        $tahap = TahapLab::query()->create([
-            'permohonan_id' => $p->id, 'lab_id' => $lab->id, 'norma_hari' => $lab->norma_hari,
-            'masuk_at' => $now, 'batas_at' => HariKerja::batas($now, $lab->norma_hari),
-        ]);
-        if (! $p->masuk_lab_at) {
-            Permohonan::query()->whereKey($p->id)->update([
-                'masuk_lab_at' => $now,
-                'target_selesai_at' => HariKerja::batas($now, (int) Setting::get('norma_total_hari')),
-            ]);
-            $p->refresh();
-        }
+        for ($coba = 1; ; $coba++) {
+            try {
+                DB::transaction(fn () => Permohonan::query()->whereKey($p->id)->update(['kode' => $this->kodeSampelBaru($jenis, $tgl)]));
+                $p->kode = Permohonan::query()->whereKey($p->id)->value('kode');
 
-        return $tahap;
-    }
-
-    /** Tahap aktif di lab saat ini; dibuat bila belum ada (data lama sebelum fitur norma waktu). */
-    private function tahapSaatIni(Permohonan $p, Lab $lab): TahapLab
-    {
-        return TahapLab::query()->where('permohonan_id', $p->id)->where('lab_id', $lab->id)->first()
-            ?? $this->masukLab($p, $lab);
-    }
-
-    /** Operator menyatakan ikut menangani sampel di lab-nya; namanya tampil di detail permohonan. */
-    public function tangani(Permohonan $p, User $petugas): void
-    {
-        if ($p->status !== Status::DiLab || $p->current_lab_id !== $petugas->lab_id) {
-            throw new WorkflowException('Sampel ini tidak ada di antrean lab Anda.');
-        }
-        $lab = Lab::query()->findOrFail($p->current_lab_id);
-        $this->tx(function () use ($p, $petugas, $lab) {
-            $tahap = $this->tahapSaatIni($p, $lab);
-            if ($tahap->operator()->whereKey($petugas->id)->exists()) {
-                throw new WorkflowException('Anda sudah tercatat menangani sampel ini.');
+                return;
+            } catch (QueryException $e) {
+                if ($coba >= 5 || ! $this->isDuplicate($e)) {
+                    throw $e;
+                }
             }
-            $tahap->operator()->attach($petugas->id, ['created_at' => now()]);
-            Permohonan::query()->whereKey($p->id)->update(['updated_at' => now()]);
-            $this->catat($p, Status::DiLab, "Sampel ditangani {$petugas->nama} (Lab {$lab->nama})", $petugas);
-        });
+        }
+    }
+
+    /**
+     * Kode sampel mengikuti buku sampel: {SP.M|SP.PE|SP.S}/DDMMYY.NN.
+     * Nomor urut NN per hari dan per jenis layanan: tiap jenis mulai dari 01 setiap hari.
+     */
+    public function kodeSampelBaru(JenisBayar $jenis, string $tgl): string
+    {
+        $awalan = $jenis->kodeSurat()."/{$tgl}.";
+        // Periksa juga kode_sampel: data dari versi sebelumnya menyimpan kode SP hanya di kolom itu.
+        $terakhir = Permohonan::query()->where('kode', 'like', $awalan.'%')->pluck('kode')
+            ->merge(Permohonan::query()->where('kode_sampel', 'like', $awalan.'%')->pluck('kode_sampel'))
+            ->map(fn (string $k) => (int) substr($k, strlen($awalan)))
+            ->max() ?? 0;
+
+        return sprintf('%s%02d', $awalan, $terakhir + 1);
     }
 
     public function tolak(Permohonan $p, string $alasan, User $admin): void
@@ -189,139 +245,420 @@ class Workflow
             ['status' => Status::Ditolak->value, 'alasan_tolak' => $alasan], "Ditolak: {$alasan}", $admin));
     }
 
-    public function bayar(Permohonan $p, string $ntpn, UploadedFile $bukti, User $u): void
+    // =====================================================================================
+    // 3. Billing & pembayaran (Operator Bendahara)
+    // =====================================================================================
+
+    /** Bendahara menerbitkan billing SIMPONI resmi (Mandiri di awal; lainnya setelah LHP disahkan). */
+    /**
+     * Bendahara menerbitkan billing SIMPONI resmi. Sistem membuat Bukti Tagihan PNBP otomatis dari data ini
+     * (kode billing, tanggal & kedaluwarsa, nomor aju/PNBP, detail tarif per parameter).
+     *
+     * @param  array{billing_at?:mixed, billing_kedaluwarsa_at?:mixed, nomor_aju?:?string, nomor_pnbp?:?string}  $data
+     */
+    public function terbitkanBilling(Permohonan $p, string $kodeBilling, int $tagihan, ?UploadedFile $berkas, User $bendahara, array $data = []): void
     {
-        $this->tx(function () use ($p, $ntpn, $bukti, $u) {
+        $this->tx(function () use ($p, $kodeBilling, $tagihan, $berkas, $bendahara, $data) {
+            $tgl = isset($data['billing_at']) && $data['billing_at'] ? \Illuminate\Support\Carbon::parse($data['billing_at']) : now();
+            $this->transisi($p, Status::MenungguBilling,
+                ['status' => Status::MenungguPembayaran->value, 'kode_billing' => $kodeBilling, 'tagihan' => $tagihan,
+                    'billing_at' => $tgl, 'billing_kedaluwarsa_at' => ! empty($data['billing_kedaluwarsa_at']) ? \Illuminate\Support\Carbon::parse($data['billing_kedaluwarsa_at']) : $tgl->copy()->addDays(3),
+                    'nomor_aju' => ($data['nomor_aju'] ?? null) ?: null, 'nomor_pnbp' => ($data['nomor_pnbp'] ?? null) ?: null,
+                    'dibayar_at' => null, 'bank_bayar' => null, 'channel_bayar' => null, 'ntb' => null, 'ntpn' => null],
+                ($p->lhpTerbit() ? 'LHP sudah disahkan. ' : '').'Kode billing SIMPONI '.$kodeBilling.' diterbitkan, tagihan '.rupiah($tagihan), $bendahara);
+            if ($berkas) {
+                $this->simpanBerkas([$berkas], $p, Dokumen::BILLING, $bendahara);
+            }
+        });
+    }
+
+    /** Pengguna jasa mengunggah bukti bayar; NTPN tidak perlu diketik manual. */
+    public function bayar(Permohonan $p, UploadedFile $bukti, User $u): void
+    {
+        $this->tx(function () use ($p, $bukti, $u) {
             $this->transisi($p, Status::MenungguPembayaran,
-                ['status' => Status::MenungguKonfirmasiBayar->value, 'ntpn' => $ntpn],
-                "Bukti transfer SIMPONI diunggah (NTPN {$ntpn})", $u);
+                ['status' => Status::MenungguKonfirmasiBayar->value], 'Bukti pembayaran SIMPONI diunggah pengguna jasa', $u);
             $this->simpanBerkas([$bukti], $p, Dokumen::BUKTI_BAYAR, $u);
         });
     }
 
     /**
-     * Dana masuk.
-     * - MANDIRI  : sampel diteruskan ke lab pertama (mulai diuji). Mengembalikan lab tersebut.
-     * - EKSTERNAL: pelunasan setelah LHU jadi => SELESAI, LHU bisa diunduh. Mengembalikan null.
+     * Dana masuk. Sebelum diuji (Mandiri) => siap dibuatkan surat tugas.
+     * Setelah LHP disahkan (bayar di belakang) => selesai.
      */
-    public function terimaPembayaran(Permohonan $p, User $admin): ?Lab
+    /**
+     * @param  array{dibayar_at?:mixed, bank_bayar?:?string, channel_bayar?:?string, ntb?:?string}  $bayar  data pembayaran SIMPONI
+     */
+    public function terimaPembayaran(Permohonan $p, User $bendahara, ?string $ntpn = null, array $bayar = []): Status
     {
-        if ($p->eksternal()) {
-            $this->tx(fn () => $this->transisi($p, Status::MenungguKonfirmasiBayar, ['status' => Status::Selesai->value],
-                'Pelunasan SIMPONI terkonfirmasi. LHU '.($p->lhu?->nomor ?? '').' dapat diunduh pengguna jasa', $admin));
+        $ke = $p->lhpTerbit() ? Status::Selesai : Status::SiapUji;
+        $this->tx(fn () => $this->transisi($p, Status::MenungguKonfirmasiBayar,
+            ['status' => $ke->value, 'ntpn' => $ntpn ?: null,
+                'dibayar_at' => ! empty($bayar['dibayar_at']) ? \Illuminate\Support\Carbon::parse($bayar['dibayar_at']) : now(),
+                'bank_bayar' => ($bayar['bank_bayar'] ?? null) ?: null, 'channel_bayar' => ($bayar['channel_bayar'] ?? null) ?: null, 'ntb' => ($bayar['ntb'] ?? null) ?: null],
+            'Pembayaran SIMPONI terkonfirmasi'.($ntpn ? " (NTPN {$ntpn})" : '').'. '
+            .($ke === Status::Selesai ? 'LHP selesai dan dapat diunduh' : 'Sampel siap dibuatkan surat tugas pengujian'), $bendahara));
 
-            return null;
-        }
-
-        $first = $this->labAktif()->first() ?? throw new WorkflowException('Belum ada laboratorium aktif. Atur di menu Lab & tarif.');
-        $this->tx(function () use ($p, $admin, $first) {
-            $this->transisi($p, Status::MenungguKonfirmasiBayar,
-                ['status' => Status::DiLab->value, 'current_lab_id' => $first->id],
-                "Pembayaran SIMPONI terkonfirmasi masuk. Sampel diteruskan otomatis ke Lab {$first->nama}", $admin);
-            $this->masukLab($p, $first);
-        });
-
-        return $first;
+        return $ke;
     }
 
-    public function tolakPembayaran(Permohonan $p, string $catatan, User $admin): void
+    public function tolakPembayaran(Permohonan $p, string $catatan, User $bendahara): void
     {
         $this->tx(fn () => $this->transisi($p, Status::MenungguKonfirmasiBayar,
             ['status' => Status::MenungguPembayaran->value, 'ntpn' => null],
-            'Bukti pembayaran ditolak'.($catatan !== '' ? ": {$catatan}" : ''), $admin));
+            'Bukti pembayaran ditolak'.($catatan !== '' ? ": {$catatan}" : ''), $bendahara));
     }
 
+    // =====================================================================================
+    // 4. Surat tugas (Admin Laboratorium) & pengujian (Analis/Penyelia)
+    // =====================================================================================
+
     /**
-     * Petugas lab menginput hasil. Sampel diteruskan ke lab aktif berikutnya;
-     * bila ini lab terakhir, sistem merekap: semua NEGATIF => LULUS, ada POSITIF => TIDAK LULUS.
+     * Terbitkan surat tugas pengujian (template FL/OK/SUB II/8.5.3.d): satu surat per sampel dengan
+     * No. FPPC dari kode sampel, menugaskan penyelia setiap bidang yang parameternya diminta.
+     * Sampel lalu masuk ke lab-lab itu bersamaan (paralel).
+     *
+     * @param  array<int, int|null>  $penyelia  [lab_id => user_id penyelia]
+     * @return Collection<int, SuratTugas>
      */
-    public function inputHasil(Permohonan $p, User $petugas, string $hasil, ?string $catatan, array $files): ?Lab
+    public function buatSuratTugas(Permohonan $p, User $operator, array $penyelia = [], ?string $catatan = null): Collection
     {
-        if ($p->status !== Status::DiLab || $p->current_lab_id !== $petugas->lab_id) {
-            throw new WorkflowException('Sampel ini tidak ada di antrean lab Anda.');
-        }
-        $cur = Lab::query()->findOrFail($p->current_lab_id);
-        $next = $this->labAktif()->first(fn (Lab $l) => $l->urutan > $cur->urutan);
-
-        return $this->tx(function () use ($p, $petugas, $hasil, $catatan, $files, $cur, $next) {
-            HasilUji::query()->create([
-                'permohonan_id' => $p->id, 'lab_id' => $cur->id, 'petugas_id' => $petugas->id,
-                'hasil' => $hasil, 'catatan' => $catatan,
-            ]);
-            $this->simpanBerkas($files, $p, Dokumen::LAMPIRAN_LAB, $petugas, $cur->id);
-
-            // Tutup tahap lab ini; penginput hasil otomatis tercatat sebagai operator yang menangani.
-            $tahap = $this->tahapSaatIni($p, $cur);
-            $tahap->operator()->syncWithoutDetaching([$petugas->id => ['created_at' => now()]]);
-            $tahap->update(['selesai_at' => now()]);
-
-            if ($next) {
-                $this->transisiLab($p, $cur, ['current_lab_id' => $next->id],
-                    "Uji {$cur->nama} selesai. Data diteruskan otomatis ke Lab {$next->nama}", $petugas);
-                $this->masukLab($p, $next);
-
-                return $next;
+        return $this->tx(function () use ($p, $operator, $penyelia, $catatan) {
+            $this->kunci($p);
+            $this->pastikanStatus($p, Status::SiapUji);
+            $p->load('parameter');
+            $labs = Lab::query()->whereIn('id', $p->labTerlibat())->orderBy('urutan')->get();
+            if ($labs->isEmpty()) {
+                throw new WorkflowException('Permohonan ini belum punya parameter uji.');
             }
 
-            $positif = HasilUji::query()->where('permohonan_id', $p->id)->where('hasil', 'POSITIF')->exists();
-            Lhu::query()->create(['permohonan_id' => $p->id, 'status_izin' => $positif ? StatusIzin::TidakLulus : StatusIzin::Lulus]);
-            $this->transisiLab($p, $cur, ['status' => Status::MenungguValidasi->value, 'current_lab_id' => null],
-                "Uji {$cur->nama} selesai. Seluruh hasil lab direkap otomatis, menunggu validasi LHU", $petugas);
+            $surat = collect();
+            $nomor = $this->nomorSuratTugas($p);
+            $catatan = $catatan !== null && trim($catatan) !== '' ? mb_substr(trim($catatan), 0, 1000) : null;
+            foreach ($labs as $lab) {
+                $pid = $penyelia[$lab->id] ?? null;
+                $pj = $pid ? User::query()->whereKey($pid)->where('role', Role::Penyelia->value)->where('lab_id', $lab->id)->where('aktif', true)->first() : null;
+                if ($pid && ! $pj) {
+                    throw new WorkflowException("Penyelia yang dipilih untuk Lab {$lab->nama} tidak valid.");
+                }
+                $pj ??= $lab->penyelia()->first();
+                $surat->push(SuratTugas::query()->create([
+                    'permohonan_id' => $p->id, 'lab_id' => $lab->id, 'nomor' => $nomor,
+                    'penyelia_id' => $pj?->id, 'dibuat_oleh' => $operator->id, 'catatan' => $catatan,
+                ]));
+                $this->masukLab($p, $lab);
+            }
+            $this->transisi($p, Status::SiapUji, ['status' => Status::DiLab->value],
+                "Surat tugas pengujian {$nomor} diterbitkan untuk bidang ".$labs->pluck('nama')->join(', ', ' dan ').'. Sampel mulai diuji', $operator);
 
-            return null;
+            return $surat;
         });
     }
 
-    /** Transisi antar-lab: dikunci juga pada lab saat ini supaya dua petugas tidak menginput bersamaan. */
-    private function transisiLab(Permohonan $p, Lab $cur, array $set, string $ket, User $u): void
+    /** No. FPPC surat tugas, mis. SP.S/050126.02/FPPCU/SUB II/I/2026 (format di Pengaturan). */
+    private function nomorSuratTugas(Permohonan $p): string
     {
-        $affected = Permohonan::query()->whereKey($p->id)
-            ->where('status', Status::DiLab->value)->where('current_lab_id', $cur->id)
-            ->update($set + ['updated_at' => now()]);
-        if ($affected !== 1) {
-            throw new WorkflowException('Sampel sudah diproses petugas lain. Muat ulang halaman.');
+        $urut = SuratTugas::query()->whereYear('created_at', now()->year)->distinct()->count('permohonan_id') + 1;
+
+        return $this->formatNomor(Setting::get('format_nomor_surat_tugas'), $urut, now(), ['{kode_sampel}' => (string) $p->kode_sampel]);
+    }
+
+    /** Ganti {urut} (4 digit), {bulan} (Romawi), {tahun}, dan tambahan lain pada format nomor dari Pengaturan. */
+    public function formatNomor(string $format, int $urut, \DateTimeInterface $tgl, array $tambahan = []): string
+    {
+        $romawi = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][(int) $tgl->format('n') - 1];
+
+        return strtr($format, $tambahan + ['{urut}' => sprintf('%04d', $urut), '{bulan}' => $romawi, '{tahun}' => $tgl->format('Y')]);
+    }
+
+    /** Catat sampel masuk sebuah lab beserta batas norma waktunya (dibuka ulang bila sudah ada). */
+    public function masukLab(Permohonan $p, Lab $lab): TahapLab
+    {
+        $now = now();
+        $tahap = TahapLab::query()->updateOrCreate(['permohonan_id' => $p->id, 'lab_id' => $lab->id], [
+            'norma_hari' => $lab->norma_hari, 'masuk_at' => $now,
+            'batas_at' => HariKerja::batas($now, $lab->norma_hari), 'selesai_at' => null,
+        ]);
+        if (! $p->masuk_lab_at) {
+            Permohonan::query()->whereKey($p->id)->update([
+                'masuk_lab_at' => $now,
+                'target_selesai_at' => HariKerja::batas($now, (int) Setting::get('norma_total_hari')),
+            ]);
+            $p->masuk_lab_at = $now;
         }
-        $p->refresh();
-        $this->catat($p, $p->status, $ket, $u);
+
+        return $tahap;
+    }
+
+    /** Tahap lab yang sedang berjalan untuk lab petugas ini, atau null. */
+    public function tahapTerbuka(Permohonan $p, ?int $labId): ?TahapLab
+    {
+        if ($p->status !== Status::DiLab || ! $labId) {
+            return null;
+        }
+
+        return TahapLab::query()->where('permohonan_id', $p->id)->where('lab_id', $labId)->whereNull('selesai_at')->first();
+    }
+
+    /** Analis menyatakan ikut menangani sampel di lab-nya; namanya tampil di detail permohonan. */
+    public function tangani(Permohonan $p, User $petugas): void
+    {
+        $tahap = $this->tahapTerbuka($p, $petugas->lab_id) ?? throw new WorkflowException('Sampel ini tidak ada di antrean lab Anda.');
+        $this->tx(function () use ($p, $petugas, $tahap) {
+            if ($tahap->operator()->whereKey($petugas->id)->exists()) {
+                throw new WorkflowException('Anda sudah tercatat menangani sampel ini.');
+            }
+            $tahap->operator()->attach($petugas->id, ['created_at' => now()]);
+            Permohonan::query()->whereKey($p->id)->update(['updated_at' => now()]);
+            $this->catat($p, Status::DiLab, "Sampel ditangani {$petugas->nama} (Lab {$petugas->lab?->nama})", $petugas);
+        });
     }
 
     /**
-     * Terbitkan LHU bernomor.
-     * - MANDIRI  : langsung SELESAI, LHU bisa diunduh.
-     * - EKSTERNAL: LHU jadi, kode billing pelunasan diterbitkan; LHU baru bisa diunduh setelah lunas.
+     * Simpan hasil parameter lab petugas. Bila $selesai, semua parameter lab itu wajib terisi,
+     * tahap lab ditutup, dan bila seluruh lab sudah selesai sampel masuk pemeriksaan LHP.
+     *
+     * @param  array<int, array{hasil?:?string, memenuhi?:mixed, keterangan?:?string}>  $hasil  [permohonan_parameter_id => ...]
+     * @param  UploadedFile[]  $files
+     * @return bool true bila seluruh pengujian selesai (masuk pemeriksaan)
      */
-    public function validasiLhu(Permohonan $p, User $admin, ?string $kodeBilling = null): Lhu
+    public function simpanHasil(Permohonan $p, User $petugas, array $hasil, array $files, bool $selesai): bool
     {
-        if ($p->eksternal() && ! $kodeBilling) {
-            throw new WorkflowException('Isi kode billing SIMPONI untuk pelunasan pengguna jasa eksternal.');
+        if (! $petugas->isLab()) {
+            throw new WorkflowException('Hanya analis atau penyelia lab yang dapat menginput hasil.');
         }
 
-        return $this->tx(function () use ($p, $admin, $kodeBilling) {
-            $lhu = Lhu::query()->where('permohonan_id', $p->id)->lockForUpdate()->first()
-                ?? throw new WorkflowException('Rekap LHU belum tersedia.');
-            $tahun = now()->format('Y');
-            $urut = Lhu::query()->whereNotNull('nomor')->where('nomor', 'like', '%/'.$tahun)->count() + 1;
-            $nomor = sprintf('%04d/%s/%s', $urut, Setting::get('prefix_lhu'), $tahun);
-            $kode = strtoupper(bin2hex(random_bytes(6)));
-            $lhu->fill(['nomor' => $nomor, 'kode_verifikasi' => $kode, 'validated_by' => $admin->id, 'validated_at' => now()]);
+        return $this->tx(function () use ($p, $petugas, $hasil, $files, $selesai) {
+            $this->kunci($p);
+            $lab = $petugas->lab ?? throw new WorkflowException('Akun Anda belum ditempatkan di lab.');
+            $tahap = $this->tahapTerbuka($p, $lab->id) ?? throw new WorkflowException('Sampel ini tidak ada di antrean lab Anda.');
+
+            $baris = PermohonanParameter::query()->where('permohonan_id', $p->id)->where('lab_id', $lab->id)->get();
+            foreach ($baris as $b) {
+                $in = $hasil[$b->id] ?? null;
+                if (! is_array($in)) {
+                    continue;
+                }
+                $nilai = trim((string) ($in['hasil'] ?? ''));
+                $memenuhi = match ((string) ($in['memenuhi'] ?? '')) {
+                    '1' => true, '0' => false, default => null,
+                };
+                $ket = trim((string) ($in['keterangan'] ?? ''));
+                $nilai = $nilai !== '' ? mb_substr($nilai, 0, 150) : null;
+                $ket = $ket !== '' ? mb_substr($ket, 0, 300) : null;
+                if ($b->hasil !== $nilai || $b->memenuhi !== $memenuhi || $b->keterangan !== $ket) {
+                    $b->fill(['hasil' => $nilai, 'memenuhi' => $memenuhi, 'keterangan' => $ket,
+                        'diinput_oleh' => $petugas->id, 'diinput_at' => now()])->save();
+                }
+            }
+            $this->simpanBerkas($files, $p, Dokumen::LAMPIRAN_LAB, $petugas, $lab->id);
+            $tahap->operator()->syncWithoutDetaching([$petugas->id => ['created_at' => now()]]);
+            Permohonan::query()->whereKey($p->id)->update(['updated_at' => now()]);
+
+            if (! $selesai) {
+                return false;
+            }
+            $kurang = $baris->fresh()->reject->sudahDiisi();
+            if ($kurang->isNotEmpty()) {
+                throw new WorkflowException('Lengkapi hasil dan kesesuaian persyaratan untuk: '.$kurang->pluck('nama')->join(', ').'.');
+            }
+            $tahap->update(['selesai_at' => now()]);
+            Pengembalian::query()->where('permohonan_id', $p->id)->where('lab_id', $lab->id)->whereNull('selesai_at')->update(['selesai_at' => now()]);
+
+            $masihBuka = TahapLab::query()->where('permohonan_id', $p->id)->whereNull('selesai_at')->exists();
+            if ($masihBuka) {
+                $this->catat($p, Status::DiLab, "Pengujian Lab {$lab->nama} selesai", $petugas);
+
+                return false;
+            }
+            $this->transisi($p, Status::DiLab, ['status' => Status::MenungguPemeriksaan->value, 'current_lab_id' => null],
+                "Pengujian Lab {$lab->nama} selesai. Seluruh hasil lengkap, menunggu pemeriksaan LHP oleh Admin Laboratorium", $petugas);
+
+            return true;
+        });
+    }
+
+    // =====================================================================================
+    // 5. Pemeriksaan (Admin Lab) -> Paraf (Penyelia) -> Pengesahan (Penanggung Jawab)
+    // =====================================================================================
+
+    /** Admin Lab menyatakan seluruh data LHP sudah sesuai dengan permohonan. */
+    public function periksa(Permohonan $p, User $admin, ?string $catatan = null): void
+    {
+        $this->tx(function () use ($p, $admin, $catatan) {
+            $this->kunci($p);
+            $this->pastikanStatus($p, Status::MenungguPemeriksaan);
+            $this->setujui($p, Persetujuan::PERIKSA, null, $admin, $catatan);
+            Pengembalian::query()->where('permohonan_id', $p->id)->where('jenis', Pengembalian::PERBAIKAN)->whereNull('selesai_at')->update(['selesai_at' => now()]);
+            $this->transisi($p, Status::MenungguPemeriksaan, ['status' => Status::MenungguParaf->value],
+                'Hasil pengujian divalidasi Administrator: sesuai permohonan dan lengkap. Menunggu paraf penyelia', $admin);
+        });
+    }
+
+    /** Penyelia memaraf hasil bidangnya. Bila semua bidang sudah diparaf, LHP menunggu pengesahan. */
+    public function paraf(Permohonan $p, User $penyelia): bool
+    {
+        return $this->tx(function () use ($p, $penyelia) {
+            $this->kunci($p);
+            $this->pastikanStatus($p, Status::MenungguParaf);
+            $p->load('parameter');
+            $labs = $p->labTerlibat();
+            if ($penyelia->role !== Role::Penyelia || ! $labs->contains($penyelia->lab_id)) {
+                throw new WorkflowException('Anda bukan penyelia bidang yang menguji sampel ini.');
+            }
+            if (Persetujuan::query()->where('permohonan_id', $p->id)->where('jenis', Persetujuan::PARAF)->where('lab_id', $penyelia->lab_id)->exists()) {
+                throw new WorkflowException('Hasil bidang Anda sudah diparaf.');
+            }
+            $this->setujui($p, Persetujuan::PARAF, $penyelia->lab_id, $penyelia);
+            $sudah = Persetujuan::query()->where('permohonan_id', $p->id)->where('jenis', Persetujuan::PARAF)->pluck('lab_id');
+            if ($labs->diff($sudah)->isEmpty()) {
+                $this->transisi($p, Status::MenungguParaf, ['status' => Status::MenungguPengesahan->value],
+                    "Diparaf {$penyelia->nama} (Penyelia {$penyelia->lab?->nama}). Semua bidang sudah diparaf, menunggu pengesahan", $penyelia);
+
+                return true;
+            }
+            Permohonan::query()->whereKey($p->id)->update(['updated_at' => now()]);
+            $this->catat($p, Status::MenungguParaf, "Diparaf {$penyelia->nama} (Penyelia {$penyelia->lab?->nama})", $penyelia);
+
+            return false;
+        });
+    }
+
+    /**
+     * Penanggung Jawab mengesahkan: LHP bernomor (urut agenda per tahun), kode verifikasi + QR.
+     * Mandiri => selesai. Lainnya => menunggu billing (bayar di belakang).
+     */
+    public function sahkan(Permohonan $p, User $pj): Lhu
+    {
+        if ($pj->role !== Role::PenanggungJawab) {
+            throw new WorkflowException('Hanya Penanggung Jawab Laboratorium yang dapat mengesahkan LHP.');
+        }
+
+        return $this->tx(function () use ($p, $pj) {
+            $this->kunci($p);
+            $this->pastikanStatus($p, Status::MenungguPengesahan);
+            $sidik = $this->sidikHasil($p);
+            $kadaluarsa = Persetujuan::query()->where('permohonan_id', $p->id)->where('sidik', '!=', $sidik)->exists();
+            if ($kadaluarsa) {
+                throw new WorkflowException('Hasil uji berubah setelah diperiksa/diparaf. Kembalikan ke lab untuk diperiksa ulang.');
+            }
+            $this->setujui($p, Persetujuan::SAH, null, $pj);
+
+            $tahun = (int) now()->format('Y');
+            $urut = (int) Lhu::query()->where('tahun', $tahun)->max('nomor_urut') + 1;
+            $nomor = $this->formatNomor(Setting::get('format_nomor_lhp'), $urut, now());
+            $memenuhi = PermohonanParameter::query()->where('permohonan_id', $p->id)->where('memenuhi', false)->doesntExist();
+            $lhu = Lhu::query()->firstOrNew(['permohonan_id' => $p->id]);
+            $lhu->fill([
+                'nomor' => $nomor, 'tahun' => $tahun, 'nomor_urut' => $urut, 'versi_sidik' => 2,
+                'status_izin' => $memenuhi ? StatusIzin::Lulus : StatusIzin::TidakLulus,
+                'kode_verifikasi' => strtoupper(bin2hex(random_bytes(6))), 'validated_by' => $pj->id, 'validated_at' => now(),
+            ]);
+            $lhu->setRelation('permohonan', $p);
             [$hash, $sig] = $this->sidik($p, $lhu);
             $lhu->fill(['hash' => $hash, 'signature' => $sig])->save();
+            $p->setRelation('lhu', $lhu);
 
-            if ($p->eksternal()) {
-                $this->transisi($p, Status::MenungguValidasi,
-                    ['status' => Status::MenungguPembayaran->value, 'kode_billing' => $kodeBilling],
-                    "LHU {$nomor} jadi. Menunggu pelunasan ".rupiah($p->tagihan)." dengan kode billing SIMPONI {$kodeBilling}; LHU bisa diambil setelah lunas", $admin);
-            } else {
-                $this->transisi($p, Status::MenungguValidasi, ['status' => Status::Selesai->value],
-                    "LHU {$nomor} terbit. Keputusan: ".$lhu->status_izin->keputusan($p->tujuan), $admin);
-            }
+            $ke = $p->mandiri() ? Status::Selesai : Status::MenungguBilling;
+            $this->transisi($p, Status::MenungguPengesahan, ['status' => $ke->value],
+                "LHP {$nomor} disahkan oleh {$pj->nama}. "
+                .($ke === Status::Selesai ? 'LHP selesai dan dapat diambil di kantor Balai' : 'Menunggu billing SIMPONI (dibayar di belakang)'), $pj);
 
             return $lhu;
         });
     }
 
+    private function setujui(Permohonan $p, string $jenis, ?int $labId, User $u, ?string $catatan = null): void
+    {
+        Persetujuan::query()->create([
+            'permohonan_id' => $p->id, 'jenis' => $jenis, 'lab_id' => $labId, 'user_id' => $u->id,
+            'catatan' => $catatan ? mb_substr($catatan, 0, 500) : null, 'sidik' => $this->sidikHasil($p), 'created_at' => now(),
+        ]);
+    }
+
+    /** Jenis pengembalian yang boleh dipilih pada status tertentu (sesuai flowchart). */
+    public static function pilihanKembali(Status $status): array
+    {
+        return match (true) {
+            // Validasi hasil (Administrator): data belum benar/lengkap -> kembali ke pengujian.
+            $status === Status::MenungguPemeriksaan => [Pengembalian::REVISI, Pengembalian::UJI_ULANG],
+            // Paraf/validasi akhir tidak disetujui: perbaikan data -> Administrator; pengujian ulang -> lab.
+            in_array($status, [Status::MenungguParaf, Status::MenungguPengesahan], true) => [Pengembalian::PERBAIKAN, Pengembalian::UJI_ULANG],
+            default => [],
+        };
+    }
+
     /**
-     * Sidik isi LHU: SHA-256 atas isi kanonik + HMAC dengan APP_KEY.
+     * Kembalikan proses sebelum LHP disahkan. Pemeriksaan & paraf sebelumnya gugur.
+     * - REVISI / UJI_ULANG: kembali ke lab yang bersangkutan, lalu divalidasi ulang.
+     * - PERBAIKAN: kembali ke validasi hasil oleh Administrator.
+     */
+    public function kembalikan(Permohonan $p, User $oleh, ?int $labId, string $jenis, string $catatan): void
+    {
+        $this->tx(function () use ($p, $oleh, $labId, $jenis, $catatan) {
+            $this->kunci($p);
+            if (! in_array($jenis, self::pilihanKembali($p->status), true)) {
+                throw new WorkflowException('Pilihan pengembalian ini tidak berlaku pada tahap sekarang. Muat ulang halaman.');
+            }
+            if ($jenis === Pengembalian::PERBAIKAN) {
+                Pengembalian::query()->create([
+                    'permohonan_id' => $p->id, 'lab_id' => null, 'jenis' => $jenis, 'catatan' => mb_substr($catatan, 0, 1000),
+                    'oleh' => $oleh->id, 'dari_status' => $p->status->value, 'created_at' => now(),
+                ]);
+                Persetujuan::query()->where('permohonan_id', $p->id)->delete();
+                $this->transisi($p, $p->status, ['status' => Status::MenungguPemeriksaan->value],
+                    "Hasil belum disetujui, perlu perbaikan data. Dikembalikan ke validasi hasil (Administrator) oleh {$oleh->nama}: {$catatan}", $oleh);
+
+                return;
+            }
+            $p->load('parameter');
+            $labId = (int) $labId;
+            if (! $p->labTerlibat()->contains($labId)) {
+                throw new WorkflowException('Lab tersebut tidak menguji sampel ini.');
+            }
+            if ($oleh->role === Role::Penyelia && $oleh->lab_id !== $labId) {
+                throw new WorkflowException('Penyelia hanya dapat mengembalikan ke lab bidangnya sendiri.');
+            }
+            $lab = Lab::query()->findOrFail($labId);
+            $baris = PermohonanParameter::query()->where('permohonan_id', $p->id)->where('lab_id', $labId)->get();
+
+            $lama = null;
+            if ($jenis === Pengembalian::UJI_ULANG) {
+                $lama = $baris->map->only(['id', 'nama', 'hasil', 'memenuhi', 'keterangan', 'diinput_oleh', 'diinput_at'])->values()->all();
+                PermohonanParameter::query()->whereIn('id', $baris->pluck('id'))
+                    ->update(['hasil' => null, 'memenuhi' => null, 'diinput_oleh' => null, 'diinput_at' => null]);
+                $this->masukLab($p, $lab); // norma waktu dihitung ulang
+            } else {
+                TahapLab::query()->where('permohonan_id', $p->id)->where('lab_id', $labId)->update(['selesai_at' => null]);
+            }
+            Pengembalian::query()->create([
+                'permohonan_id' => $p->id, 'lab_id' => $labId, 'jenis' => $jenis, 'catatan' => mb_substr($catatan, 0, 1000),
+                'oleh' => $oleh->id, 'dari_status' => $p->status->value, 'data_lama' => $lama, 'created_at' => now(),
+            ]);
+            Persetujuan::query()->where('permohonan_id', $p->id)->delete();
+
+            $label = $jenis === Pengembalian::UJI_ULANG ? 'uji ulang sampel' : 'revisi data';
+            $this->transisi($p, $p->status, ['status' => Status::DiLab->value],
+                "Dikembalikan ke Lab {$lab->nama} untuk {$label} oleh {$oleh->nama}: {$catatan}", $oleh);
+        });
+    }
+
+    // =====================================================================================
+    // Sidik & keaslian LHP
+    // =====================================================================================
+
+    /** Sidik seluruh hasil parameter: berubah bila ada nilai yang diubah setelah diperiksa/diparaf. */
+    public function sidikHasil(Permohonan $p): string
+    {
+        $rows = PermohonanParameter::query()->where('permohonan_id', $p->id)->orderBy('id')
+            ->get(['id', 'lab_id', 'nama', 'metode', 'persyaratan', 'jumlah', 'hasil', 'memenuhi', 'keterangan'])
+            ->map(fn ($r) => [$r->id, $r->lab_id, $r->nama, $r->metode, $r->persyaratan, $r->jumlah, $r->hasil, $r->memenuhi, $r->keterangan])->all();
+
+        return hash('sha256', json_encode($rows, JSON_UNESCAPED_UNICODE));
+    }
+
+    /**
+     * Sidik isi LHP: SHA-256 atas isi kanonik + HMAC dengan APP_KEY.
      * Hash bisa dicocokkan siapa pun; HMAC membuktikan dokumen dibuat oleh server ini
      * sehingga perubahan langsung di database pun terdeteksi di halaman verifikasi.
      *
@@ -329,15 +666,53 @@ class Workflow
      */
     public function sidik(Permohonan $p, Lhu $lhu): array
     {
-        $hasil = HasilUji::query()->where('permohonan_id', $p->id)->orderBy('lab_id')
-            ->get(['lab_id', 'hasil'])->map(fn ($h) => [$h->lab_id, $h->hasil])->all();
-        $isi = json_encode([
-            'nomor' => $lhu->nomor, 'kode' => $p->kode, 'verifikasi' => $lhu->kode_verifikasi,
-            'sampel' => $p->nama_sampel, 'komoditas' => $p->jenis_komoditas, 'jumlah' => $p->jumlah_sampel,
-            'tujuan' => $p->tujuan->value, 'status' => $lhu->status_izin->value, 'hasil' => $hasil,
-            'validated_at' => $lhu->validated_at?->format('Y-m-d H:i:s'),
-        ], JSON_UNESCAPED_UNICODE);
+        if ((int) $lhu->versi_sidik === 3) {
+            return $this->sidikSistem($p, $lhu);
+        }
+        if ((int) $lhu->versi_sidik < 2) {
+            // Format LHU sebelum revisi 2: satu hasil per lab.
+            $hasil = HasilUji::query()->where('permohonan_id', $p->id)->orderBy('lab_id')
+                ->get(['lab_id', 'hasil'])->map(fn ($h) => [$h->lab_id, $h->hasil])->all();
+            $isi = json_encode([
+                'nomor' => $lhu->nomor, 'kode' => $p->kode, 'verifikasi' => $lhu->kode_verifikasi,
+                'sampel' => $p->nama_sampel, 'komoditas' => $p->jenis_komoditas, 'jumlah' => $p->jumlah_sampel,
+                'tujuan' => $p->tujuan->value, 'status' => $lhu->status_izin->value, 'hasil' => $hasil,
+                'validated_at' => $lhu->validated_at?->format('Y-m-d H:i:s'),
+            ], JSON_UNESCAPED_UNICODE);
+        } else {
+            $isi = json_encode([
+                'v' => 2, 'nomor' => $lhu->nomor, 'kode' => $p->kode, 'kode_sampel' => $p->kode_sampel,
+                'verifikasi' => $lhu->kode_verifikasi, 'sampel' => $p->nama_sampel, 'komoditas' => $p->jenis_komoditas,
+                'jumlah' => $p->jumlah_sampel, 'tujuan' => $p->tujuan->value, 'status' => $lhu->status_izin->value,
+                'hasil' => $this->sidikHasil($p), 'oleh' => $lhu->validated_by,
+                'validated_at' => $lhu->validated_at?->format('Y-m-d H:i:s'),
+            ], JSON_UNESCAPED_UNICODE);
+        }
         $hash = hash('sha256', $isi);
+
+        return [$hash, hash_hmac('sha256', $hash, (string) config('app.key'))];
+    }
+
+    /**
+     * Sidik LHP yang diterbitkan versi sebelumnya (branch "sistem": satu LHP per sampel, tabel sampel & hasil_parameter).
+     * Dihitung persis seperti saat diterbitkan agar dokumen lama tetap terverifikasi asli.
+     *
+     * @return array{0:string,1:string}
+     */
+    private function sidikSistem(Permohonan $p, Lhu $lhu): array
+    {
+        $sampel = DB::table('sampel')->where('permohonan_id', $p->id)->orderBy('urut')->get()
+            ->map(fn ($s) => [$s->kode, $s->jenis_sampel, DB::table('hasil_parameter')->where('sampel_id', $s->id)->orderBy('urutan')->orderBy('id')->get()
+                ->map(fn ($h) => [$h->bidang, $h->nama, json_decode((string) $h->ulangan, true), $h->satuan, $h->persyaratan, $h->metode, $h->keterangan])->all()])->all();
+        $raw = DB::table('permohonan')->where('id', $p->id)->first();
+        $isi = [
+            'nomor' => $lhu->nomor, 'kode' => $p->kode, 'kode_sampel' => $p->kode_sampel, 'verifikasi' => $lhu->kode_verifikasi,
+            'pelanggan' => $raw->pelanggan ?? null, 'alamat' => $p->alamat, 'layanan' => $p->jenis_bayar?->value,
+            'diterima' => $p->diterima_at?->format('Y-m-d'), 'sampel' => $sampel,
+            'ttd' => [$lhu->getAttributes()['ttd_nama'] ?? null, $lhu->getAttributes()['ttd_nip'] ?? null, $lhu->getAttributes()['ttd_jabatan'] ?? null],
+            'validated_at' => $lhu->validated_at?->format('Y-m-d H:i:s'),
+        ];
+        $hash = hash('sha256', json_encode($isi, JSON_UNESCAPED_UNICODE));
 
         return [$hash, hash_hmac('sha256', $hash, (string) config('app.key'))];
     }
@@ -352,15 +727,22 @@ class Workflow
         return hash_equals($lhu->hash, $hash) && hash_equals($lhu->signature, $sig);
     }
 
+    // =====================================================================================
+    // Otorisasi objek & berkas
+    // =====================================================================================
+
     /** Siapa boleh melihat permohonan (otorisasi tingkat objek, dipakai Policy). */
     public function bolehLihat(User $u, Permohonan $p): bool
     {
-        return match ($u->role) {
-            Role::Superadmin, Role::AdminLab => true,
-            Role::PenggunaJasa => $p->user_id === $u->id,
-            Role::PetugasLab => ($p->status === Status::DiLab && $p->current_lab_id === $u->lab_id)
-                || HasilUji::query()->where('permohonan_id', $p->id)->where('lab_id', $u->lab_id)->exists(),
-        };
+        if ($u->isStaff()) {
+            return true;
+        }
+        if ($u->role === Role::PenggunaJasa) {
+            return $p->user_id === $u->id;
+        }
+
+        // Analis & penyelia: hanya sampel yang pernah/sedang diuji di lab-nya.
+        return $u->lab_id !== null && TahapLab::query()->where('permohonan_id', $p->id)->where('lab_id', $u->lab_id)->exists();
     }
 
     /** Deteksi tipe dari magic bytes, bukan dari ekstensi atau MIME kiriman browser. */

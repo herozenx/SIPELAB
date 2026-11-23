@@ -1,9 +1,9 @@
 @extends('layouts.app')
-@section('title', 'Lab & tarif')
+@section('title', 'Laboratorium')
 @section('content')
-<h1>Laboratorium, tarif, dan norma waktu</h1>
-<p class="mt-1 max-w-prose text-kabut-600">Sampel melewati lab aktif sesuai nomor urut, dari kecil ke besar. Tagihan = jumlah tarif lab aktif × jumlah sampel + biaya administrasi ({{ rupiah($biayaAdmin) }}, diatur di <a href="{{ route('admin.settings') }}">Pengaturan</a>).</p>
-<p class="mt-2 max-w-prose text-sm text-kabut-600"><span class="font-semibold">Norma waktu</span> = batas hari kerja tiap lab sejak sampel masuk. Jumlah norma lab aktif saat ini: <span class="num font-semibold">{{ $labs->where('aktif', true)->sum('norma_hari') }} hari kerja</span> (target sampel jadi: {{ \App\Models\Setting::get('norma_total_hari') }} hari kerja).</p>
+<h1>Laboratorium &amp; norma waktu</h1>
+<p class="mt-1 max-w-prose text-kabut-600">Setiap lab/bidang menguji parameter miliknya. Sampel diuji paralel di semua lab yang parameternya dipilih. Tarif kini diatur per parameter di <a href="{{ route('admin.parameter') }}">Parameter &amp; tarif</a>; kolom tarif lab di bawah hanya untuk data lama.</p>
+<p class="mt-2 max-w-prose text-sm text-kabut-600"><span class="font-semibold">Norma waktu</span> = batas hari kerja tiap lab sejak sampel masuk. Target sampel jadi: {{ \App\Models\Setting::get('norma_total_hari') }} hari kerja sejak masuk lab.</p>
 
 @php
   // HP: tiap lab jadi kartu 2 kolom dengan label; layar lebar (md+): satu baris seperti tabel.
@@ -38,5 +38,5 @@
   </form>
 </section>
 @if ($errors->any())<p class="error mt-3">{{ $errors->first() }}</p>@endif
-<p class="mt-3 text-xs text-kabut-500">Lab yang masih memegang sampel tidak bisa dinonaktifkan. Lab tidak dihapus agar riwayat hasil uji tetap utuh. Perubahan norma berlaku untuk sampel yang masuk lab setelahnya. Operator tiap lab diatur di menu <a href="{{ route('tim.index') }}">Tim operator</a>.</p>
+<p class="mt-3 text-xs text-kabut-500">Lab yang masih memegang sampel tidak bisa dinonaktifkan. Lab tidak dihapus agar riwayat hasil uji tetap utuh. Perubahan norma berlaku untuk sampel yang masuk lab setelahnya. Analis dan penyelia tiap lab diatur di menu <a href="{{ route('tim.index') }}">Tim lab</a>.</p>
 @endsection

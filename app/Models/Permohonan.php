@@ -26,6 +26,10 @@ class Permohonan extends Model
             'tagihan' => 'integer',
             'masuk_lab_at' => 'datetime',
             'target_selesai_at' => 'datetime',
+            'diterima_at' => 'datetime',
+            'billing_at' => 'datetime',
+            'billing_kedaluwarsa_at' => 'datetime',
+            'dibayar_at' => 'datetime',
         ];
     }
 
@@ -39,6 +43,18 @@ class Permohonan extends Model
         return $this->belongsTo(Lab::class, 'current_lab_id');
     }
 
+    public function penerima(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'diterima_oleh');
+    }
+
+    /** Parameter yang diminta beserta hasil ujinya. */
+    public function parameter(): HasMany
+    {
+        return $this->hasMany(PermohonanParameter::class)->orderBy('id');
+    }
+
+    /** Hasil uji format lama (satu hasil per lab), dipakai LHU yang terbit sebelum revisi 2. */
     public function hasil(): HasMany
     {
         return $this->hasMany(HasilUji::class);
@@ -59,26 +75,64 @@ class Permohonan extends Model
         return $this->hasMany(StatusLog::class)->orderBy('id');
     }
 
-    /** Tahapan pengujian per lab (norma waktu & operator yang menangani). */
+    /** Tahapan pengujian per lab (norma waktu & analis yang menangani). */
     public function tahap(): HasMany
     {
         return $this->hasMany(TahapLab::class)->orderBy('id');
     }
 
-    /** Tahap di lab tempat sampel berada sekarang. */
+    public function suratTugas(): HasMany
+    {
+        return $this->hasMany(SuratTugas::class)->orderBy('id');
+    }
+
+    public function persetujuan(): HasMany
+    {
+        return $this->hasMany(Persetujuan::class)->orderBy('id');
+    }
+
+    public function pengembalian(): HasMany
+    {
+        return $this->hasMany(Pengembalian::class)->orderBy('id');
+    }
+
+    /** Tahap di lab yang masih berjalan (salah satunya, untuk tampilan ringkas). */
     public function tahapAktif(): HasOne
     {
         return $this->hasOne(TahapLab::class)->whereNull('selesai_at')->latestOfMany();
     }
 
-    public function eksternal(): bool
+    /** Kode yang dikenal petugas: kode sampel bila sudah diregistrasi, selain itu nomor permohonan. */
+    public function kodeTampil(): string
     {
-        return $this->jenis_bayar === JenisBayar::Eksternal;
+        return $this->kode_sampel ?: (string) $this->kode;
     }
 
-    /** Eksternal yang LHU-nya sudah jadi tetapi belum lunas. */
+    public function mandiri(): bool
+    {
+        return ($this->jenis_bayar ?? JenisBayar::Mandiri) === JenisBayar::Mandiri;
+    }
+
+    /** Selain Mandiri dibayar di belakang (setelah LHP disahkan). */
+    public function eksternal(): bool
+    {
+        return ! $this->mandiri();
+    }
+
+    public function lhpTerbit(): bool
+    {
+        return $this->lhu?->nomor !== null;
+    }
+
+    /** Tahap pembayaran setelah LHP disahkan (layanan non-Mandiri). */
     public function menungguPelunasan(): bool
     {
-        return $this->eksternal() && in_array($this->status, [Status::MenungguPembayaran, Status::MenungguKonfirmasiBayar], true);
+        return $this->status->tahapBayar() && $this->lhpTerbit();
+    }
+
+    /** @return \Illuminate\Support\Collection<int, int> id lab yang terlibat (punya parameter). */
+    public function labTerlibat()
+    {
+        return $this->parameter->pluck('lab_id')->unique()->values();
     }
 }

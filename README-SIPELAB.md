@@ -1,4 +1,4 @@
-# SIPELAB — Panduan Pemakaian & Pengubahan
+# SILANTRO — Panduan Pemakaian & Pengubahan
 
 **Sistem Pelayanan, Pengujian & Sertifikasi Laboratorium** — BPPMHKP Surabaya II
 Laravel 11 · PHP 8.3 · SQLite (laptop) · Neon Postgres (demo Vercel) · MySQL/MariaDB (server instansi)
@@ -307,7 +307,7 @@ Untuk **demo online** (bukan server resmi — server production dikelola instans
 
 | Bagian | Di Vercel |
 |---|---|
-| PHP / Laravel | Runtime komunitas `vercel-php` (PHP 8.3), diatur di `vercel.json` + `api/index.php` |
+| PHP / Laravel | Runtime komunitas `vercel-php` (PHP 8.4), diatur di `vercel.json` + `api/index.php` |
 | Database | **Neon Postgres** gratis (Vercel → Storage → Neon), otomatis mengisi `DATABASE_URL` |
 | Berkas unggahan | Disimpan di database (`SIPELAB_BERKAS_DB=true`), karena Vercel tidak punya disk permanen |
 | Rahasia | `APP_KEY` dan `SEED_PASSWORD` disimpan di **Environment Variables** Vercel, bukan di kode |

@@ -3,7 +3,7 @@
 @section('content')
 @php $R = \App\Enums\Role::class; $e = $edit; @endphp
 <h1>Pengguna</h1>
-<p class="mt-1 text-kabut-600">Kelola akun petugas dan pengguna jasa. Perubahan peran, lab, atau status langsung mengeluarkan sesi akun tersebut.</p>
+<p class="mt-1 text-kabut-600">Kelola akun petugas Balai dan pengguna jasa. Perubahan peran, lab, atau status langsung mengeluarkan sesi akun tersebut.</p>
 
 @if (session('sandi_sementara'))
   <div class="alert-warning mt-5" role="status"><x-ikon n="kunci" class="mt-0.5 h-4 w-4 shrink-0" />
@@ -61,8 +61,9 @@
         <select id="u-role" name="role" class="input" data-reveal-select>
           @foreach ($R::cases() as $r)<option value="{{ $r->value }}" @selected(old('role', $e?->role->value ?? 'petugas_lab') === $r->value)>{{ $r->label() }}</option>@endforeach
         </select>
+        <p class="hint" data-role-tugas>@foreach ($R::cases() as $r)<span data-reveal-when="{{ $r->value }}">{{ $r->tugas() }}</span>@endforeach</p>
       </div>
-      <div data-reveal-when="petugas_lab">
+      <div data-reveal-when="petugas_lab penyelia">
         <label for="u-lab" class="label">Ditempatkan di lab</label>
         <select id="u-lab" name="lab_id" class="input">
           <option value="">Pilih lab</option>
@@ -70,6 +71,7 @@
         </select>
       </div>
       <div><label for="u-instansi" class="label">Instansi <span class="font-normal text-kabut-500">(opsional)</span></label><input id="u-instansi" name="instansi" value="{{ old('instansi', $e?->instansi) }}" class="input"></div>
+      <div><label for="u-nip" class="label">NIP <span class="font-normal text-kabut-500">(petugas; dicetak di LHP untuk pengesah)</span></label><input id="u-nip" name="nip" value="{{ old('nip', $e?->nip) }}" class="input num">@error('nip')<p class="error">{{ $message }}</p>@enderror</div>
       <div><label for="u-telp" class="label">Telepon <span class="font-normal text-kabut-500">(opsional)</span></label><input id="u-telp" name="telepon" value="{{ old('telepon', $e?->telepon) }}" class="input num"></div>
       <div>
         <label for="u-pass" class="label">{{ $e ? 'Kata sandi baru' : 'Kata sandi sementara' }} @if($e)<span class="font-normal text-kabut-500">(kosongkan bila tidak diganti)</span>@endif</label>

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\LabController;
+use App\Http\Controllers\Admin\ParameterController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\TimController;
 use App\Http\Controllers\Admin\UserController;
@@ -33,29 +34,38 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/versi', [PermohonanController::class, 'versi'])->middleware('throttle:api')->name('api.versi');
 
     // Permohonan
-    Route::get('/permohonan', [PermohonanController::class, 'index'])
-        ->middleware('role:pengguna_jasa,admin_lab,superadmin')->name('permohonan.index');
+    Route::get('/permohonan', [PermohonanController::class, 'index'])->name('permohonan.index');
     Route::get('/permohonan/baru', [PermohonanController::class, 'create'])->middleware('role:pengguna_jasa')->name('permohonan.create');
     Route::post('/permohonan', [PermohonanController::class, 'store'])->middleware(['role:pengguna_jasa', 'throttle:aksi'])->name('permohonan.store');
     Route::get('/permohonan/{permohonan}', [PermohonanController::class, 'show'])->whereNumber('permohonan')->name('permohonan.show');
     Route::get('/permohonan/{permohonan}/dokumen/{dokumen}', [PermohonanController::class, 'dokumen'])
         ->whereNumber(['permohonan', 'dokumen'])->name('permohonan.dokumen');
-    Route::get('/permohonan/{permohonan}/lhu', [PermohonanController::class, 'lhu'])->whereNumber('permohonan')->name('permohonan.lhu');
+    Route::get('/permohonan/{permohonan}/lhp', [PermohonanController::class, 'lhu'])->whereNumber('permohonan')->name('permohonan.lhu');
+    Route::get('/permohonan/{permohonan}/lhp.pdf', [PermohonanController::class, 'lhpPdf'])->whereNumber('permohonan')->name('permohonan.lhp-pdf');
+    Route::get('/permohonan/{permohonan}/bukti-tagihan.pdf', [PermohonanController::class, 'buktiTagihan'])->whereNumber('permohonan')->name('permohonan.bukti-tagihan');
+    Route::get('/permohonan/{permohonan}/bukti-terima.pdf', [PermohonanController::class, 'buktiTerima'])->whereNumber('permohonan')->name('permohonan.bukti-terima');
+    Route::get('/permohonan/{permohonan}/surat-tugas.pdf', [PermohonanController::class, 'cetakSuratTugas'])
+        ->whereNumber('permohonan')->name('permohonan.surat-tugas');
 
-    Route::middleware('throttle:aksi')->whereNumber('permohonan')->group(function () {
-        Route::post('/permohonan/{permohonan}/bayar', [PermohonanController::class, 'bayar'])->middleware('role:pengguna_jasa')->name('permohonan.bayar');
-        Route::post('/permohonan/{permohonan}/hasil', [PermohonanController::class, 'inputHasil'])->middleware('role:petugas_lab')->name('permohonan.hasil');
-        Route::post('/permohonan/{permohonan}/tangani', [PermohonanController::class, 'tangani'])->middleware('role:petugas_lab')->name('permohonan.tangani');
-        Route::middleware('role:admin_lab,superadmin')->group(function () {
-            Route::post('/permohonan/{permohonan}/verifikasi', [PermohonanController::class, 'verifikasi'])->name('permohonan.verifikasi');
-            Route::post('/permohonan/{permohonan}/konfirmasi-bayar', [PermohonanController::class, 'konfirmasiBayar'])->name('permohonan.konfirmasi');
-            Route::post('/permohonan/{permohonan}/validasi-lhu', [PermohonanController::class, 'validasiLhu'])->name('permohonan.validasi');
-        });
+    // Tindakan alur; hak akses per tindakan diatur PermohonanPolicy.
+    Route::middleware('throttle:aksi')->whereNumber('permohonan')->prefix('/permohonan/{permohonan}')->name('permohonan.')->group(function () {
+        Route::post('/verifikasi', [PermohonanController::class, 'verifikasi'])->name('verifikasi');
+        Route::post('/registrasi', [PermohonanController::class, 'registrasi'])->name('registrasi');
+        Route::post('/billing', [PermohonanController::class, 'billing'])->name('billing');
+        Route::post('/bayar', [PermohonanController::class, 'bayar'])->middleware('role:pengguna_jasa')->name('bayar');
+        Route::post('/konfirmasi-bayar', [PermohonanController::class, 'konfirmasiBayar'])->name('konfirmasi');
+        Route::post('/surat-tugas', [PermohonanController::class, 'suratTugas'])->name('surat');
+        Route::post('/hasil', [PermohonanController::class, 'inputHasil'])->name('hasil');
+        Route::post('/tangani', [PermohonanController::class, 'tangani'])->name('tangani');
+        Route::post('/periksa', [PermohonanController::class, 'periksa'])->name('periksa');
+        Route::post('/paraf', [PermohonanController::class, 'paraf'])->name('paraf');
+        Route::post('/sahkan', [PermohonanController::class, 'sahkan'])->name('sahkan');
+        Route::post('/kembalikan', [PermohonanController::class, 'kembalikan'])->name('kembalikan');
     });
 
-    Route::get('/laporan', [DashboardController::class, 'laporan'])->middleware('role:admin_lab,superadmin')->name('laporan');
+    Route::get('/laporan', [DashboardController::class, 'laporan'])->middleware('role:superadmin,admin_lab,operator,bendahara,penanggung_jawab')->name('laporan');
 
-    // Tim operator per lab: dikelola Admin Lab sendiri (dan Superadmin)
+    // Tim lab (analis & penyelia): dikelola Admin Laboratorium (dan Administrator)
     Route::prefix('tim')->name('tim.')->middleware('role:admin_lab,superadmin')->group(function () {
         Route::get('/', [TimController::class, 'index'])->name('index');
         Route::post('/', [TimController::class, 'store'])->middleware('throttle:aksi')->name('store');
@@ -69,9 +79,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/chat/status', [ChatController::class, 'status'])->middleware('throttle:chat')->name('chat.status');
     Route::get('/api/chat/{thread}', [ChatController::class, 'pesan'])->whereNumber('thread')->middleware('throttle:chat')->name('chat.pesan');
     Route::post('/api/chat/{thread}', [ChatController::class, 'kirim'])->whereNumber('thread')->middleware('throttle:chat-kirim')->name('chat.kirim');
-    Route::get('/riwayat-uji', [DashboardController::class, 'riwayat'])->middleware('role:petugas_lab')->name('riwayat');
+    Route::get('/riwayat-uji', [DashboardController::class, 'riwayat'])->middleware('role:petugas_lab,penyelia')->name('riwayat');
 
-    // Superadmin
+    // Administrator
     Route::prefix('admin')->name('admin.')->middleware('role:superadmin')->group(function () {
         Route::get('/pengguna', [UserController::class, 'index'])->name('users');
         Route::post('/pengguna', [UserController::class, 'store'])->name('users.store');
@@ -81,6 +91,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/lab', [LabController::class, 'index'])->name('labs');
         Route::post('/lab', [LabController::class, 'save'])->name('labs.store');
         Route::put('/lab/{lab}', [LabController::class, 'save'])->whereNumber('lab')->name('labs.update');
+        Route::get('/parameter', [ParameterController::class, 'index'])->name('parameter');
+        Route::post('/parameter', [ParameterController::class, 'save'])->name('parameter.store');
+        Route::put('/parameter/{parameter}', [ParameterController::class, 'save'])->whereNumber('parameter')->name('parameter.update');
         Route::get('/pengaturan', [SettingController::class, 'index'])->name('settings');
         Route::put('/pengaturan', [SettingController::class, 'save'])->name('settings.save');
         Route::get('/log-aktivitas', [SettingController::class, 'audit'])->name('audit');

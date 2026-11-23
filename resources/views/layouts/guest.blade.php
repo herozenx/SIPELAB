@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>@yield('title', 'SIPELAB') · BPPMHKP Surabaya II</title>
-  <meta name="description" content="Layanan permohonan uji mutu hasil perikanan secara online: ajukan, bayar lewat SIMPONI, pantau pengujian, dan terima LHU digital.">
+  <title>@yield('title', 'SILANTRO') · BPPMHKP Surabaya II</title>
+  <meta name="description" content="Layanan permohonan uji mutu hasil perikanan secara online: ajukan, bayar lewat SIMPONI, pantau pengujian, dan terima LHP digital.">
   <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
   <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ @filemtime(public_path('css/app.css')) }}">
   <script src="{{ asset('js/app.js') }}?v={{ @filemtime(public_path('js/app.js')) }}" defer></script>
@@ -14,10 +14,10 @@
 
   <header class="sticky top-0 z-40 border-b border-kabut-200 bg-white">
     <div class="mx-auto flex h-[68px] max-w-6xl items-center justify-between gap-2 px-4 sm:px-6">
-      <a href="{{ route('home') }}" class="flex shrink-0 items-center gap-3 text-tinta no-underline hover:no-underline" aria-label="SIPELAB, beranda">
+      <a href="{{ route('home') }}" class="flex shrink-0 items-center gap-3 text-tinta no-underline hover:no-underline" aria-label="SILANTRO, beranda">
         <img src="{{ asset('favicon.svg') }}" alt="" class="h-9 w-9">
         <span class="leading-tight">
-          <span class="block font-extrabold tracking-tight text-laut-700">SIPELAB</span>
+          <span class="block font-extrabold tracking-tight text-laut-700">SILANTRO</span>
           <span class="block text-2xs font-medium text-kabut-500">BPPMHKP Surabaya II</span>
         </span>
       </a>
@@ -25,7 +25,7 @@
       <nav class="hidden items-center gap-1 text-sm md:flex" aria-label="Menu utama">
         <a href="{{ route('panduan') }}" class="rounded-lg px-3 py-2.5 font-semibold text-kabut-600 no-underline hover:bg-kabut-100 hover:text-tinta hover:no-underline">Panduan</a>
         <a href="{{ route('home') }}#tarif" class="rounded-lg px-3 py-2.5 font-semibold text-kabut-600 no-underline hover:bg-kabut-100 hover:text-tinta hover:no-underline">Tarif</a>
-        <a href="{{ route('verifikasi') }}" class="rounded-lg px-3 py-2.5 font-semibold text-kabut-600 no-underline hover:bg-kabut-100 hover:text-tinta hover:no-underline">Cek keaslian LHU</a>
+        <a href="{{ route('verifikasi') }}" class="rounded-lg px-3 py-2.5 font-semibold text-kabut-600 no-underline hover:bg-kabut-100 hover:text-tinta hover:no-underline">Cek keaslian LHP</a>
         <span class="mx-2 h-6 w-px bg-kabut-200" aria-hidden="true"></span>
         @auth
           <a href="{{ route('dashboard') }}" class="btn-primary min-h-[44px] px-5">Buka beranda</a>
@@ -45,7 +45,7 @@
       <nav class="flex flex-col" aria-label="Menu seluler">
         <a href="{{ route('panduan') }}" class="py-3 text-base font-semibold text-tinta no-underline">Panduan</a>
         <a href="{{ route('home') }}#tarif" class="py-3 text-base font-semibold text-tinta no-underline">Tarif</a>
-        <a href="{{ route('verifikasi') }}" class="py-3 text-base font-semibold text-tinta no-underline">Cek keaslian LHU</a>
+        <a href="{{ route('verifikasi') }}" class="py-3 text-base font-semibold text-tinta no-underline">Cek keaslian LHP</a>
         <div class="mt-4 flex flex-col gap-2">
           @auth
             <a href="{{ route('dashboard') }}" class="btn-primary min-h-[48px]">Buka beranda</a>
@@ -69,7 +69,7 @@
           <div class="flex items-center gap-3">
             <img src="{{ asset('favicon.svg') }}" alt="" class="h-9 w-9">
             <span class="leading-tight">
-              <span class="block font-extrabold tracking-tight text-white">SIPELAB</span>
+              <span class="block font-extrabold tracking-tight text-white">SILANTRO</span>
               <span class="block text-2xs font-medium text-laut-200">BPPMHKP Surabaya II</span>
             </span>
           </div>
@@ -79,7 +79,7 @@
         <nav class="flex flex-col gap-1 text-sm" aria-label="Menu footer">
           <a href="{{ route('panduan') }}" class="py-2 text-laut-200 no-underline hover:text-white hover:no-underline">Panduan</a>
           <a href="{{ route('home') }}#tarif" class="py-2 text-laut-200 no-underline hover:text-white hover:no-underline">Tarif</a>
-          <a href="{{ route('verifikasi') }}" class="py-2 text-laut-200 no-underline hover:text-white hover:no-underline">Cek keaslian LHU</a>
+          <a href="{{ route('verifikasi') }}" class="py-2 text-laut-200 no-underline hover:text-white hover:no-underline">Cek keaslian LHP</a>
           <a href="{{ route('home') }}#bantuan" class="py-2 text-laut-200 no-underline hover:text-white hover:no-underline">Pusat bantuan</a>
         </nav>
       </div>

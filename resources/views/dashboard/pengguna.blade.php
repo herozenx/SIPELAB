@@ -13,7 +13,7 @@
 <div class="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white px-5 py-4 shadow-[0_0_0_1px_theme(colors.kabut.200)]" data-dismissable="panduan-v1">
   <span class="flex items-start gap-3">
     <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-laut-50 text-laut-600"><x-ikon n="buku" class="h-5 w-5" /></span>
-    <span><span class="block font-bold">Baru pertama kali memakai SIPELAB?</span><span class="text-sm text-kabut-600">Ikuti panduan langkah demi langkah: dari pengajuan, pembayaran, sampai mengunduh LHU. Ada pertanyaan? Chat langsung dengan petugas.</span></span>
+    <span><span class="block font-bold">Baru pertama kali memakai SILANTRO?</span><span class="text-sm text-kabut-600">Ikuti panduan langkah demi langkah: dari pengajuan, pembayaran, sampai LHP selesai. Ada pertanyaan? Chat langsung dengan petugas.</span></span>
   </span>
   <span class="flex flex-wrap gap-2">
     <a href="{{ route('panduan') }}" class="btn-primary btn-sm">Baca panduan</a>
@@ -24,12 +24,8 @@
 
 @foreach ($perluTindakan as $p)
   <a href="{{ route('permohonan.show', $p) }}" class="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-laut-600 px-5 py-4 text-white no-underline hover:bg-laut-700 hover:no-underline">
-    @if ($p->eksternal())
-      <span><span class="block font-bold">LHU {{ $p->kode }} sudah jadi: lunasi untuk mengambil</span><span class="text-sm text-laut-100">Bayar {{ rupiah($p->tagihan) }} lewat SIMPONI dengan kode billing <span class="num font-semibold text-white">{{ $p->kode_billing }}</span>, lalu kirim NTPN. LHU terbuka setelah lunas.</span></span>
-    @else
-      <span><span class="block font-bold">Bayar tagihan {{ $p->kode }}</span><span class="text-sm text-laut-100">{{ rupiah($p->tagihan) }} lewat SIMPONI dengan kode billing <span class="num font-semibold text-white">{{ $p->kode_billing }}</span>, lalu kirim NTPN.</span></span>
-    @endif
-    <span class="btn bg-white text-laut-700">Kirim bukti bayar</span>
+    <span><span class="block font-bold">{{ $p->lhpTerbit() ? 'LHP '.$p->kodeTampil().' sudah selesai: lakukan pembayaran' : 'Bayar tagihan '.$p->kodeTampil() }}</span><span class="text-sm text-laut-100">{{ rupiah($p->tagihan) }} lewat SIMPONI dengan kode billing <span class="num font-semibold text-white">{{ $p->kode_billing }}</span>, lalu unggah bukti bayar.</span></span>
+    <span class="btn bg-white text-laut-700">Lihat billing</span>
   </a>
 @endforeach
 

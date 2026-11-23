@@ -44,3 +44,28 @@ if (! function_exists('ukuran_berkas')) {
         return $bytes >= 1048576 ? number_format($bytes / 1048576, 1, ',', '.').' MB' : max(1, (int) round($bytes / 1024)).' KB';
     }
 }
+
+if (! function_exists('terbilang')) {
+    /** Angka ke kata Bahasa Indonesia, mis. 500000 => "Lima Ratus Ribu Rupiah". */
+    function terbilang(int $n, bool $rupiah = true): string
+    {
+        $satuan = ['', 'satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan', 'sembilan', 'sepuluh', 'sebelas'];
+        $kata = function (int $x) use (&$kata, $satuan): string {
+            return match (true) {
+                $x < 12 => $satuan[$x],
+                $x < 20 => $kata($x - 10).' belas',
+                $x < 100 => $kata(intdiv($x, 10)).' puluh '.$kata($x % 10),
+                $x < 200 => 'seratus '.$kata($x - 100),
+                $x < 1000 => $kata(intdiv($x, 100)).' ratus '.$kata($x % 100),
+                $x < 2000 => 'seribu '.$kata($x - 1000),
+                $x < 1000000 => $kata(intdiv($x, 1000)).' ribu '.$kata($x % 1000),
+                $x < 1000000000 => $kata(intdiv($x, 1000000)).' juta '.$kata($x % 1000000),
+                default => $kata(intdiv($x, 1000000000)).' miliar '.$kata($x % 1000000000),
+            };
+        };
+        $teks = $n === 0 ? 'nol' : $kata(abs($n));
+        $teks = ucwords(trim(preg_replace('/\s+/', ' ', $teks)));
+
+        return $rupiah ? $teks.' Rupiah' : $teks;
+    }
+}

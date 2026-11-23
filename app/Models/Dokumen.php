@@ -10,6 +10,7 @@ class Dokumen extends Model
     public const PENDUKUNG = 'pendukung';
     public const BUKTI_BAYAR = 'bukti_bayar';
     public const LAMPIRAN_LAB = 'lampiran_lab';
+    public const BILLING = 'billing';
 
     protected $table = 'dokumen';
 
@@ -25,6 +26,7 @@ class Dokumen extends Model
         return match ($this->jenis) {
             self::PENDUKUNG => 'Dokumen pendukung',
             self::BUKTI_BAYAR => 'Bukti bayar SIMPONI',
+            self::BILLING => 'Billing SIMPONI resmi',
             self::LAMPIRAN_LAB => 'Lampiran lab',
             default => $this->jenis,
         };

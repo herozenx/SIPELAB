@@ -12,17 +12,21 @@
   if ($u->isStaff()) {
       $nav[] = ['permohonan.index', 'Semua permohonan', 'daftar', 'permohonan.index|permohonan.show|permohonan.lhu'];
       $nav[] = ['chat', 'Chat pengguna', 'chat', 'chat'];
-      $nav[] = ['tim.index', 'Tim operator', 'tim', 'tim.*'];
+      if ($u->hasRole($R::Superadmin, $R::AdminLab)) {
+          $nav[] = ['tim.index', 'Tim lab', 'tim', 'tim.*'];
+      }
       $nav[] = ['laporan', 'Laporan', 'grafik', 'laporan'];
   }
-  if ($u->role === $R::PetugasLab) {
+  if ($u->isLab()) {
+      $nav[] = ['permohonan.index', 'Sampel lab saya', 'daftar', 'permohonan.index|permohonan.show'];
       $nav[] = ['riwayat', 'Riwayat uji', 'riwayat', 'riwayat'];
       $nav[] = ['chat', 'Chat pengguna', 'chat', 'chat'];
   }
   $chatBelum = app(\App\Services\Chat::class)->belum($u);
   $admin = $u->role === $R::Superadmin ? [
       ['admin.users', 'Pengguna', 'pengguna', 'admin.users'],
-      ['admin.labs', 'Lab & tarif', 'lab', 'admin.labs'],
+      ['admin.parameter', 'Parameter & tarif', 'lab', 'admin.parameter'],
+      ['admin.labs', 'Laboratorium', 'lab', 'admin.labs'],
       ['admin.settings', 'Pengaturan', 'atur', 'admin.settings'],
       ['admin.audit', 'Log aktivitas', 'log', 'admin.audit'],
   ] : [];
@@ -34,7 +38,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token() }}">
-  <title>@yield('title', 'Beranda') · SIPELAB</title>
+  <title>@yield('title', 'Beranda') · SILANTRO</title>
   <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
   <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ @filemtime(public_path('css/app.css')) }}">
   <script src="{{ asset('js/app.js') }}?v={{ @filemtime(public_path('js/app.js')) }}" defer></script>
@@ -47,7 +51,7 @@
   <aside id="nav" class="no-print fixed inset-y-0 left-0 z-40 hidden w-[248px] flex-col bg-laut-700 px-3 pb-4 pt-5 text-white lg:sticky lg:top-0 lg:flex lg:h-screen" data-nav>
     <a href="{{ route('dashboard') }}" class="mb-7 flex items-center gap-2.5 px-3 text-white no-underline hover:no-underline">
       <img src="{{ asset('favicon.svg') }}" alt="" class="h-8 w-8">
-      <span class="leading-tight"><span class="block text-[1.05rem] font-extrabold tracking-tight">SIPELAB</span><span class="block text-2xs font-medium text-laut-200">BPPMHKP Surabaya II</span></span>
+      <span class="leading-tight"><span class="block text-[1.05rem] font-extrabold tracking-tight">SILANTRO</span><span class="block text-2xs font-medium text-laut-200">BPPMHKP Surabaya II</span></span>
     </a>
     <nav class="flex flex-1 flex-col gap-1 overflow-y-auto" aria-label="Menu utama">
       @foreach ($nav as [$route, $label, $ikon, $pola])
@@ -56,7 +60,7 @@
         </a>
       @endforeach
       @if ($admin)
-        <p class="mb-1 mt-5 px-3 text-2xs font-semibold text-laut-300">Superadmin</p>
+        <p class="mb-1 mt-5 px-3 text-2xs font-semibold text-laut-300">Administrator</p>
         @foreach ($admin as [$route, $label, $ikon, $pola])
           <a href="{{ route($route) }}" class="nav-link" @if($aktif($pola)) aria-current="page" @endif><x-ikon :n="$ikon" />{{ $label }}</a>
         @endforeach
@@ -77,7 +81,7 @@
   <div class="min-w-0">
     {{-- Bilah atas untuk layar kecil --}}
     <header class="no-print sticky top-0 z-20 flex items-center justify-between border-b border-kabut-200 bg-white px-4 py-3 lg:hidden">
-      <a href="{{ route('dashboard') }}" class="flex items-center gap-2 font-extrabold text-laut-700 no-underline"><img src="{{ asset('favicon.svg') }}" alt="" class="h-7 w-7">SIPELAB</a>
+      <a href="{{ route('dashboard') }}" class="flex items-center gap-2 font-extrabold text-laut-700 no-underline"><img src="{{ asset('favicon.svg') }}" alt="" class="h-7 w-7">SILANTRO</a>
       <button type="button" class="btn-ghost btn-sm" data-nav-toggle aria-controls="nav" aria-expanded="false"><x-ikon n="menu" class="h-4 w-4" />Menu</button>
     </header>
 

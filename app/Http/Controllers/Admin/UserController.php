@@ -92,14 +92,16 @@ class UserController extends Controller
             'nama' => ['required', 'string', 'min:3', 'max:100'],
             'email' => ['required', 'email:rfc', 'max:120', Rule::unique('users', 'email')->ignore($user?->id)],
             'role' => ['required', Rule::enum(Role::class)],
-            'lab_id' => ['nullable', 'required_if:role,petugas_lab', 'exists:labs,id'],
+            'lab_id' => ['nullable', 'required_if:role,petugas_lab,penyelia', 'exists:labs,id'],
             'instansi' => ['nullable', 'string', 'max:150'],
+            'alamat' => ['nullable', 'string', 'max:300'],
             'telepon' => ['nullable', 'regex:/^[0-9+\-\s]{8,20}$/'],
+            'nip' => ['nullable', 'regex:/^[0-9\s]{8,30}$/'],
             'aktif' => ['boolean'],
             'password' => [$user ? 'nullable' : 'required', Password::defaults()],
-        ], ['lab_id.required_if' => 'Petugas lab harus ditempatkan di salah satu lab.']);
+        ], ['lab_id.required_if' => 'Analis dan penyelia harus ditempatkan di salah satu lab.', 'nip.regex' => 'NIP berisi angka (boleh dengan spasi).']);
 
-        if ($data['role'] !== Role::PetugasLab->value) {
+        if (! Role::from($data['role'])->butuhLab()) {
             $data['lab_id'] = null;
         }
         if (empty($data['password'])) {

@@ -6,6 +6,7 @@ use App\Enums\StatusIzin;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/** LHP (Laporan Hasil Pengujian). Nama tabel/model tetap "lhu" agar data lama tetap terbaca. */
 class Lhu extends Model
 {
     protected $table = 'lhu';
@@ -14,7 +15,10 @@ class Lhu extends Model
 
     protected function casts(): array
     {
-        return ['status_izin' => StatusIzin::class, 'validated_at' => 'datetime'];
+        return [
+            'status_izin' => StatusIzin::class, 'validated_at' => 'datetime',
+            'tahun' => 'integer', 'nomor_urut' => 'integer', 'versi_sidik' => 'integer',
+        ];
     }
 
     public function permohonan(): BelongsTo
@@ -22,6 +26,7 @@ class Lhu extends Model
         return $this->belongsTo(Permohonan::class);
     }
 
+    /** Pejabat yang mengesahkan (Penanggung Jawab Lab). */
     public function validator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'validated_by');

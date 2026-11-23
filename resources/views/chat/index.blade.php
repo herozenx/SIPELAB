@@ -93,7 +93,7 @@
           @endforelse
         </ul>
       </section>
-      @if ($wa = wa_link('Halo Balai, saya '.$u->nama.($u->instansi ? ' ('.$u->instansi.')' : '').'. Saya ingin bertanya tentang layanan uji SIPELAB.'))
+      @if ($wa = wa_link('Halo Balai, saya '.$u->nama.($u->instansi ? ' ('.$u->instansi.')' : '').'. Saya ingin bertanya tentang layanan uji SILANTRO.'))
         <section class="panel panel-body text-sm">
           <p class="font-semibold">Butuh jawaban cepat di luar chat?</p>
           <p class="mt-1 text-kabut-600">Hubungi WhatsApp Center Balai pada jam layanan.</p>
@@ -103,7 +103,7 @@
       <section class="panel panel-body text-sm text-kabut-600">
         <p class="font-semibold text-tinta">Tips</p>
         <ul class="mt-2 list-disc space-y-1 pl-5">
-          <li>Sebutkan kode permohonan (mis. PMH-2026-00001) agar cepat ditangani.</li>
+          <li>Sebutkan kode permohonan (mis. SP.M/221126.01) agar cepat ditangani.</li>
           <li>Jangan kirim kata sandi atau data rahasia lewat chat.</li>
         </ul>
       </section>

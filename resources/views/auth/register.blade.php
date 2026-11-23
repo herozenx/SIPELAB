@@ -16,7 +16,7 @@
     <div class="sm:col-span-2">
       <label for="instansi" class="label">Nama usaha atau instansi</label>
       <input id="instansi" name="instansi" value="{{ old('instansi') }}" class="input" autocomplete="organization" required @error('instansi') aria-invalid="true" @enderror>
-      <p class="hint">Dicetak di LHU sebagai pemohon.</p>
+      <p class="hint">Dicetak di LHP sebagai pemohon.</p>
     </div>
     <div>
       <label for="email" class="label">Email</label>
