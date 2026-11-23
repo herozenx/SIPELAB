@@ -21,6 +21,9 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+/.agents/
+/AGENTS.md
+/anti-slop/
 
 .vercel
 .env*

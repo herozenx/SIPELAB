@@ -18,6 +18,24 @@
   h3 { @apply text-base leading-snug; }
   a { @apply text-laut-600 underline-offset-2; }
   a:hover { @apply underline; }
+  main a,
+  main button,
+  footer a { transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease; }
+  @media (prefers-reduced-motion: reduce) {
+    main a,
+    main button,
+    footer a,
+    .public-mobile-menu { transition: none; }
+  }
+  a[href],
+  button,
+  summary,
+  select,
+  label[for],
+  label:has(input[type='checkbox']),
+  label:has(input[type='radio']) { cursor: pointer; }
+  button:disabled,
+  [aria-disabled='true'] { cursor: not-allowed; }
   :focus-visible { @apply outline-none ring-2 ring-laut-400 ring-offset-2 ring-offset-white rounded-sm; }
   ::selection { @apply bg-laut-100; }
   [hidden] { display: none !important; }
@@ -25,6 +43,10 @@
 }
 
 @layer components {
+  .public-nav-link { @apply inline-flex min-h-[44px] items-center rounded-lg px-2 text-sm font-semibold text-kabut-600 no-underline transition-colors duration-200 hover:text-laut-700 hover:no-underline; }
+  .mobile-nav-link { @apply flex min-h-[48px] items-center border-b border-kabut-100 text-base font-semibold text-tinta no-underline transition-colors duration-200 hover:bg-kabut-50 hover:px-2 hover:no-underline; }
+  .public-mobile-menu { @apply absolute left-0 right-0 top-full border-t border-kabut-200 bg-white px-0 opacity-0 shadow-[0_12px_24px_rgba(19,35,43,0.10)] transition-all duration-200; transform: translateY(-8px); visibility: hidden; pointer-events: none; }
+  .public-mobile-menu.is-open { @apply opacity-100; transform: translateY(0); visibility: visible; pointer-events: auto; }
   /* Tombol: satu bentuk, tiga bobot. */
   .btn { @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold leading-none no-underline transition-colors disabled:cursor-not-allowed disabled:opacity-60; }
   .btn:hover { @apply no-underline; }

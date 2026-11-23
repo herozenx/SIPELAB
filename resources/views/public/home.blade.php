@@ -11,9 +11,9 @@
   <div class="mx-auto max-w-6xl px-4 pb-28 pt-12 sm:px-6 sm:pt-16 lg:grid lg:grid-cols-12 lg:items-center lg:gap-10 lg:pb-36">
     <div class="lg:col-span-6">
       <h1 class="max-w-[18ch] text-[1.9rem] font-extrabold leading-[1.12] tracking-tight text-white sm:text-5xl">Uji mutu hasil perikanan, terpantau sampai LHP terbit.</h1>
-      <p class="mt-5 max-w-[56ch] text-base text-laut-100 sm:text-lg">Ajukan permohonan uji secara online, bayar lewat SIMPONI, dan pantau status permohonan Anda dari mana saja. Laporan Hasil Uji diterbitkan digital dan bisa dicek keasliannya oleh siapa pun.</p>
+      <p class="mt-5 max-w-[56ch] text-base text-laut-100 sm:text-lg">Ajukan permohonan uji secara online, bayar lewat SIMPONI, dan pantau status permohonan Anda dari mana saja. <br><br>Laporan Hasil Pengujian diterbitkan digital dan bisa dicek keasliannya oleh siapapun.</p>
       <div class="mt-8 flex flex-wrap gap-3 max-sm:[&>a]:flex-1">
-        <a href="{{ route('register') }}" class="btn min-h-[48px] bg-white px-6 text-laut-700 hover:bg-laut-50">Daftar sebagai pengguna jasa</a>
+        <a href="{{ route('register') }}" class="btn min-h-[48px] bg-white px-6 text-laut-700 hover:bg-laut-50">Daftar Akun</a>
         <a href="{{ route('login') }}" class="btn min-h-[48px] px-6 text-white ring-1 ring-inset ring-white/40 hover:bg-white/10">Masuk</a>
       </div>
       <ul class="mt-8 flex flex-wrap gap-x-8 gap-y-3 text-sm text-laut-100">
@@ -82,7 +82,7 @@
 {{-- Lima langkah --}}
 @php
   $langkah = [
-    ['Ajukan online', 'Isi data sampel dan pilih parameter uji beserta jumlah pengujiannya. Lampirkan dokumen pendukung bila ada.', '-rotate-1'],
+    ['Ajukan online', 'Isi formulir dan data sampel, serta lampirkan dokumen pendukung bila ada.', '-rotate-1'],
     ['Serahkan sampel', 'Bawa sampel fisik ke loket. Operator memverifikasi dan memberi kode sampel.', 'rotate-[1.25deg]'],
     ['Bayar lewat SIMPONI', 'Layanan Mandiri bayar di awal: lihat billing resmi di akun Anda, lalu unggah bukti setornya. Tidak perlu mengetik NTPN.', '-rotate-[0.5deg]'],
     ['Sampel diproses', 'Sampel diuji oleh laboratorium Balai. Norma waktu '.\App\Models\Setting::get('norma_total_hari').' hari kerja; status bisa dipantau dari akun Anda.', 'rotate-1'],
@@ -91,14 +91,14 @@
 @endphp
 <section id="langkah" class="scroll-mt-24 py-14 sm:py-20">
   <div class="mx-auto max-w-6xl px-4 sm:px-6">
-    <h2 class="max-w-2xl text-2xl font-extrabold sm:text-3xl">Lima langkah dari pengajuan sampai LHP</h2>
-    <p class="mt-3 max-w-2xl text-kabut-600">Prosesnya lurus dari awal sampai akhir, tanpa perlu bolak-balik ke kantor untuk mengurus berkas.</p>
+    <h2 class="max-w-2xl text-2xl font-extrabold sm:text-3xl">Lima Langkah Pengajuan LHP</h2>
+    <p class="mt-3 max-w-2xl text-kabut-600">Timeline proses mulai dari awal pengajuan hingga tahapan akhir LHP selesai</p>
 
     <ol class="relative mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-5 lg:gap-5 lg:pt-9">
       <li aria-hidden="true" class="absolute top-0 hidden h-px w-full bg-laut-200 lg:block"></li>
       @foreach ($langkah as $i => [$judul, $isi, $miring])
         <li>
-          <div class="relative h-full {{ $miring }} rounded-xl border border-kabut-200 bg-white p-5 pt-7 transition-transform duration-200 hover:rotate-0">
+          <div class="relative h-full {{ $miring }} rounded-xl border border-kabut-200 bg-white p-5 pt-7 shadow-[0_10px_28px_rgba(11,61,80,0.10)] transition-transform duration-200 hover:rotate-0">
             <span aria-hidden="true" class="absolute -top-1 left-1/2 h-3 w-3 -translate-x-1/2 rounded-full border-2 border-laut-200 bg-laut-50"></span>
             <span aria-hidden="true" class="absolute -top-9 left-1/2 hidden h-9 w-px bg-laut-300 lg:block"></span>
             <svg viewBox="0 0 96 80" class="h-20 w-auto" aria-hidden="true">
@@ -180,7 +180,7 @@
       <h2 class="text-2xl font-extrabold sm:text-3xl">Tarif pengujian</h2>
       <p class="mt-3 max-w-md text-kabut-600">Tagihan dihitung dari tarif setiap parameter uji yang dipilih dikalikan jumlah pengujian, ditambah biaya administrasi. Billing resmi diterbitkan lewat SIMPONI.</p>
 
-      <div class="relative mt-8 max-w-md -rotate-1 rounded-sm bg-white p-6 shadow-[0_1px_2px_rgba(11,61,80,0.10)] sm:p-7">
+      <div class="relative mt-8 max-w-md -rotate-1 rounded-sm bg-white p-6 shadow-[0_12px_32px_rgba(11,61,80,0.16)] sm:p-7">
         <div class="flex items-center justify-between border-b border-dashed border-kabut-300 pb-4">
           <img src="{{ asset('favicon.svg') }}" alt="" class="h-9 w-9">
           <div class="text-right">
@@ -234,7 +234,7 @@
       </div>
     </div>
 
-    <div id="cek-lhu" class="scroll-mt-24 self-start rounded-2xl border border-kabut-200 bg-white p-6 sm:p-8">
+    <div id="cek-lhu" class="scroll-mt-24 self-start rounded-2xl border border-kabut-200 bg-white p-6 shadow-[0_12px_32px_rgba(11,61,80,0.12)] sm:p-8">
       <div class="flex items-center gap-5">
         <svg viewBox="0 0 96 56" class="h-14 w-auto shrink-0" aria-hidden="true">
           <g transform="rotate(-4 36 28)">
@@ -250,7 +250,7 @@
           <path d="M63.5 28l4.5 4.5 8-9" stroke="#0E4D64" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
           <path d="M80.5 38.5l11 11" stroke="#0E4D64" stroke-width="4.5" stroke-linecap="round"/>
         </svg>
-        <h2 class="text-xl font-extrabold sm:text-2xl">Cek keaslian LHP</h2>
+        <h2 class="text-xl font-extrabold sm:text-2xl">Cek Keaslian LHP</h2>
       </div>
       <p class="mt-4 text-kabut-600">Masukkan kode verifikasi yang tercetak di LHP untuk memastikan dokumen diterbitkan oleh Balai. Data pemohon tidak ditampilkan.</p>
 
@@ -268,16 +268,16 @@
 @php
   $wa = wa_link('Halo Balai, saya ingin bertanya tentang layanan uji SILANTRO.');
   $bantuan = array_values(array_filter([
-    ['buku', 'Panduan penggunaan', 'Langkah demi langkah dari daftar akun sampai LHP, per bagian.', route('panduan'), false],
-    ['chat', 'Chat petugas', auth()->check() ? 'Tanya langsung ke admin atau operator lab yang sedang online.' : 'Masuk dulu, lalu tanya langsung ke admin atau operator lab yang sedang online.', auth()->check() ? route('chat') : route('login'), false],
+    ['buku', 'Panduan Penggunaan', 'Langkah demi langkah dari daftar akun hingga LHP diterbitkan.', route('panduan'), false],
+    ['chat', 'Chat Petugas', auth()->check() ? 'tanya langsung ke admin atau operator lab yang sedang online.' : 'Masuk ke akun anda kemudian tanya langsung ke admin atau operator lab yang sedang online.', auth()->check() ? route('chat') : route('login'), false],
     $wa ? ['chat', 'WhatsApp Center', 'Hubungi Balai lewat WhatsApp pada jam layanan.', $wa, true] : null,
-    ['perisai', 'Cek keaslian LHP', 'Sudah menerima LHP? Pastikan dokumen Anda sah sebelum dipakai untuk keperluan administrasi.', route('verifikasi'), false],
+    ['perisai', 'Cek Keaslian LHP', 'Sudah menerima LHP? Pastikan dokumen Anda sah sebelum dipakai untuk keperluan administrasi.', route('verifikasi'), false],
   ]));
 @endphp
 <section id="bantuan" class="scroll-mt-24 py-14 sm:py-20">
   <div class="mx-auto max-w-6xl px-4 sm:px-6">
-    <h2 class="text-2xl font-extrabold sm:text-3xl">Pusat bantuan</h2>
-    <p class="mt-3 max-w-2xl text-kabut-600">Masih ada yang mengganjal? Pilih jalur bantuan yang paling nyaman untuk Anda.</p>
+    <h2 class="text-2xl font-extrabold sm:text-3xl">Butuh Bantuan?</h2>
+    <p class="mt-3 max-w-2xl text-kabut-600">Pilih cara bantuan yang paling sesuai untuk Anda.</p>
 
     <div class="mt-12 grid gap-12 lg:grid-cols-[1fr_1.2fr] lg:gap-16">
       <div>
@@ -309,7 +309,7 @@
       <div>
         @foreach ($bantuan as $k => [$ikon, $judul, $isi, $url, $luar])
           @if ($k > 0)<div class="h-px bg-kabut-200"></div>@endif
-          <a href="{{ $url }}" @if($luar) target="_blank" rel="noopener" @endif class="group -mx-4 flex items-start gap-5 rounded-xl p-4 text-tinta no-underline hover:bg-kabut-50 hover:no-underline sm:mx-0 sm:rounded-none sm:px-0 sm:py-6 sm:hover:bg-transparent">
+          <a href="{{ $url }}" @if($luar) target="_blank" rel="noopener" @endif class="group -mx-4 flex items-start gap-5 rounded-xl p-4 text-tinta no-underline shadow-[0_8px_24px_rgba(11,61,80,0.08)] hover:bg-kabut-50 hover:no-underline sm:mx-0 sm:px-5 sm:py-5">
             <span class="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-laut-50 text-laut-600"><x-ikon :n="$ikon" class="h-6 w-6" /></span>
             <span class="flex-1">
               <span class="block font-bold">{{ $judul }}</span>

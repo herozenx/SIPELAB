@@ -25,14 +25,20 @@
   const menuBtn = $('[data-menu-toggle]');
   const setMenu = (open) => {
     if (!menu || !menuBtn) return;
-    menu.classList.toggle('hidden', !open);
+    menu.classList.toggle('is-open', open);
+    menu.setAttribute('aria-hidden', String(!open));
     menuBtn.setAttribute('aria-expanded', String(open));
     menuBtn.setAttribute('aria-label', open ? 'Tutup menu' : 'Buka menu');
     $('[data-menu-open]', menuBtn)?.classList.toggle('hidden', open);
     $('[data-menu-close]', menuBtn)?.classList.toggle('hidden', !open);
+    if (open) menu.querySelector('a')?.focus();
+    else menuBtn.focus();
   };
-  menuBtn?.addEventListener('click', () => setMenu(menu.classList.contains('hidden')));
+  menuBtn?.addEventListener('click', () => setMenu(!menu.classList.contains('is-open')));
   if (menu) $$('a', menu).forEach((a) => a.addEventListener('click', () => setMenu(false)));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && menuBtn?.getAttribute('aria-expanded') === 'true') setMenu(false);
+  });
 
   // Baris tabel bisa diklik (tautan asli tetap ada untuk keyboard & pembaca layar)
   document.addEventListener('click', (e) => {

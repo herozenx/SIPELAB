@@ -10,12 +10,12 @@
   <script src="{{ asset('js/app.js') }}?v={{ @filemtime(public_path('js/app.js')) }}" defer></script>
 </head>
 <body class="bg-white">
-  <a href="#isi" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-laut-600 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white">Lompat ke konten</a>
+  <a href="#isi" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:min-h-[44px] focus:rounded-lg focus:bg-laut-600 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white">Lewati ke konten utama</a>
 
-  <header class="sticky top-0 z-40 border-b border-kabut-200 bg-white">
-    <div class="mx-auto flex h-[68px] max-w-6xl items-center justify-between gap-2 px-4 sm:px-6">
-      <a href="{{ route('home') }}" class="flex shrink-0 items-center gap-3 text-tinta no-underline hover:no-underline" aria-label="SILANTRO, beranda">
-        <img src="{{ asset('favicon.svg') }}" alt="" class="h-9 w-9">
+  <header class="sticky top-0 z-40 border-b border-kabut-200 bg-white/95 shadow-[0_1px_8px_rgba(19,35,43,0.06)] backdrop-blur-sm">
+    <div class="mx-auto grid h-[72px] max-w-6xl grid-cols-[1fr_auto] items-center gap-4 px-4 sm:px-6 lg:grid-cols-[1fr_auto_1fr]">
+      <a href="{{ route('home') }}" class="flex min-h-[44px] shrink-0 items-center gap-3 text-tinta no-underline hover:no-underline" aria-label="SILANTRO, beranda">
+        <img src="{{ asset('favicon.svg') }}" alt="" width="36" height="36" class="h-9 w-9">
         <span class="leading-tight">
           <span class="block font-extrabold tracking-tight text-laut-700">SILANTRO</span>
           <span class="block text-2xs font-medium text-kabut-500">BPPMHKP Surabaya II</span>
@@ -23,29 +23,34 @@
       </a>
 
       <nav class="hidden items-center gap-1 text-sm md:flex" aria-label="Menu utama">
-        <a href="{{ route('panduan') }}" class="rounded-lg px-3 py-2.5 font-semibold text-kabut-600 no-underline hover:bg-kabut-100 hover:text-tinta hover:no-underline">Panduan</a>
-        <a href="{{ route('home') }}#tarif" class="rounded-lg px-3 py-2.5 font-semibold text-kabut-600 no-underline hover:bg-kabut-100 hover:text-tinta hover:no-underline">Tarif</a>
-        <a href="{{ route('verifikasi') }}" class="rounded-lg px-3 py-2.5 font-semibold text-kabut-600 no-underline hover:bg-kabut-100 hover:text-tinta hover:no-underline">Cek keaslian LHP</a>
-        <span class="mx-2 h-6 w-px bg-kabut-200" aria-hidden="true"></span>
-        @auth
-          <a href="{{ route('dashboard') }}" class="btn-primary min-h-[44px] px-5">Buka beranda</a>
-        @else
-          <a href="{{ route('login') }}" class="rounded-lg px-3 py-2.5 font-semibold text-tinta no-underline hover:bg-kabut-100 hover:no-underline">Masuk</a>
-          <a href="{{ route('register') }}" class="btn-primary ml-1 min-h-[44px] px-5">Daftar</a>
-        @endauth
+        <a href="{{ route('panduan') }}" class="public-nav-link">Panduan</a>
+        <a href="{{ route('home') }}#tarif" class="public-nav-link">Tarif</a>
+        <a href="{{ route('verifikasi') }}" class="public-nav-link">Cek Keaslian LHP</a>
+        <a href="{{ route('home') }}#bantuan" class="public-nav-link">Pusat Bantuan</a>
       </nav>
 
-      <button type="button" data-menu-toggle class="inline-flex h-11 w-11 items-center justify-center rounded-lg text-tinta hover:bg-kabut-100 md:hidden" aria-label="Buka menu" aria-expanded="false" aria-controls="menu-hp">
+      <div class="hidden items-center justify-end gap-3 lg:flex">
+        @auth
+          <a href="{{ route('dashboard') }}" class="btn-primary min-h-[44px] rounded-lg px-5 transition-all duration-200 hover:-translate-y-0.5">Buka beranda</a>
+        @else
+          <a href="{{ route('login') }}" class="inline-flex min-h-[44px] items-center rounded-lg border border-kabut-300 bg-white px-4 text-sm font-bold text-laut-700 no-underline shadow-[0_2px_8px_rgba(19,35,43,0.06)] transition-all duration-200 hover:border-laut-300 hover:bg-kabut-50 hover:no-underline">Masuk</a>
+          <a href="{{ route('register') }}" class="btn-primary min-h-[44px] rounded-lg px-5 transition-all duration-200 hover:-translate-y-0.5">Daftar</a>
+        @endauth
+      </div>
+
+      <button type="button" data-menu-toggle class="inline-flex h-11 min-w-11 items-center justify-center gap-2 rounded-lg px-3 text-tinta hover:bg-kabut-100 md:hidden" aria-label="Buka menu" aria-expanded="false" aria-controls="menu-hp">
         <svg data-menu-open viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
         <svg data-menu-close viewBox="0 0 24 24" class="hidden h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        <span class="text-sm font-semibold">Menu</span>
       </button>
     </div>
 
-    <div id="menu-hp" data-menu class="hidden border-t border-kabut-200 bg-white px-4 pb-6 pt-2 md:hidden">
-      <nav class="flex flex-col" aria-label="Menu seluler">
-        <a href="{{ route('panduan') }}" class="py-3 text-base font-semibold text-tinta no-underline">Panduan</a>
-        <a href="{{ route('home') }}#tarif" class="py-3 text-base font-semibold text-tinta no-underline">Tarif</a>
-        <a href="{{ route('verifikasi') }}" class="py-3 text-base font-semibold text-tinta no-underline">Cek keaslian LHP</a>
+    <div id="menu-hp" data-menu class="public-mobile-menu md:hidden" aria-hidden="true">
+      <nav class="mx-auto flex max-w-6xl flex-col px-4 pb-5" aria-label="Menu seluler">
+        <a href="{{ route('panduan') }}" class="mobile-nav-link">Panduan</a>
+        <a href="{{ route('home') }}#tarif" class="mobile-nav-link">Tarif</a>
+        <a href="{{ route('verifikasi') }}" class="mobile-nav-link">Cek keaslian LHP</a>
+        <a href="{{ route('home') }}#bantuan" class="mobile-nav-link">Pusat bantuan</a>
         <div class="mt-4 flex flex-col gap-2">
           @auth
             <a href="{{ route('dashboard') }}" class="btn-primary min-h-[48px]">Buka beranda</a>
@@ -63,24 +68,24 @@
   </main>
 
   <footer class="bg-laut-800 text-laut-100">
-    <div class="mx-auto max-w-6xl px-4 py-12 sm:px-6">
-      <div class="grid gap-10 md:grid-cols-[1fr_auto]">
+    <div class="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+      <div class="grid gap-10 md:grid-cols-[1fr_220px] md:gap-16">
         <div>
-          <div class="flex items-center gap-3">
-            <img src="{{ asset('favicon.svg') }}" alt="" class="h-9 w-9">
+          <a href="{{ route('home') }}" class="flex min-h-[44px] items-center gap-3 text-white no-underline hover:no-underline" aria-label="SILANTRO, kembali ke beranda">
+            <img src="{{ asset('favicon.svg') }}" alt="" width="36" height="36" class="h-9 w-9">
             <span class="leading-tight">
               <span class="block font-extrabold tracking-tight text-white">SILANTRO</span>
               <span class="block text-2xs font-medium text-laut-200">BPPMHKP Surabaya II</span>
             </span>
-          </div>
+          </a>
           <p class="mt-6 text-sm font-semibold text-white">{{ \App\Models\Setting::get('nama_instansi') }}</p>
-          <p class="mt-1 text-sm text-laut-200">{{ \App\Models\Setting::get('alamat_instansi') }}</p>
+          <address class="mt-2 max-w-md not-italic text-sm leading-relaxed text-laut-200">{{ \App\Models\Setting::get('alamat_instansi') }}</address>
         </div>
-        <nav class="flex flex-col gap-1 text-sm" aria-label="Menu footer">
-          <a href="{{ route('panduan') }}" class="py-2 text-laut-200 no-underline hover:text-white hover:no-underline">Panduan</a>
-          <a href="{{ route('home') }}#tarif" class="py-2 text-laut-200 no-underline hover:text-white hover:no-underline">Tarif</a>
-          <a href="{{ route('verifikasi') }}" class="py-2 text-laut-200 no-underline hover:text-white hover:no-underline">Cek keaslian LHP</a>
-          <a href="{{ route('home') }}#bantuan" class="py-2 text-laut-200 no-underline hover:text-white hover:no-underline">Pusat bantuan</a>
+        <nav class="flex flex-col text-sm" aria-label="Menu footer">
+          <a href="{{ route('panduan') }}" class="flex min-h-[44px] items-center border-b border-white/10 text-laut-200 no-underline transition-colors duration-200 hover:pl-1 hover:text-white hover:no-underline">Panduan</a>
+          <a href="{{ route('home') }}#tarif" class="flex min-h-[44px] items-center border-b border-white/10 text-laut-200 no-underline transition-colors duration-200 hover:pl-1 hover:text-white hover:no-underline">Tarif</a>
+          <a href="{{ route('verifikasi') }}" class="flex min-h-[44px] items-center border-b border-white/10 text-laut-200 no-underline transition-colors duration-200 hover:pl-1 hover:text-white hover:no-underline">Cek Keaslian LHP</a>
+          <a href="{{ route('home') }}#bantuan" class="flex min-h-[44px] items-center text-laut-200 no-underline transition-colors duration-200 hover:pl-1 hover:text-white hover:no-underline">Pusat Bantuan</a>
         </nav>
       </div>
       <div class="mt-10 border-t border-white/10 pt-6 text-xs text-laut-300">
