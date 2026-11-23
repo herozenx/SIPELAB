@@ -43,6 +43,7 @@
 }
 
 @layer components {
+  .auth-inline-link { @apply font-semibold text-laut-700 no-underline transition-colors duration-200 hover:text-laut-500 hover:no-underline; }
   .public-nav-link { @apply inline-flex min-h-[44px] items-center rounded-lg px-2 text-sm font-semibold text-kabut-600 no-underline transition-colors duration-200 hover:text-laut-700 hover:no-underline; }
   .mobile-nav-link { @apply flex min-h-[48px] items-center border-b border-kabut-100 text-base font-semibold text-tinta no-underline transition-colors duration-200 hover:bg-kabut-50 hover:px-2 hover:no-underline; }
   .public-mobile-menu { @apply absolute left-0 right-0 top-full border-t border-kabut-200 bg-white px-0 opacity-0 shadow-[0_12px_24px_rgba(19,35,43,0.10)] transition-all duration-200; transform: translateY(-8px); visibility: hidden; pointer-events: none; }
