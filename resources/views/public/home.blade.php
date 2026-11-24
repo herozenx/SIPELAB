@@ -177,14 +177,14 @@
 <section id="tarif" class="scroll-mt-24 border-t border-kabut-200 bg-kabut-50 py-14 sm:py-20">
   <div class="mx-auto grid max-w-6xl gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:gap-16">
     <div>
-      <h2 class="text-2xl font-extrabold sm:text-3xl">Tarif pengujian</h2>
+      <h2 class="text-2xl font-extrabold sm:text-3xl">Tarif Pengujian</h2>
       <p class="mt-3 max-w-md text-kabut-600">Tagihan dihitung dari tarif setiap parameter uji yang dipilih dikalikan jumlah pengujian, ditambah biaya administrasi. Billing resmi diterbitkan lewat SIMPONI.</p>
 
       <div class="relative mt-8 max-w-md -rotate-1 rounded-sm bg-white p-6 shadow-[0_12px_32px_rgba(11,61,80,0.16)] sm:p-7">
         <div class="flex items-center justify-between border-b border-dashed border-kabut-300 pb-4">
           <img src="{{ asset('favicon.svg') }}" alt="" class="h-9 w-9">
           <div class="text-right">
-            <p class="text-sm font-bold leading-none">Nota tarif uji</p>
+            <p class="text-sm font-bold leading-none">Nota Tarif Uji</p>
             <p class="mt-1 text-xs text-kabut-500">SILANTRO · BPPMHKP Surabaya II</p>
           </div>
         </div>
@@ -277,7 +277,7 @@
 <section id="bantuan" class="scroll-mt-24 py-14 sm:py-20">
   <div class="mx-auto max-w-6xl px-4 sm:px-6">
     <h2 class="text-2xl font-extrabold sm:text-3xl">Butuh Bantuan?</h2>
-    <p class="mt-3 max-w-2xl text-kabut-600">Pilih cara bantuan yang paling sesuai untuk Anda.</p>
+    <p class="mt-3 max-w-2xl text-kabut-600">Pilih topik yang paling relevan untuk Anda.</p>
 
     <div class="mt-12 grid gap-12 lg:grid-cols-[1fr_1.2fr] lg:gap-16">
       <div>

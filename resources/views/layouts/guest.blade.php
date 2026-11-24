@@ -31,7 +31,7 @@
 
       <div class="hidden items-center justify-end gap-3 lg:flex">
         @auth
-          <a href="{{ route('dashboard') }}" class="btn-primary min-h-[44px] rounded-lg px-5 transition-all duration-200 hover:-translate-y-0.5">Buka beranda</a>
+          <a href="{{ route('dashboard') }}" class="btn-primary min-h-[44px] rounded-lg px-5 transition-all duration-200 hover:-translate-y-0.5">Buka Beranda</a>
         @else
           <a href="{{ route('login') }}" class="inline-flex min-h-[44px] items-center rounded-lg border border-kabut-300 bg-white px-4 text-sm font-bold text-laut-700 no-underline shadow-[0_2px_8px_rgba(19,35,43,0.06)] transition-all duration-200 hover:border-laut-300 hover:bg-kabut-50 hover:no-underline">Masuk</a>
           <a href="{{ route('register') }}" class="btn-primary min-h-[44px] rounded-lg px-5 transition-all duration-200 hover:-translate-y-0.5">Daftar</a>
@@ -53,7 +53,7 @@
         <a href="{{ route('home') }}#bantuan" class="mobile-nav-link">Pusat Bantuan</a>
         <div class="mt-4 flex flex-col gap-2">
           @auth
-            <a href="{{ route('dashboard') }}" class="btn-primary min-h-[48px]">Buka beranda</a>
+            <a href="{{ route('dashboard') }}" class="btn-primary min-h-[48px]">Buka Beranda</a>
           @else
             <a href="{{ route('login') }}" class="btn-ghost min-h-[48px]">Masuk</a>
             <a href="{{ route('register') }}" class="btn-primary min-h-[48px]">Daftar</a>

@@ -19,11 +19,11 @@
       ],
       [['info', 'Di HP, semua menu tersedia setelah menekan <b>Menu</b>.']], null],
     ['akun', 'Akun dan Jenis Layanan', 'akun',
-      'Buat akun sekali, lalu pilih jenis layanan saat perlu.',
+      'Buat akun lalu pilih jenis layanan yang diinginkan',
       [
         'Isi nama penanggung jawab, nama usaha/instansi, email, telepon, dan kata sandi.',
         'Permohonan online umumnya diajukan sebagai <b>Mandiri</b>: bayar sebelum pengujian.',
-        'Pengujian Eksternal atau Surveilen ditetapkan petugas Balai dan dibayar setelah LHP.',
+        'Pengujian Eksternal atau Surveilen ditetapkan petugas Balai dan dibayar setelah LHP terbit.',
       ],
       [['info', 'Nama usaha/instansi dicetak sebagai pemohon pada dokumen resmi.']], null],
     ['ajukan', 'Ajukan dan serahkan sampel', 'tambah',
@@ -38,7 +38,7 @@
     ['bayar', 'Bayar dan unggah bukti', 'berkas',
       'Bayar melalui SIMPONI sesuai jenis layanan, lalu unggah bukti penyetoran.',
       [
-        'Buka permohonan berstatus <b>Menunggu pembayaran</b>.',
+        'Buka permohonan yang berstatus <b>Menunggu Pembayaran</b>.',
         'Catat kode billing dan jumlah setor, lalu bayar melalui bank, ATM, mobile banking, atau kantor pos.',
         'Unggah bukti setor dan kirimkan sebagai bukti pembayaran.',
         'Tunggu petugas Bendahara mengonfirmasi penerimaan dana.',
@@ -48,7 +48,7 @@
       'Status terbaru ditampilkan di halaman permohonan.',
       [
         'Periksa status: verifikasi, pembayaran, pengujian, penyusunan LHP, atau LHP selesai.',
-        'Gunakan <b>Perkiraan selesai</b> sebagai target waktu dalam hari kerja.',
+        'Gunakan <b>Perkiraan Selesai</b> sebagai target waktu dalam hari kerja.',
         'Setelah LHP disahkan, buka atau unduh LHP PDF dari permohonan.',
         'Untuk memeriksa keaslian, pindai QR Code atau masukkan 12 karakter kode verifikasi.',
       ],
