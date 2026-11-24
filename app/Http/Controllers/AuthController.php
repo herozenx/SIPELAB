@@ -90,6 +90,11 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $request->merge(['email' => mb_strtolower(trim((string) $request->input('email')))]);
+        $telepon = preg_replace('/[^0-9]/', '', (string) $request->input('telepon_lokal', $request->input('telepon')));
+        if (str_starts_with($telepon, '0')) {
+            $telepon = substr($telepon, 1);
+        }
+        $request->merge(['telepon' => str_starts_with($telepon, '62') ? '+'.$telepon : '+62'.$telepon]);
         $data = $request->validate([
             'nama' => ['required', 'string', 'min:3', 'max:100'],
             'instansi' => ['required', 'string', 'min:2', 'max:150'],
