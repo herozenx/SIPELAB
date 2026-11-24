@@ -10,108 +10,66 @@
    * Teks ditulis tim Balai; ubah di sini untuk memperbarui panduan.
    */
   $bab = [
-    ['mengenal', 'Mengenal SILANTRO & beranda', 'beranda',
-      'SILANTRO adalah layanan online Balai untuk permohonan uji mutu hasil perikanan: dari pengajuan, pembayaran SIMPONI, pengujian di laboratorium, sampai Laporan Hasil Pengujian (LHP).',
+    ['mengenal', 'Mengenal SILANTRO', 'beranda',
+      'Gunakan satu akun untuk mengajukan uji, membayar, memantau status, dan menerima LHP.',
       [
-        'Buka halaman depan SILANTRO. Di sana tersedia menu <b>Masuk</b>, <b>Daftar</b>, <b>Panduan</b>, dan <b>Cek keaslian LHP</b>.',
-        'Setelah masuk, menu di sisi kiri berisi <b>Beranda</b>, <b>Ajukan uji</b>, <b>Permohonan saya</b>, <b>Chat petugas</b>, dan <b>Panduan</b>.',
-        '<b>Beranda</b> menampilkan permohonan terbaru dan pengingat tindakan, misalnya tagihan yang perlu dibayar.',
-        'Semua halaman diperbarui otomatis ketika status sampel berubah; Anda tidak perlu menekan muat ulang.',
+        'Pilih <b>Daftar</b> atau <b>Masuk</b> di halaman depan.',
+        'Setelah masuk, gunakan <b>Beranda</b> untuk melihat tindakan yang perlu dilakukan.',
+        'Gunakan <b>Permohonan saya</b> untuk membuka status dan dokumen.',
       ],
-      [['info', 'Di HP, menu dibuka lewat tombol <b>Menu</b> di kanan atas.']], null],
-    ['jenis', 'Akun, pendaftaran & jenis layanan', 'akun',
-      'Satu akun dipakai untuk semua permohonan instansi/usaha Anda. Permohonan online diajukan sebagai layanan Mandiri; layanan Pengujian Eksternal dan Surveilen ditetapkan petugas Balai.',
+      [['info', 'Di HP, semua menu tersedia setelah menekan <b>Menu</b>.']], null],
+    ['akun', 'Akun dan Jenis Layanan', 'akun',
+      'Buat akun lalu pilih jenis layanan yang diinginkan',
       [
-        'Klik <b>Daftar</b> di halaman depan.',
-        'Isi <b>nama penanggung jawab</b>, <b>nama usaha/instansi</b> (dicetak di LHP), <b>email</b>, dan <b>nomor telepon/WA</b>.',
-        'Buat kata sandi minimal 8 karakter berisi huruf besar, huruf kecil, dan angka, lalu klik <b>Buat akun</b>.',
-        'Untuk masuk berikutnya, klik <b>Masuk</b>, lalu isi email dan kata sandi.',
+        'Isi nama penanggung jawab, nama usaha/instansi, email, telepon, dan kata sandi.',
+        'Permohonan online umumnya diajukan sebagai <b>Mandiri</b>: bayar sebelum pengujian.',
+        'Pengujian Eksternal atau Surveilen ditetapkan petugas Balai dan dibayar setelah LHP terbit.',
       ],
-      [['penting', 'Setelah 5 kali salah kata sandi, akun dikunci 15 menit demi keamanan.'], ['info', 'Operator Balai menetapkan jenis layanan saat memverifikasi sampel.']], 'jenis'],
-    ['ajukan', 'Mengajukan permohonan uji', 'tambah',
-      'Permohonan diajukan online sebelum sampel dibawa ke Balai.',
+      [['info', 'Nama usaha/instansi dicetak sebagai pemohon pada dokumen resmi.']], null],
+    ['ajukan', 'Ajukan dan serahkan sampel', 'tambah',
+      'Isi permohonan, lalu bawa sampel fisik ke loket Balai.',
       [
-        'Klik menu <b>Ajukan uji</b>.',
-        'Isi <b>jenis komoditas</b>, <b>asal sampel</b>, dan <b>alamat</b> (dicetak di LHP), lalu <b>nama/jenis sampel</b> dan <b>jumlah sampel</b> tiap produk. Menguji beberapa produk sekaligus? Klik <b>Tambah produk</b>; tiap produk memilih parameternya sendiri.',
-        'Centang <b>parameter uji</b> yang diminta (Organoleptik, Mikrobiologi, Kimia, Radionuklida) dan atur <b>jumlah pengujian</b> tiap parameter.',
-        'Pilih <b>tujuan distribusi</b>: Domestik atau Ekspor.',
-        'Lampirkan dokumen pendukung bila ada (PDF/JPG/PNG, maksimal 3 berkas, masing-masing 5 MB).',
-        'Periksa <b>perkiraan tagihan</b> di samping formulir, lalu klik <b>Kirim permohonan</b>.',
-        'Anda langsung mendapat <b>nomor permohonan</b>, misalnya <span class="kode">PMH-221126-001</span>. Catat nomor ini.',
+        'Klik <b>Ajukan uji</b>, lalu isi data sampel, komoditas, jumlah, asal, tujuan, dan alamat. Menguji beberapa produk sekaligus? Klik <b>Tambah produk</b>.',
+        'Pilih parameter uji dan lampiran pendukung bila ada.',
+        'Setelah dikirim, bawa sampel ke loket dan sebutkan kode permohonan.',
+        'Petugas memverifikasi, meregistrasi sampel, dan menerbitkan kode sampel atau billing bila diperlukan.',
       ],
-      [['info', 'Angka tagihan final mengikuti billing SIMPONI resmi yang diterbitkan Operator Bendahara.']], null],
-    ['sampel', 'Menyerahkan sampel & verifikasi', 'lab',
-      'Sampel fisik diperiksa petugas loket sebelum diuji.',
+      [['info', 'Dokumen pendukung boleh berupa PDF, JPG, atau PNG, maksimal 5 MB per berkas.']], null],
+    ['bayar', 'Bayar dan unggah bukti', 'berkas',
+      'Bayar melalui SIMPONI sesuai jenis layanan, lalu unggah bukti penyetoran.',
       [
-        'Administrator Balai memverifikasi berkas dan data permohonan. Bila diterima, status menjadi <b>Diterima, serahkan sampel</b>.',
-        'Bawa sampel ke loket penerimaan Balai dan sebutkan <b>kode permohonan</b>.',
-        'Operator atau Admin Laboratorium mencocokkan sampel dengan permohonan, lalu meregistrasinya dengan <b>kode sampel</b> buku sampel, misalnya <span class="kode">SP.M/221126.01</span>. Bila ada beberapa produk, tiap produk diberi akhiran A, B, C, misalnya <span class="kode">SP.M/221126.01A</span>. <b>Bukti terima sampel</b> (PDF) bisa diunduh dari halaman permohonan.',
-        '<b>Mandiri:</b> status menjadi <b>Menunggu kode billing</b>, lalu billing SIMPONI resmi muncul di halaman permohonan.',
-        '<b>Pengujian Eksternal/Surveilen:</b> sampel langsung diproses; tagihan diterbitkan setelah LHP disahkan.',
-        'Bila berkas/data tidak sesuai, permohonan <b>ditolak</b> beserta alasannya. Perbaiki lalu ajukan permohonan baru.',
+        'Buka permohonan yang berstatus <b>Menunggu Pembayaran</b>.',
+        'Catat kode billing dan jumlah setor, lalu bayar melalui bank, ATM, mobile banking, atau kantor pos.',
+        'Unggah bukti setor dan kirimkan sebagai bukti pembayaran. Nomor NTPN tidak perlu diketik.',
+        'Tunggu petugas Bendahara mengonfirmasi penerimaan dana.',
       ],
-      [], null],
-    ['bayar', 'Pembayaran SIMPONI', 'berkas',
-      'Layanan Mandiri membayar sebelum sampel diuji; layanan lain membayar setelah LHP disahkan.',
+      [['info', 'Jika bukti ditolak, alasan ditampilkan pada permohonan dan bukti dapat diunggah ulang.']], null],
+    ['pantau', 'Pantau status dan terima LHP', 'jam',
+      'Status terbaru ditampilkan di halaman permohonan.',
       [
-        'Buka permohonan berstatus <b>Menunggu pembayaran</b> (juga muncul sebagai pengingat di Beranda).',
-        'Lihat <b>kode billing</b> (15 digit) dan <b>jumlah setor</b>, lalu klik <b>Lihat billing resmi</b> untuk membuka dokumen billing.',
-        'Bayar lewat teller bank, ATM, internet/mobile banking, atau kantor pos yang melayani SIMPONI.',
-        'Unggah foto/PDF <b>bukti setor</b>, lalu klik <b>Kirim bukti pembayaran</b>. Nomor NTPN tidak perlu diketik.',
-        'Operator Bendahara mencocokkan dana masuk. Setelah terkonfirmasi, sampel mulai diuji (Mandiri) atau LHP siap diambil (layanan lain).',
+        'Periksa status: verifikasi, pembayaran, pengujian, penyusunan LHP, atau LHP selesai.',
+        'Gunakan <b>Perkiraan Selesai</b> sebagai target waktu dalam hari kerja.',
+        'Setelah LHP disahkan, buka atau unduh LHP PDF dari permohonan.',
+        'Untuk memeriksa keaslian, pindai QR Code atau masukkan 12 karakter kode verifikasi.',
       ],
-      [['info', 'Bila bukti ditolak, alasannya tampil di halaman permohonan dan Anda bisa mengunggah ulang.']], null],
-    ['pantau', 'Memantau status permohonan', 'jam',
-      'Status permohonan bisa Anda pantau kapan saja dari akun Anda.',
-      [
-        'Buka menu <b>Permohonan saya</b> lalu klik permohonan. Tahapannya tampil di bagian atas: Verifikasi, Pembayaran, Pengujian, Penyusunan LHP, LHP selesai.',
-        'Status yang mungkin: <b>Menunggu verifikasi</b>, <b>Diterima, serahkan sampel</b>, <b>Menunggu kode billing</b>, <b>Menunggu pembayaran</b>, <b>Pembayaran sedang dicek</b>, <b>Sedang diproses/pengujian</b>, <b>Penyusunan LHP</b>, dan <b>LHP selesai</b>.',
-        "Bagian <b>Perkiraan selesai</b> menunjukkan target tanggal sampel jadi ({$normaTotal} hari kerja sejak sampel mulai diuji).",
-        'Halaman diperbarui sendiri setiap kali status berubah.',
-      ],
-      [['info', 'Hari kerja = Senin–Jumat di luar hari libur nasional dan cuti bersama.']], 'norma'],
-    ['lhu', 'LHP & cek keaslian', 'perisai',
-      'LHP bernomor disahkan Penanggung Jawab Laboratorium dan dilengkapi QR Code keaslian.',
-      [
-        'Setelah pengujian selesai, hasil divalidasi Administrator, diparaf penyelia, lalu disahkan Penanggung Jawab Laboratorium. Status berubah menjadi <b>LHP selesai</b>.',
-        'Buka permohonan berstatus <b>LHP selesai</b>, lalu klik <b>LHP (PDF)</b> untuk melihat atau mengunduh LHP. Layanan yang dibayar di belakang: LHP bisa diunduh setelah pembayaran dikonfirmasi.',
-        'Siapa pun (misalnya pembeli atau instansi lain) bisa mengecek keaslian LHP dengan memindai <b>QR Code</b> atau memasukkan 12 karakter <b>kode verifikasi</b> di menu <b>Cek keaslian LHP</b>.',
-      ],
-      [['penting', 'Jangan mengubah isi LHP. Perubahan apa pun akan terdeteksi "tidak cocok" saat dicek keasliannya.']], null],
-    ['chat', 'Chat petugas & bantuan', 'chat',
-      'Tanyakan apa saja langsung kepada petugas Balai lewat chat di dalam SILANTRO.',
-      [
-        'Klik tombol <b>Chat petugas</b> di pojok kanan bawah, atau menu <b>Chat petugas</b> di sisi kiri.',
-        'Tulis pertanyaan, sebutkan <b>kode permohonan</b> bila terkait sampel tertentu, lalu tekan <b>Enter</b> atau <b>Kirim</b>.',
-        'Pesan dibalas oleh petugas Balai; nama dan jabatan pembalas tampil di setiap balasan.',
-        'Daftar <b>Petugas online</b> menunjukkan siapa saja yang sedang bertugas saat ini.',
-        'Lencana merah di menu menandakan ada balasan yang belum Anda baca.',
-      ],
-      array_values(array_filter([
-        ['penting', 'Jangan mengirim kata sandi atau data rahasia lewat chat.'],
-        $wa ? ['info', 'Tidak ada petugas online? Hubungi juga <b>WhatsApp Center</b> Balai lewat tombol di bawah.'] : null,
-      ])), 'bantuan'],
-    ['faq', 'Tanya jawab & istilah', 'info',
-      'Jawaban atas pertanyaan yang sering diajukan dan arti istilah di SILANTRO.',
-      [], [], 'faq'],
+      [['info', 'Hari kerja adalah Senin sampai Jumat, di luar hari libur.']], 'norma'],
+    ['bantuan', 'Bantuan dan pertanyaan', 'chat',
+      'Gunakan pertanyaan yang paling sesuai, atau hubungi petugas.',
+      [],
+      [], 'faq'],
   ];
   $n = count($bab);
   $faq = [
-    ['Apa beda layanan Mandiri, Pengujian Eksternal, dan Surveilen?', 'Permohonan online selalu Mandiri: bayar di awal setelah sampel diverifikasi, lalu sampel diuji. Pengujian Eksternal dan Surveilen ditetapkan petugas Balai; sampel langsung diuji dan tagihan dibayar setelah LHP disahkan.'],
-    ['Berapa lama sampai LHP selesai?', "Norma waktu pelayanan {$normaTotal} hari kerja sejak sampel mulai diuji. Target tanggal selesai tampil di halaman permohonan Anda."],
-    ['Kenapa hasil uji belum tampil di akun saya?', 'Hasil uji dan LHP baru bisa dibuka setelah LHP disahkan dan permohonan selesai (termasuk lunas untuk layanan yang dibayar di belakang), supaya yang Anda terima adalah hasil final.'],
-    ['Apakah saya perlu mengetik NTPN?', 'Tidak. Cukup unggah bukti setor SIMPONI. Operator Bendahara mencocokkan pembayaran dari bukti dan sistem SIMPONI.'],
-    ['Format berkas apa yang bisa diunggah?', 'PDF, JPG, atau PNG asli, maksimal 5 MB per berkas. Berkas yang hanya diganti ekstensinya akan ditolak.'],
-    ['Lupa kata sandi?', 'Hubungi petugas lewat chat atau WhatsApp Center, atau datang ke loket. Petugas akan mereset sandi; Anda wajib menggantinya saat masuk.'],
+    ['Berapa lama sampai LHP selesai?', "Target pemeriksaan ditampilkan di permohonan. Batas norma total saat ini adalah {$normaTotal} hari kerja."],
+    ['Mengapa hasil uji belum tampil?', 'Hasil uji ditampilkan setelah pengujian dan penyusunan LHP disahkan.'],
+    ['Jenis berkas yang bisa diunggah?', 'PDF, JPG, atau PNG, maksimal 5 MB untuk setiap berkas.'],
+    ['Lupa kata sandi?', 'Hubungi petugas Balai untuk mereset kata sandi, lalu gantikan kata sandi saat masuk kembali.'],
   ];
   $istilah = [
     ['SIMPONI', 'Sistem Informasi PNBP Online milik Kementerian Keuangan untuk menyetor tagihan layanan.'],
     ['Kode billing', '15 digit kode tagihan SIMPONI yang dipakai saat membayar.'],
-    ['NTPN', 'Nomor Transaksi Penerimaan Negara di bukti setor, tanda pembayaran sah.'],
-    ['PNBP', 'Penerimaan Negara Bukan Pajak; tarif layanan uji termasuk PNBP.'],
     ['Kode sampel', 'Kode registrasi dari buku sampel, mis. SP.M/221126.01 (jenis layanan / tanggal diterima . nomor urut harian; akhiran A, B, C untuk tiap produk bila lebih dari satu).'],
     ['LHP', 'Laporan Hasil Pengujian, dokumen resmi hasil pengujian sampel.'],
-    ['Norma waktu', 'Batas waktu pelayanan dalam hari kerja, per lab maupun total.'],
   ];
   $catatanGaya = ['info' => ['bg-laut-50 text-laut-700', 'info', 'Info'], 'penting' => ['bg-surya-50 text-surya-700', 'info', 'Penting']];
 @endphp
@@ -120,24 +78,23 @@
   {{-- Kepala panduan --}}
   <div class="flex flex-wrap items-end justify-between gap-4">
     <div>
-      <p class="text-xs font-bold uppercase tracking-wider text-laut-600">Panduan resmi SILANTRO</p>
-      <h1 class="mt-1">Panduan Penggunaan SILANTRO</h1>
-      <p class="mt-2 max-w-prose text-kabut-600">Langkah demi langkah untuk pengguna jasa: akun, permohonan, pembayaran, pemantauan, sampai LHP.</p>
-      <p class="mt-2 text-xs text-kabut-500">Edisi November 2026 · {{ $n }} bagian</p>
+      <p class="text-xs font-bold text-laut-600">Panduan Pengguna Jasa</p>
+      <h1 class="mt-1">Cara menggunakan SILANTRO</h1>
+      <p class="mt-2 max-w-prose text-kabut-600">Pilih satu bagian untuk melihat langkah yang diperlukan.</p>
     </div>
     <div class="no-print flex flex-wrap gap-2">
-      <a href="{{ $masuk ? route('dashboard') : route('home') }}" class="btn-ghost"><x-ikon n="kembali" class="h-4 w-4" />{{ $masuk ? 'Beranda' : 'Kembali ke portal' }}</a>
+      <a href="{{ $masuk ? route('dashboard') : route('home') }}" class="btn-ghost"><x-ikon n="kembali" class="h-4 w-4" />{{ $masuk ? 'Beranda' : 'Kembali Ke Beranda' }}</a>
       <button type="button" class="btn-primary" data-print><x-ikon n="unggah" class="h-4 w-4 rotate-180" />Unduh PDF</button>
     </div>
   </div>
 
   <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[270px_minmax(0,1fr)]">
     {{-- Daftar bagian --}}
-    <nav class="no-print panel self-start lg:sticky lg:top-24" aria-label="Daftar bagian panduan">
-      <div class="panel-head"><h2 class="text-base">Daftar bagian</h2><span class="num text-xs text-kabut-500" data-bab-pos>1 / {{ $n }}</span></div>
-      <ol class="p-2">
+    <nav class="no-print panel min-w-0 self-start overflow-hidden lg:sticky lg:top-24" aria-label="Daftar bagian panduan">
+      <div class="panel-head"><h2 class="text-base">Daftar Panduan</h2><span class="num text-xs text-kabut-500" data-bab-pos>1 / {{ $n }}</span></div>
+      <ol class="flex gap-1 overflow-x-auto p-2 lg:block">
         @foreach ($bab as $i => [$id, $judul])
-          <li><a href="#{{ $id }}" data-bab-link class="flex items-start gap-3 rounded-lg px-3 py-2 text-sm text-tinta no-underline hover:bg-kabut-50 hover:no-underline aria-[current=true]:bg-laut-50 aria-[current=true]:font-semibold aria-[current=true]:text-laut-700"><span class="num w-6 shrink-0 text-xs font-bold text-kabut-400">{{ sprintf('%02d', $i + 1) }}</span><span>{{ $judul }}</span></a></li>
+          <li class="shrink-0 lg:w-full"><a href="#{{ $id }}" data-bab-link class="flex min-h-[44px] items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm text-tinta no-underline hover:bg-kabut-50 hover:no-underline aria-[current=true]:bg-laut-50 aria-[current=true]:font-semibold aria-[current=true]:text-laut-700 lg:whitespace-normal"><span class="num w-5 shrink-0 text-xs font-bold text-kabut-400">{{ sprintf('%02d', $i + 1) }}</span><span>{{ $judul }}</span></a></li>
         @endforeach
       </ol>
     </nav>
@@ -194,7 +151,6 @@
                   <table class="tabel">
                     <tbody>
                       <tr><td class="font-semibold">Norma waktu sampel jadi</td><td class="num text-right font-semibold">{{ $normaTotal }} hari kerja</td></tr>
-                      <tr><td>Tarif pengujian per sampel</td><td class="num text-right">{{ rupiah($labs->sum('tarif')) }}</td></tr>
                       <tr><td class="text-kabut-500">Biaya administrasi per permohonan</td><td class="num text-right text-kabut-500">{{ rupiah($biayaAdmin) }}</td></tr>
                     </tbody>
                   </table>
@@ -208,6 +164,10 @@
                 </div>
                 @break
               @case('faq')
+                <div class="flex flex-wrap gap-2">
+                  <a href="{{ $masuk ? route('chat') : route('login') }}" class="btn-primary min-h-[44px]"><x-ikon n="chat" class="h-4 w-4" />{{ $masuk ? 'Chat petugas' : 'Masuk untuk chat petugas' }}</a>
+                  @if ($wa)<a href="{{ $wa }}" target="_blank" rel="noopener noreferrer" class="btn-ghost min-h-[44px]"><x-ikon n="chat" class="h-4 w-4" />WhatsApp Center</a>@endif
+                </div>
                 <div class="divide-y divide-kabut-100 rounded-xl ring-1 ring-kabut-200">
                   @foreach ($faq as [$tanya, $jawab])
                     <details class="group px-4 py-3.5" @if($loop->first) open @endif>
@@ -234,8 +194,8 @@
           </div>
 
           <footer class="no-print flex items-center justify-between gap-3 border-t border-kabut-200 px-5 py-3 sm:px-7">
-            @if ($i > 0)<a href="#{{ $bab[$i - 1][0] }}" class="text-sm font-semibold no-underline" data-bab-ke="{{ $i - 1 }}">← {{ $bab[$i - 1][1] }}</a>@else<span></span>@endif
-            @if ($i < $n - 1)<a href="#{{ $bab[$i + 1][0] }}" class="text-right text-sm font-semibold no-underline" data-bab-ke="{{ $i + 1 }}">{{ $bab[$i + 1][1] }} →</a>@endif
+            @if ($i > 0)<a href="#{{ $bab[$i - 1][0] }}" class="panduan-page-link" data-bab-ke="{{ $i - 1 }}">← {{ $bab[$i - 1][1] }}</a>@else<span></span>@endif
+            @if ($i < $n - 1)<a href="#{{ $bab[$i + 1][0] }}" class="panduan-page-link" data-bab-ke="{{ $i + 1 }}">{{ $bab[$i + 1][1] }} →</a>@endif
           </footer>
         </article>
       @endforeach

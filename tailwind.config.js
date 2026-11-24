@@ -20,5 +20,5 @@ export default {
       maxWidth: { prose: '68ch' },
     },
   },
-  plugins: [],
+  plugins: [require('@tailwindcss/forms')({ strategy: 'class' })],
 };

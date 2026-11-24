@@ -189,7 +189,7 @@ class RevisiSatuTest extends TestCase
     public function test_semua_halaman_utama_tampil_untuk_tiap_peran(): void
     {
         $this->get('/daftar')->assertOk()->assertDontSee('Jenis pengguna jasa');
-        $this->get('/')->assertOk()->assertSee('Panduan')->assertSee('Cek keaslian LHP')->assertSee('Organoleptik');
+        $this->get('/')->assertOk()->assertSee('Panduan')->assertSee('Cek Keaslian LHP')->assertSee('Organoleptik');
         $this->get('/masuk')->assertOk()->assertDontSee('Masuk sebagai');
 
         $p = $this->sampaiSelesai();
@@ -250,22 +250,21 @@ class RevisiSatuTest extends TestCase
     public function test_panduan_bisa_dibuka_tamu_dan_pengguna(): void
     {
         $this->get('/panduan')->assertOk()
-            ->assertSee('Panduan Penggunaan SILANTRO')->assertSee('Daftar bagian')->assertSee('Unduh PDF')
+            ->assertSee('Cara menggunakan SILANTRO')->assertSee('Daftar bagian')->assertSee('Unduh PDF')
             ->assertSee('Mandiri')->assertSee('Pengujian Eksternal')->assertSee('6 hari kerja')->assertSee('Nomor NTPN tidak perlu diketik')
-            ->assertSee('Bagian 09 dari 9')
             ->assertDontSee('wa.me');
         $this->as('pengguna@lab.local')->get('/panduan')->assertOk()->assertSee('Chat petugas');
     }
 
     public function test_whatsapp_center_tampil_setelah_diisi_di_pengaturan(): void
     {
-        $this->get('/')->assertOk()->assertSee('Pusat bantuan')->assertDontSee('wa.me');
+        $this->get('/')->assertOk()->assertSee('Pusat Bantuan')->assertDontSee('wa.me');
 
         $this->as('superadmin@lab.local')->put('/admin/pengaturan', self::SETELAN + ['whatsapp_center' => 'bukan-nomor'])->assertSessionHasErrors('whatsapp_center');
         $this->as('superadmin@lab.local')->put('/admin/pengaturan', self::SETELAN + ['whatsapp_center' => '0853-8522-0631'])->assertSessionHas('success');
 
         $this->assertStringStartsWith('https://wa.me/6285385220631', wa_link());
         $this->as('pengguna@lab.local')->get('/chat')->assertOk()->assertSee('https://wa.me/6285385220631', false);
-        $this->as('pengguna@lab.local')->get('/panduan')->assertOk()->assertSee('Chat WhatsApp Center');
+        $this->as('pengguna@lab.local')->get('/panduan')->assertOk()->assertSee('WhatsApp Center')->assertSee('https://wa.me/6285385220631', false);
     }
 }
