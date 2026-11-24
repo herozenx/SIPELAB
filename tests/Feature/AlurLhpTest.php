@@ -44,7 +44,7 @@ class AlurLhpTest extends TestCase
         $p = $this->ajukan();
         $this->assertSame(Status::Diajukan, $p->status);
         $this->assertSame(JenisBayar::Mandiri, $p->jenis_bayar);
-        $this->assertSame('SP.M/191126.01', $p->kode); // kode SP langsung saat diajukan
+        $this->assertSame('PMH-191126-001', $p->kode); // nomor permohonan; kode SP baru saat registrasi
         $this->assertNull($p->kode_sampel);
         $this->assertSame(['E1', 'H', 'O'], $p->parameter()->pluck('kode')->sort()->values()->all());
 
@@ -109,7 +109,8 @@ class AlurLhpTest extends TestCase
         $lhu = $p->lhu;
         $this->assertSame('0001/LAB/BPPMHKP.SBY.II/KI.310/XI/2026', $lhu->nomor);
         $this->assertSame(StatusIzin::Lulus, $lhu->status_izin);
-        $this->assertSame(2, $lhu->versi_sidik);
+        $this->assertSame(4, $lhu->versi_sidik);
+        $this->assertSame(1, $p->no_agenda);
         $this->assertSame(['PARAF', 'PARAF', 'PARAF', 'PERIKSA', 'SAH'], Persetujuan::query()->where('permohonan_id', $p->id)->pluck('jenis')->sort()->values()->all());
 
         // LHP: petugas kantor membuka pratinjau (dengan QR); pengguna jasa mengunduh PDF setelah selesai.
@@ -151,7 +152,7 @@ class AlurLhpTest extends TestCase
 
         $s = $this->ajukan('eksternal@lab.local', ['H']);
         $this->verifikasi($s, 'SURVEILEN');
-        $this->assertSame('SP.S/191126.01', $s->fresh()->kode_sampel);
+        $this->assertSame('SP.S/191126.02', $s->fresh()->kode_sampel); // urut harian lanjut dari SP.PE/191126.01
         $this->assertSame(Status::SiapUji, $s->fresh()->status);
     }
 
@@ -165,10 +166,10 @@ class AlurLhpTest extends TestCase
         // Wajib memilih parameter.
         $this->as('pengguna@lab.local')->post('/permohonan', [
             'nama_sampel' => 'Tuna', 'jenis_komoditas' => 'Ikan', 'jumlah_sampel' => 1, 'asal_sampel' => 'X', 'alamat' => 'Jalan X', 'tujuan' => 'DOMESTIK',
-        ])->assertSessionHasErrors('parameter');
+        ])->assertSessionHasErrors('produk.0.parameter');
     }
 
-    public function test_kode_sampel_urut_harian_per_jenis_layanan(): void
+    public function test_kode_sampel_urut_harian_berlanjut_lintas_jenis_layanan(): void
     {
         Carbon::setTestNow('2026-11-22 09:00:00');
         $kode = [];
@@ -177,7 +178,8 @@ class AlurLhpTest extends TestCase
             $this->verifikasi($p, $jenis);
             $kode[] = $p->fresh()->kode_sampel;
         }
-        $this->assertSame(['SP.M/221126.01', 'SP.PE/221126.01', 'SP.S/221126.01', 'SP.M/221126.02', 'SP.PE/221126.02'], $kode);
+        // Seperti buku sampel: SP.E/060126.01–.03 lalu SP.S/060126.04 (nomor urut harian dipakai bersama).
+        $this->assertSame(['SP.M/221126.01', 'SP.PE/221126.02', 'SP.S/221126.03', 'SP.M/221126.04', 'SP.PE/221126.05'], $kode);
 
         Carbon::setTestNow('2026-11-23 08:00:00');
         $p = $this->ajukan();

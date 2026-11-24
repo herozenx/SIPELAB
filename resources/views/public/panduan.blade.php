@@ -32,12 +32,12 @@
       'Permohonan diajukan online sebelum sampel dibawa ke Balai.',
       [
         'Klik menu <b>Ajukan uji</b>.',
-        'Isi <b>nama/jenis sampel</b>, <b>jenis komoditas</b>, <b>jumlah sampel</b>, <b>asal sampel</b>, dan <b>alamat</b> (dicetak di LHP).',
+        'Isi <b>jenis komoditas</b>, <b>asal sampel</b>, dan <b>alamat</b> (dicetak di LHP), lalu <b>nama/jenis sampel</b> dan <b>jumlah sampel</b> tiap produk. Menguji beberapa produk sekaligus? Klik <b>Tambah produk</b>; tiap produk memilih parameternya sendiri.',
         'Centang <b>parameter uji</b> yang diminta (Organoleptik, Mikrobiologi, Kimia, Radionuklida) dan atur <b>jumlah pengujian</b> tiap parameter.',
         'Pilih <b>tujuan distribusi</b>: Domestik atau Ekspor.',
         'Lampirkan dokumen pendukung bila ada (PDF/JPG/PNG, maksimal 3 berkas, masing-masing 5 MB).',
         'Periksa <b>perkiraan tagihan</b> di samping formulir, lalu klik <b>Kirim permohonan</b>.',
-        'Anda langsung mendapat kode permohonan sesuai buku sampel, misalnya <span class="kode">SP.M/221126.01</span> (Mandiri / tanggal / nomor urut). Catat kode ini.',
+        'Anda langsung mendapat <b>nomor permohonan</b>, misalnya <span class="kode">PMH-221126-001</span>. Catat nomor ini.',
       ],
       [['info', 'Angka tagihan final mengikuti billing SIMPONI resmi yang diterbitkan Operator Bendahara.']], null],
     ['sampel', 'Menyerahkan sampel & verifikasi', 'lab',
@@ -45,7 +45,7 @@
       [
         'Administrator Balai memverifikasi berkas dan data permohonan. Bila diterima, status menjadi <b>Diterima, serahkan sampel</b>.',
         'Bawa sampel ke loket penerimaan Balai dan sebutkan <b>kode permohonan</b>.',
-        'Operator atau Admin Laboratorium mencocokkan sampel dengan permohonan, lalu meregistrasinya dengan <b>kode sampel</b>, misalnya <span class="kode">SP.M/221126.01</span>. <b>Bukti terima sampel</b> (PDF) bisa diunduh dari halaman permohonan.',
+        'Operator atau Admin Laboratorium mencocokkan sampel dengan permohonan, lalu meregistrasinya dengan <b>kode sampel</b> buku sampel, misalnya <span class="kode">SP.M/221126.01</span>. Bila ada beberapa produk, tiap produk diberi akhiran A, B, C, misalnya <span class="kode">SP.M/221126.01A</span>. <b>Bukti terima sampel</b> (PDF) bisa diunduh dari halaman permohonan.',
         '<b>Mandiri:</b> status menjadi <b>Menunggu kode billing</b>, lalu billing SIMPONI resmi muncul di halaman permohonan.',
         '<b>Pengujian Eksternal/Surveilen:</b> sampel langsung diproses; tagihan diterbitkan setelah LHP disahkan.',
         'Bila berkas/data tidak sesuai, permohonan <b>ditolak</b> beserta alasannya. Perbaiki lalu ajukan permohonan baru.',
@@ -109,7 +109,7 @@
     ['Kode billing', '15 digit kode tagihan SIMPONI yang dipakai saat membayar.'],
     ['NTPN', 'Nomor Transaksi Penerimaan Negara di bukti setor, tanda pembayaran sah.'],
     ['PNBP', 'Penerimaan Negara Bukan Pajak; tarif layanan uji termasuk PNBP.'],
-    ['Kode sampel', 'Kode registrasi dari buku sampel, mis. SP.M/221126.01 (jenis layanan / tanggal diterima . nomor urut harian).'],
+    ['Kode sampel', 'Kode registrasi dari buku sampel, mis. SP.M/221126.01 (jenis layanan / tanggal diterima . nomor urut harian; akhiran A, B, C untuk tiap produk bila lebih dari satu).'],
     ['LHP', 'Laporan Hasil Pengujian, dokumen resmi hasil pengujian sampel.'],
     ['Norma waktu', 'Batas waktu pelayanan dalam hari kerja, per lab maupun total.'],
   ];
@@ -176,7 +176,7 @@
               @case('jenis')
                 <div class="grid gap-4 md:grid-cols-3">
                   @foreach ([
-                    ['Mandiri', 'Diajukan online · bayar di awal', ['Ajukan permohonan online', 'Sampel diverifikasi, kode SP.M', 'Bayar billing SIMPONI, unggah bukti', 'Sampel diuji di lab', 'LHP selesai, unduh PDF'], 'bg-laut-600'],
+                    ['Mandiri', 'Diajukan online · bayar di awal', ['Ajukan permohonan online', 'Sampel diregistrasi, kode SP.M', 'Bayar billing SIMPONI, unggah bukti', 'Sampel diuji di lab', 'LHP selesai, unduh PDF'], 'bg-laut-600'],
                     ['Pengujian Eksternal', 'Ditetapkan petugas · bayar di belakang', ['Permohonan diterima Balai', 'Sampel diverifikasi, kode SP.PE', 'Sampel langsung diuji di lab', 'LHP disahkan, billing terbit', 'Bayar, lalu unduh LHP PDF'], 'bg-lamun-600'],
                     ['Surveilen', 'Ditetapkan petugas · bayar di belakang', ['Permohonan diterima Balai', 'Sampel diverifikasi, kode SP.S', 'Sampel langsung diuji di lab', 'LHP disahkan, billing terbit', 'Bayar, lalu unduh LHP PDF'], 'bg-laut-800'],
                   ] as [$nama, $sub, $alur, $warna])

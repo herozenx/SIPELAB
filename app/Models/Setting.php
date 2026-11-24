@@ -12,16 +12,18 @@ class Setting extends Model
         'nama_instansi' => 'Balai Pengendalian dan Pengawasan Mutu Hasil Kelautan dan Perikanan Surabaya II',
         'alamat_instansi' => 'Jl. Sawunggaling 177-183, Jemundo, Taman, Sidoarjo',
         'biaya_admin' => '0', // PNBP SIMPONI hanya memuat tarif parameter
-        // Nomor LHP & surat tugas. {urut} = nomor urut agenda per tahun (4 digit), {bulan} = bulan Romawi, {tahun}.
+        // Nomor LHP & surat tugas. {urut} = nomor agenda buku sampel per tahun (4 digit), {bulan} = bulan Romawi, {tahun}.
+        // Pada nomor LHP, {bulan} & {tahun} mengikuti tanggal sampel diterima.
         'format_nomor_lhp' => '{urut}/LAB/BPPMHKP.SBY.II/KI.310/{bulan}/{tahun}',
         // Surat tugas pengujian (template FL/OK/SUB II/8.5.3.d). {kode_sampel} = kode sampel, mis. SP.S/050126.02.
         'format_nomor_surat_tugas' => '{kode_sampel}/FPPCU/SUB II/{bulan}/{tahun}',
         'kota_surat_tugas' => 'Surabaya',
         'kode_formulir_surat_tugas' => 'FL/OK/SUB II/8.5.3.d',
-        'jabatan_kepala_lab' => 'Kepala Laboratorium Penguji',
-        'nama_kepala_lab' => '',
-        'nip_kepala_lab' => '',
-        'kota_lhp' => 'Sidoarjo',
+        // Penanda tangan surat tugas & kota LHP sesuai dokumen Balai 2026.
+        'jabatan_kepala_lab' => 'Plt. Kepala Laboratorium Penguji',
+        'nama_kepala_lab' => 'Ricat Pahlefi Hidayat, S.St.Pi., M.Si',
+        'nip_kepala_lab' => '19780424 200502 1 001',
+        'kota_lhp' => 'Surabaya',
         // Bukti Tagihan PNBP
         'satuan_kerja' => 'Balai PPMHKP Surabaya II',
         'kode_formulir_lhp' => 'FL/OK/LP/SUB II/8.6.d',

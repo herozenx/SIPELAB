@@ -25,6 +25,11 @@ class PermohonanParameter extends Model
         return $this->belongsTo(Permohonan::class);
     }
 
+    public function produk(): BelongsTo
+    {
+        return $this->belongsTo(PermohonanProduk::class, 'produk_id');
+    }
+
     public function lab(): BelongsTo
     {
         return $this->belongsTo(Lab::class);

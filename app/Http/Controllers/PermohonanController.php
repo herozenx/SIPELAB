@@ -68,41 +68,59 @@ class PermohonanController extends Controller
             'parameter' => $this->wf->parameterAktif()->groupBy('bidang'),
             'biayaAdmin' => (int) Setting::get('biaya_admin'),
             'alamat' => $request->user()->alamat,
+            'maksProduk' => Workflow::MAKS_PRODUK,
         ]);
     }
 
     public function store(Request $request)
     {
         Gate::authorize('create', Permohonan::class);
+        // Bentuk lama (satu produk: nama_sampel + parameter[]) tetap diterima, dijadikan satu produk.
+        if (! $request->has('produk') && $request->hasAny(['nama_sampel', 'parameter'])) {
+            $request->merge(['produk' => [[
+                'nama' => $request->input('nama_sampel'), 'jumlah' => $request->input('jumlah_sampel', 1),
+                'parameter' => $request->input('parameter', []), 'jumlah_uji' => $request->input('jumlah', []),
+            ]]]);
+        }
         $data = $request->validate([
-            'nama_sampel' => ['required', 'string', 'min:2', 'max:120'],
+            'produk' => ['required', 'array', 'min:1', 'max:'.Workflow::MAKS_PRODUK],
+            'produk.*.nama' => ['required', 'string', 'min:2', 'max:120'],
+            'produk.*.jumlah' => ['required', 'integer', 'min:1', 'max:500'],
+            'produk.*.parameter' => ['required', 'array', 'min:1', 'max:40'],
+            'produk.*.parameter.*' => ['integer', 'exists:parameter_uji,id'],
+            'produk.*.jumlah_uji' => ['nullable', 'array'],
+            'produk.*.jumlah_uji.*' => ['nullable', 'integer', 'min:1', 'max:500'],
             'jenis_komoditas' => ['required', 'string', 'min:2', 'max:80'],
-            'jumlah_sampel' => ['required', 'integer', 'min:1', 'max:500'],
             'asal_sampel' => ['required', 'string', 'min:2', 'max:150'],
             'alamat' => ['required', 'string', 'min:5', 'max:300'],
             'tujuan' => ['required', Rule::enum(Tujuan::class)],
             'keterangan' => ['nullable', 'string', 'max:1000'],
-            'parameter' => ['required', 'array', 'min:1', 'max:40'],
-            'parameter.*' => ['integer', 'exists:parameter_uji,id'],
-            'jumlah' => ['nullable', 'array'],
-            'jumlah.*' => ['nullable', 'integer', 'min:1', 'max:500'],
             'dokumen' => ['nullable', 'array', 'max:3'],
             'dokumen.*' => ['file', 'max:5120', 'mimes:pdf,jpg,jpeg,png'],
         ], [
             'alamat.required' => 'Isi alamat pelanggan; alamat ini dicetak di LHP.',
-            'parameter.required' => 'Pilih minimal satu parameter uji.',
-            'parameter.min' => 'Pilih minimal satu parameter uji.',
+            'produk.max' => 'Satu permohonan paling banyak '.Workflow::MAKS_PRODUK.' produk. Ajukan sisanya di permohonan baru.',
+            'produk.*.nama.required' => 'Isi nama/jenis sampel produk ini.',
+            'produk.*.parameter.required' => 'Pilih minimal satu parameter uji untuk produk ini.',
+            'produk.*.parameter.min' => 'Pilih minimal satu parameter uji untuk produk ini.',
             'dokumen.max' => 'Dokumen pendukung maksimal 3 berkas.',
             'dokumen.*.max' => 'Ukuran tiap berkas maksimal 5 MB.',
             'dokumen.*.mimes' => 'Format berkas harus PDF, JPG, atau PNG.',
+        ], [
+            'produk.*.nama' => 'nama sampel', 'produk.*.jumlah' => 'jumlah sampel', 'produk.*.parameter' => 'parameter uji',
         ]);
 
-        $jumlah = $data['jumlah'] ?? [];
-        $parameter = collect($data['parameter'])->unique()
-            ->mapWithKeys(fn ($id) => [(int) $id => (int) ($jumlah[$id] ?? $data['jumlah_sampel'])])->all();
-        $isi = collect($data)->except(['dokumen', 'parameter', 'jumlah'])->map(fn ($v) => is_string($v) ? trim($v) : $v)->all();
+        $produk = collect($data['produk'])->values()->map(function ($x) {
+            $uji = $x['jumlah_uji'] ?? [];
 
-        $p = $this->wf->ajukan($request->user(), $isi, $parameter, $request->file('dokumen', []));
+            return [
+                'nama' => trim($x['nama']), 'jumlah' => (int) $x['jumlah'],
+                'parameter' => collect($x['parameter'])->unique()->mapWithKeys(fn ($id) => [(int) $id => (int) ($uji[$id] ?? $x['jumlah'])])->all(),
+            ];
+        })->all();
+        $isi = collect($data)->except(['dokumen', 'produk'])->map(fn ($v) => is_string($v) ? trim($v) : $v)->all();
+
+        $p = $this->wf->ajukan($request->user(), $isi, $produk, $request->file('dokumen', []));
         Audit::log('AJUKAN_PERMOHONAN', 'permohonan', $p->id);
 
         return redirect()->route('permohonan.show', $p)->with('success', "Permohonan {$p->kode} terkirim. Bawa sampel fisik ke loket penerimaan Balai untuk diverifikasi.");
@@ -113,7 +131,7 @@ class PermohonanController extends Controller
         $this->authorizeOr404('view', $permohonan);
         $u = $request->user();
         $p = $permohonan->load([
-            'lhu.validator', 'parameter.lab', 'parameter.penginput', 'dokumen', 'riwayat.user', 'pemohon', 'penerima',
+            'lhu.validator', 'produk', 'parameter.lab', 'parameter.penginput', 'parameter.produk', 'dokumen', 'riwayat.user', 'pemohon', 'penerima',
             'tahap.lab', 'tahap.operator', 'suratTugas.lab', 'suratTugas.penyelia', 'persetujuan.user', 'persetujuan.lab',
             'pengembalian.lab', 'pengembalian.pengirim',
         ]);
@@ -312,7 +330,7 @@ class PermohonanController extends Controller
         ];
 
         return Pdf::respons('pdf.surat-tugas', [
-            'p' => $permohonan, 'surat' => $surat, 'parameter' => $permohonan->parameter()->get(),
+            'p' => $permohonan->load('produk'), 'surat' => $surat, 'parameter' => $permohonan->parameter()->get(),
             'labs' => \App\Models\Lab::query()->aktif()->get()->merge($surat->pluck('lab'))->unique('id')->sortBy('urutan')->values(),
             'penandaTangan' => $penandaTangan,
         ], 'Surat Tugas '.str_replace('/', '-', (string) $permohonan->kode_sampel).'.pdf', $request->boolean('unduh'));
@@ -467,28 +485,49 @@ class PermohonanController extends Controller
     public function lhu(Request $request, Permohonan $permohonan)
     {
         $this->authorizeOr404('lihatLhu', $permohonan);
-        $p = $permohonan->load(['lhu.validator', 'parameter', 'hasil.lab', 'pemohon', 'tahap', 'persetujuan.user', 'persetujuan.lab']);
+        $p = $permohonan->load(['lhu.validator', 'produk', 'parameter', 'hasil.lab', 'pemohon', 'tahap', 'persetujuan.user', 'persetujuan.lab']);
         Audit::log('BUKA_LHP', 'permohonan', $p->id);
 
         return view('permohonan.lhu', [
             'p' => $p,
             'lhu' => $p->lhu,
             'parameter' => $p->parameter->sortBy(fn ($x) => [$x->lab_id, $x->id])->values(),
+            'halaman' => $this->halamanLhp($p),
             'hasilLama' => $p->hasil->sortBy(fn ($h) => $h->lab->urutan)->values(),
             'utuh' => $this->wf->lhuUtuh($p->lhu),
         ]);
+    }
+
+    /**
+     * Satu halaman LHP per produk (nomor LHP sama), seperti dokumen Balai: Kerang Darah Segar (P1) SP.M/020326.08A, dst.
+     *
+     * @return \Illuminate\Support\Collection<int, array{nama:string, kode:?string, parameter:\Illuminate\Support\Collection}>
+     */
+    private function halamanLhp(Permohonan $p)
+    {
+        $urut = fn ($c) => $c->sortBy(fn ($x) => [$x->lab_id, $x->id])->values();
+        $halaman = $p->produk->map(fn ($x) => [
+            'nama' => $x->nama, 'kode' => $x->kode ?: $p->kode_sampel, 'parameter' => $urut($p->parameter->where('produk_id', $x->id)),
+        ])->filter(fn ($h) => $h['parameter']->isNotEmpty())->values();
+        $tanpaProduk = $p->parameter->whereNull('produk_id');
+        if ($halaman->isEmpty() || $tanpaProduk->isNotEmpty()) {
+            $halaman->push(['nama' => $p->nama_sampel, 'kode' => $p->kode_sampel, 'parameter' => $urut($halaman->isEmpty() ? $p->parameter : $tanpaProduk)]);
+        }
+
+        return $halaman;
     }
 
     /** LHP dalam format PDF (otomatis dari data hasil). */
     public function lhpPdf(Request $request, Permohonan $permohonan)
     {
         $this->authorizeOr404('lihatLhu', $permohonan);
-        $p = $permohonan->load(['lhu.validator', 'parameter', 'hasil.lab', 'pemohon', 'tahap']);
+        $p = $permohonan->load(['lhu.validator', 'produk', 'parameter', 'hasil.lab', 'pemohon', 'tahap']);
         Audit::log('UNDUH_LHP_PDF', 'permohonan', $p->id);
 
         return Pdf::respons('pdf.lhp', [
             'p' => $p, 'lhu' => $p->lhu,
             'parameter' => $p->parameter->sortBy(fn ($x) => [$x->lab_id, $x->id])->values(),
+            'halaman' => $this->halamanLhp($p),
             'hasilLama' => $p->hasil->sortBy(fn ($h) => $h->lab->urutan)->values(),
         ], 'LHP '.str_replace('/', '-', (string) $p->kode_sampel ?: $p->kode).'.pdf', $request->boolean('unduh'));
     }
@@ -507,7 +546,7 @@ class PermohonanController extends Controller
     public function buktiTerima(Request $request, Permohonan $permohonan)
     {
         $this->authorizeOr404('buktiTerima', $permohonan);
-        $p = $permohonan->load(['parameter', 'pemohon', 'penerima']);
+        $p = $permohonan->load(['produk', 'parameter.produk', 'pemohon', 'penerima']);
 
         return Pdf::respons('pdf.bukti-terima', ['p' => $p], 'Bukti Terima '.str_replace('/', '-', (string) $p->kode_sampel).'.pdf', $request->boolean('unduh'));
     }

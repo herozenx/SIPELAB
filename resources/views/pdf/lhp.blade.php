@@ -6,7 +6,6 @@
   $mulai = $p->tahap->min('masuk_at');
   $akhir = $p->tahap->max('selesai_at');
   $rentang = $mulai ? $tgl($mulai).($akhir && $tgl($akhir) !== $tgl($mulai) ? ' – '.$tgl($akhir) : '') : '-';
-  $perBidang = $parameter->groupBy('bidang');
   $belumAkreditasi = $parameter->contains(fn ($x) => ! $x->akreditasi);
 @endphp
 <!doctype html>
@@ -32,6 +31,9 @@
 </style>
 </head>
 <body>
+@foreach ($halaman as $hal)
+  @php $perBidang = $hal['parameter']->groupBy('bidang'); @endphp
+  <div @if (! $loop->last) style="page-break-after:always" @endif>
   <table class="kop">
     <tr>
       <td style="width:24mm"><img src="{{ \App\Support\Pdf::logo('kkp') }}" style="width:19mm;height:17.3mm"></td>
@@ -44,8 +46,8 @@
     </tr>
   </table>
 
-  <h1>Laporan Hasil Pengujian</h1>
-  <div class="tengah"><i>Report of Analysis</i></div>
+  <h1>Hasil Uji</h1>
+  <div class="tengah"><i>Test Result</i></div>
   <div class="tengah tebal" style="margin-top:3px">Nomor/<i>Number</i> : {{ $lhu->nomor }}</div>
 
   <p style="margin:6px 0 2px">Menyatakan bahwa :<br><i>This is certify that</i></p>
@@ -54,15 +56,15 @@
       ['Pelanggan', 'Customer', $pemohon->instansi ?: $pemohon->nama],
       ['Alamat', 'Address', $p->alamat ?: ($pemohon->alamat ?: '-')],
       ['Tanggal Penerimaan', 'Receipt date', $tgl($p->diterima_at ?? $p->created_at)],
-      ['Jenis sampel', 'Type of sample', $p->nama_sampel],
-      ['Kode sampel', 'Sample code', $p->kode_sampel ?: '-'],
+      ['Jenis sampel', 'Type of sample', $hal['nama']],
+      ['Kode sampel', 'Sample code', $hal['kode'] ?: '-'],
       ['Tanggal Pengujian', 'Testing date', $rentang],
     ] as $i => [$id, $en, $isi])
       <tr><td style="width:5mm">{{ $i + 1 }}.</td><td style="width:60mm">{{ $id }}/ <i>{{ $en }}</i></td><td style="width:4mm">:</td><td class="tebal">{{ $isi }}</td></tr>
     @endforeach
   </table>
 
-  @if ($parameter->isNotEmpty())
+  @if ($hal['parameter']->isNotEmpty())
     <table class="hasil">
       <thead>
         <tr>
@@ -100,10 +102,11 @@
     <tr>
       <td style="width:16mm">Catatan/<br><i>Note</i></td><td style="width:3mm">:</td>
       <td>
-        1. Hasil uji ini hanya berlaku untuk contoh uji yang diuji/ <i>This result of the test are only valid for the tested sample.</i><br>
-        2. Laporan hasil uji ini terdiri dari 1 (satu) lembar asli/ <i>This report of test consists of 1 (one) page original.</i><br>
-        3. Laporan hasil uji ini tidak boleh digandakan, kecuali secara lengkap dan seijin tertulis Kepala Balai PPMHKP Surabaya II/
-        <i>This report of test shall not be reproduced except for the completed one and with the written permission of the Head of the Technical Implementation Unit.</i>
+        1. Hasil uji ini mewakili populasi yang diambil/ Hasil uji ini hanya berlaku untuk contoh uji yang diuji**)<br>
+        <i>This result of the test represent the population taken/ This result of the test are only valid for the tested sample**)</i><br>
+        2. Laporan hasil uji ini terdiri dari 1 (satu) lembar asli (Stempel Asli)/ <i>This report of test consists of 1 (one) page original (Original Sign).</i><br>
+        3. Laporan hasil uji ini tidak boleh digandakan, kecuali secara lengkap dan seijin tertulis Kepala Balai PPMHKP Surabaya II (Stempel Copy)/
+        <i>This report of test shall not be reproduced (copied) except for the completed one and with the written permission of the Head of the Technical Implementation Unit (Copy Sign).</i>
       </td>
     </tr>
   </table>
@@ -135,5 +138,7 @@
     **) Coret yang tidak sesuai/<i>Cross out whichever does not apply</i><br>
     {{ $S::get('kode_formulir_lhp') }}
   </div>
+  </div>
+@endforeach
 </body>
 </html>

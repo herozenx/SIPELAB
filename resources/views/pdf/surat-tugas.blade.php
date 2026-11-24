@@ -44,7 +44,7 @@
       </td>
     </tr>
     <tr><td colspan="3" style="height:8px"></td></tr>
-    <tr><td class="label">Jenis Contoh Uji</td><td class="titik">:</td><td>{{ mb_strtoupper($p->nama_sampel) }}@if($p->jumlah_sampel > 1) ({{ $p->jumlah_sampel }} sampel)@endif</td></tr>
+    <tr><td class="label">Jenis Contoh Uji</td><td class="titik">:</td><td>{{ mb_strtoupper($p->produk->isNotEmpty() ? $p->produk->pluck('nama')->join(', ') : $p->nama_sampel) }}@if($p->jumlah_sampel > 1) ({{ $p->jumlah_sampel }} sampel)@endif</td></tr>
     <tr><td class="label">Kode Contoh Uji</td><td class="titik">:</td><td>{{ $p->kode_sampel }}</td></tr>
     <tr><td class="label">No. FPPC</td><td class="titik">:</td><td><b>{{ $surat->first()->nomor }}</b></td></tr>
     <tr><td colspan="3" style="height:6px"></td></tr>

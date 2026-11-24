@@ -14,6 +14,7 @@ use App\Models\ParameterUji;
 use App\Models\Pengembalian;
 use App\Models\Permohonan;
 use App\Models\PermohonanParameter;
+use App\Models\PermohonanProduk;
 use App\Models\Persetujuan;
 use App\Models\Setting;
 use App\Models\StatusLog;
@@ -35,6 +36,8 @@ use Illuminate\Support\Facades\Storage;
 class Workflow
 {
     public const MAX_UPLOAD = 5 * 1024 * 1024;
+    /** Produk per permohonan: akhiran kode A sampai J. */
+    public const MAKS_PRODUK = 10;
     public const DISK = 'local';
     public const DIR = 'dokumen';
 
@@ -128,28 +131,56 @@ class Workflow
     // =====================================================================================
 
     /**
-     * @param  array<int, int>  $parameter  [parameter_id => jumlah pengujian]
+     * Ajukan permohonan berisi satu atau beberapa produk (satu perusahaan, hari yang sama, beda produk).
+     * Nomor permohonan sementara (PMH-DDMMYY-NNN); kode sampel SP baru diberikan saat sampel diregistrasi
+     * supaya nomor urut harian buku sampel tidak terpakai oleh permohonan yang ditolak atau tidak datang.
+     *
+     * @param  array<int, array{nama:string, jumlah:int, parameter:array<int,int>}>  $produk  [ [nama, jumlah, [parameter_id => jumlah pengujian]] ]
      * @param  UploadedFile[]  $files
      */
-    public function ajukan(User $u, array $data, array $parameter, array $files): Permohonan
+    public function ajukan(User $u, array $data, array $produk, array $files): Permohonan
     {
-        $master = ParameterUji::query()->aktif()->whereIn('parameter_uji.id', array_keys($parameter))->get()->keyBy('id');
+        $produk = array_values(array_filter($produk, fn ($x) => ! empty($x['parameter'])));
+        if ($produk === []) {
+            throw new WorkflowException('Pilih minimal satu parameter uji.');
+        }
+        if (count($produk) > self::MAKS_PRODUK) {
+            throw new WorkflowException('Satu permohonan paling banyak '.self::MAKS_PRODUK.' produk.');
+        }
+        $idDiminta = collect($produk)->flatMap(fn ($x) => array_keys($x['parameter']))->unique()->all();
+        $master = ParameterUji::query()->aktif()->whereIn('parameter_uji.id', $idDiminta)->get()->keyBy('id');
         if ($master->isEmpty()) {
             throw new WorkflowException('Pilih minimal satu parameter uji.');
         }
 
-        return $this->tx(function () use ($u, $data, $parameter, $files, $master) {
-            $p = Permohonan::query()->create($data + [
+        return $this->tx(function () use ($u, $data, $produk, $files, $master) {
+            $p = Permohonan::query()->create([
+                'nama_sampel' => mb_substr(collect($produk)->pluck('nama')->join(', '), 0, 120),
+                'jumlah_sampel' => min(65535, collect($produk)->sum(fn ($x) => max(1, (int) $x['jumlah']))),
+            ] + $data + [
                 'user_id' => $u->id, 'status' => Status::Diajukan, 'jenis_bayar' => JenisBayar::Mandiri,
             ]);
-            $this->beriKode($p, JenisBayar::Mandiri, now()->format('dmy'));
-            foreach ($master as $id => $m) {
-                PermohonanParameter::query()->create([
-                    'permohonan_id' => $p->id, 'parameter_id' => $m->id, 'lab_id' => $m->lab_id,
-                    'kode' => $m->kode, 'nama' => $m->nama, 'bidang' => $m->bidang, 'metode' => $m->metode,
-                    'persyaratan' => $m->persyaratan, 'satuan' => $m->satuan, 'akreditasi' => $m->akreditasi,
-                    'jumlah' => max(1, min(500, (int) $parameter[$id])), 'tarif' => $m->tarif, 'keterangan' => $m->keterangan,
+            $this->beriNomor($p, 'kode', fn () => $this->nomorPermohonanBaru(now()->format('dmy')));
+            foreach ($produk as $i => $x) {
+                $pr = PermohonanProduk::query()->create([
+                    'permohonan_id' => $p->id, 'urut' => $i + 1, 'nama' => mb_substr(trim((string) $x['nama']), 0, 120),
+                    'jumlah' => max(1, min(500, (int) $x['jumlah'])),
                 ]);
+                foreach ($x['parameter'] as $id => $jumlah) {
+                    $m = $master->get($id);
+                    if (! $m) {
+                        continue;
+                    }
+                    PermohonanParameter::query()->create([
+                        'permohonan_id' => $p->id, 'produk_id' => $pr->id, 'parameter_id' => $m->id, 'lab_id' => $m->lab_id,
+                        'kode' => $m->kode, 'nama' => $m->nama, 'bidang' => $m->bidang, 'metode' => $m->metode,
+                        'persyaratan' => $m->persyaratan, 'satuan' => $m->satuan, 'akreditasi' => $m->akreditasi,
+                        'jumlah' => max(1, min(500, (int) $jumlah)), 'tarif' => $m->tarif, 'keterangan' => $m->keterangan,
+                    ]);
+                }
+            }
+            if (! PermohonanParameter::query()->where('permohonan_id', $p->id)->exists()) {
+                throw new WorkflowException('Pilih minimal satu parameter uji.');
             }
             if (! empty($data['alamat']) && ! $u->alamat) {
                 $u->forceFill(['alamat' => $data['alamat']])->save();
@@ -187,16 +218,23 @@ class Workflow
             $tgl = now()->format('dmy');
             $ke = $jenis->bayarDiAwal() ? Status::MenungguBilling : Status::SiapUji;
             $lama = (string) $p->kode;
-            // Kode tetap sama bila jenis layanan & tanggal terima cocok; selain itu diberi nomor urut jenis/tanggal tersebut.
-            if (! str_starts_with($lama, $jenis->kodeSurat()."/{$tgl}.")) {
-                $this->beriKode($p, $jenis, $tgl);
+            // Data versi sebelumnya sudah memegang kode SP saat diajukan: dipakai bila jenis & tanggalnya cocok.
+            if (str_starts_with($lama, $jenis->kodeSurat()."/{$tgl}.")) {
+                Permohonan::query()->whereKey($p->id)->update(['kode_sampel' => $lama]);
+                $p->kode_sampel = $lama;
+            } else {
+                $this->beriNomor($p, 'kode_sampel', fn () => $this->kodeSampelBaru($jenis, $tgl));
             }
-            $kode = (string) $p->kode;
+            $kode = (string) $p->kode_sampel;
+            $this->beriAgenda($p);
+            $this->kodeProduk($p, $kode);
+
             $this->transisi($p, Status::Diterima, [
-                'status' => $ke->value, 'jenis_bayar' => $jenis->value, 'kode_sampel' => $kode,
+                'status' => $ke->value, 'jenis_bayar' => $jenis->value,
                 'tagihan' => $tagihan, 'diterima_at' => now(), 'diterima_oleh' => $operator->id,
             ] + array_map(fn ($v) => $v === '' ? null : $v, $kondisi),
-                'Sampel diterima dan diregistrasi dengan kode '.$kode.($kode !== $lama ? " (sebelumnya {$lama})" : '').". Jenis layanan: {$jenis->label()}. "
+                'Sampel diterima dan diregistrasi dengan kode '.$kode.' (No. agenda '.$p->no_agenda.'). '
+                ."Jenis layanan: {$jenis->label()}. "
                 .($jenis->bayarDiAwal() ? 'Menunggu penerbitan kode billing SIMPONI.' : 'Dibayar di belakang; siap dibuatkan surat tugas.'), $operator);
 
             return $kode;
@@ -204,15 +242,15 @@ class Workflow
     }
 
     /**
-     * Beri kode SP baru (urut harian per jenis); bila dua proses mendapat nomor sama, unique index
-     * menolak salah satunya dan nomor dihitung ulang (savepoint, transaksi luar tetap utuh).
+     * Isi kolom bernomor urut ($kolom unik di database). Bila dua proses mendapat nomor yang sama,
+     * unique index menolak salah satunya dan nomor dihitung ulang (savepoint, transaksi luar tetap utuh).
      */
-    private function beriKode(Permohonan $p, JenisBayar $jenis, string $tgl): void
+    private function beriNomor(Permohonan $p, string $kolom, callable $nomorBaru): void
     {
         for ($coba = 1; ; $coba++) {
             try {
-                DB::transaction(fn () => Permohonan::query()->whereKey($p->id)->update(['kode' => $this->kodeSampelBaru($jenis, $tgl)]));
-                $p->kode = Permohonan::query()->whereKey($p->id)->value('kode');
+                DB::transaction(fn () => Permohonan::query()->whereKey($p->id)->update([$kolom => $nomorBaru()]));
+                $p->{$kolom} = Permohonan::query()->whereKey($p->id)->value($kolom);
 
                 return;
             } catch (QueryException $e) {
@@ -223,20 +261,57 @@ class Workflow
         }
     }
 
+    /** Nomor permohonan online sebelum sampel diregistrasi: PMH-DDMMYY-NNN (urut harian). */
+    public function nomorPermohonanBaru(string $tgl): string
+    {
+        $awalan = "PMH-{$tgl}-";
+        $terakhir = Permohonan::query()->where('kode', 'like', $awalan.'%')->pluck('kode')
+            ->map(fn (string $k) => (int) substr($k, strlen($awalan)))->max() ?? 0;
+
+        return sprintf('%s%03d', $awalan, $terakhir + 1);
+    }
+
     /**
      * Kode sampel mengikuti buku sampel: {SP.M|SP.PE|SP.S}/DDMMYY.NN.
-     * Nomor urut NN per hari dan per jenis layanan: tiap jenis mulai dari 01 setiap hari.
+     * Nomor urut NN per hari dan berlanjut lintas jenis layanan, mis. SP.E/060126.01–.03 lalu SP.S/060126.04.
      */
     public function kodeSampelBaru(JenisBayar $jenis, string $tgl): string
     {
-        $awalan = $jenis->kodeSurat()."/{$tgl}.";
-        // Periksa juga kode_sampel: data dari versi sebelumnya menyimpan kode SP hanya di kolom itu.
-        $terakhir = Permohonan::query()->where('kode', 'like', $awalan.'%')->pluck('kode')
-            ->merge(Permohonan::query()->where('kode_sampel', 'like', $awalan.'%')->pluck('kode_sampel'))
-            ->map(fn (string $k) => (int) substr($k, strlen($awalan)))
+        // Periksa kode & kode_sampel: data versi sebelumnya menyimpan kode SP di kolom kode.
+        $pola = 'SP.%/'.$tgl.'.%';
+        $terakhir = Permohonan::query()->where('kode', 'like', $pola)->pluck('kode')
+            ->merge(Permohonan::query()->where('kode_sampel', 'like', $pola)->pluck('kode_sampel'))
+            ->map(fn (string $k) => preg_match('#^SP\.[A-Z]+/'.$tgl.'\.(\d+)#', $k, $m) ? (int) $m[1] : 0)
             ->max() ?? 0;
 
-        return sprintf('%s%02d', $awalan, $terakhir + 1);
+        return sprintf('%s/%s.%02d', $jenis->kodeSurat(), $tgl, $terakhir + 1);
+    }
+
+    /**
+     * Nomor agenda ("NO. surat" buku sampel), urut per tahun sejak registrasi. Nomor ini menjadi nomor urut LHP.
+     * Dimulai setelah nomor LHP terbesar tahun itu supaya tidak bentrok dengan LHP yang terbit sebelum revisi ini.
+     */
+    private function beriAgenda(Permohonan $p): void
+    {
+        if ($p->no_agenda) {
+            return;
+        }
+        $tahun = (int) now()->format('Y');
+        Permohonan::query()->whereKey($p->id)->update(['tahun_agenda' => $tahun]);
+        $this->beriNomor($p, 'no_agenda', fn () => max(
+            (int) Permohonan::query()->where('tahun_agenda', $tahun)->max('no_agenda'),
+            (int) Lhu::query()->where('tahun', $tahun)->max('nomor_urut'),
+        ) + 1);
+        $p->tahun_agenda = $tahun;
+    }
+
+    /** Kode tiap produk: satu produk = kode sampel; beberapa produk = kode sampel + A, B, C, ... (seperti di LHP). */
+    private function kodeProduk(Permohonan $p, string $kode): void
+    {
+        $produk = PermohonanProduk::query()->where('permohonan_id', $p->id)->orderBy('urut')->get();
+        foreach ($produk as $x) {
+            $x->update(['kode' => $produk->count() > 1 ? $kode.PermohonanProduk::akhiran($x->urut) : $kode]);
+        }
     }
 
     public function tolak(Permohonan $p, string $alasan, User $admin): void
@@ -544,13 +619,24 @@ class Workflow
             }
             $this->setujui($p, Persetujuan::SAH, null, $pj);
 
-            $tahun = (int) now()->format('Y');
-            $urut = (int) Lhu::query()->where('tahun', $tahun)->max('nomor_urut') + 1;
-            $nomor = $this->formatNomor(Setting::get('format_nomor_lhp'), $urut, now());
+            // Nomor LHP = nomor agenda buku sampel; bulan Romawi = bulan sampel diterima (bukan bulan pengesahan).
+            // Contoh dokumen Balai: SP.E/290626.02, No. agenda 437, disahkan 1 Juli -> 0437/.../VI/2026.
+            if ($p->no_agenda) {
+                $tahun = (int) $p->tahun_agenda;
+                $urut = (int) $p->no_agenda;
+            } else {
+                // Diregistrasi sebelum ada nomor agenda: ambil nomor berikutnya.
+                $tahun = (int) ($p->diterima_at ?? now())->format('Y');
+                $urut = max(
+                    (int) Lhu::query()->where('tahun', $tahun)->max('nomor_urut'),
+                    (int) Permohonan::query()->where('tahun_agenda', $tahun)->max('no_agenda'),
+                ) + 1;
+            }
+            $nomor = $this->formatNomor(Setting::get('format_nomor_lhp'), $urut, $p->diterima_at ?? now());
             $memenuhi = PermohonanParameter::query()->where('permohonan_id', $p->id)->where('memenuhi', false)->doesntExist();
             $lhu = Lhu::query()->firstOrNew(['permohonan_id' => $p->id]);
             $lhu->fill([
-                'nomor' => $nomor, 'tahun' => $tahun, 'nomor_urut' => $urut, 'versi_sidik' => 2,
+                'nomor' => $nomor, 'tahun' => $tahun, 'nomor_urut' => $urut, 'versi_sidik' => 4,
                 'status_izin' => $memenuhi ? StatusIzin::Lulus : StatusIzin::TidakLulus,
                 'kode_verifikasi' => strtoupper(bin2hex(random_bytes(6))), 'validated_by' => $pj->id, 'validated_at' => now(),
             ]);
@@ -680,13 +766,21 @@ class Workflow
                 'validated_at' => $lhu->validated_at?->format('Y-m-d H:i:s'),
             ], JSON_UNESCAPED_UNICODE);
         } else {
-            $isi = json_encode([
+            $isi = [
                 'v' => 2, 'nomor' => $lhu->nomor, 'kode' => $p->kode, 'kode_sampel' => $p->kode_sampel,
                 'verifikasi' => $lhu->kode_verifikasi, 'sampel' => $p->nama_sampel, 'komoditas' => $p->jenis_komoditas,
                 'jumlah' => $p->jumlah_sampel, 'tujuan' => $p->tujuan->value, 'status' => $lhu->status_izin->value,
                 'hasil' => $this->sidikHasil($p), 'oleh' => $lhu->validated_by,
                 'validated_at' => $lhu->validated_at?->format('Y-m-d H:i:s'),
-            ], JSON_UNESCAPED_UNICODE);
+            ];
+            if ((int) $lhu->versi_sidik >= 4) {
+                // Revisi 3: produk (kode & nama per halaman LHP) dan parameter milik tiap produk ikut disidik.
+                $isi['v'] = 4;
+                $isi['produk'] = PermohonanProduk::query()->where('permohonan_id', $p->id)->orderBy('urut')->get()
+                    ->map(fn ($x) => [$x->id, $x->kode, $x->nama, $x->jumlah,
+                        PermohonanParameter::query()->where('produk_id', $x->id)->orderBy('id')->pluck('id')->all()])->all();
+            }
+            $isi = json_encode($isi, JSON_UNESCAPED_UNICODE);
         }
         $hash = hash('sha256', $isi);
 

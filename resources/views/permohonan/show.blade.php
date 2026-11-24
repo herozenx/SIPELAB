@@ -20,6 +20,9 @@
   $bolehKembali = $p->status->tahapLhp() && Gate::allows('kembalikan', $p);
   $paraf = $p->persetujuan->where('jenis', \App\Models\Persetujuan::PARAF);
   $kembaliTerbuka = $pengembalian->whereNull('selesai_at');
+  // Beberapa produk dalam satu permohonan: tiap parameter diberi label produknya (kode A/B/C + nama).
+  $multiProduk = $p->produk->count() > 1;
+  $labelProduk = fn ($x) => $multiProduk && $x->produk ? trim(($x->produk->kode ?: 'Produk '.$x->produk->urut).' · '.$x->produk->nama) : null;
 @endphp
 
 <a href="{{ $lab ? route('dashboard') : route('permohonan.index') }}" class="no-print inline-flex items-center gap-1 text-sm font-semibold no-underline"><x-ikon n="kembali" class="h-4 w-4" />{{ $lab ? 'Antrean lab' : 'Daftar permohonan' }}</a>
@@ -363,7 +366,7 @@
           @csrf
           @foreach ($parameter as $x)
             <fieldset class="rounded-lg border border-kabut-200 p-4">
-              <legend class="px-1 text-sm font-bold">{{ $x->kode ? $x->kode.' · ' : '' }}{{ $x->nama }} <span class="font-normal text-kabut-500">×{{ $x->jumlah }}</span></legend>
+              <legend class="px-1 text-sm font-bold">@if($labelProduk($x))<span class="block text-xs font-semibold text-laut-700">{{ $labelProduk($x) }}</span>@endif{{ $x->kode ? $x->kode.' · ' : '' }}{{ $x->nama }} <span class="font-normal text-kabut-500">×{{ $x->jumlah }}</span></legend>
               <p class="text-xs text-kabut-500">Metode {{ $x->metode }} · Persyaratan: <span class="font-semibold text-tinta">{{ $x->persyaratan ?: '–' }}</span>@if($x->satuan) · Satuan {{ $x->satuan }}@endif</p>
               <div class="mt-3 grid gap-3 sm:grid-cols-[1fr_auto]">
                 <div>
@@ -556,7 +559,7 @@
             <tr class="bg-kabut-50"><td colspan="6" class="text-xs font-bold uppercase tracking-wide text-kabut-500">{{ $bidang }}</td></tr>
             @foreach ($list as $x)
               <tr>
-                <td class="min-w-[160px]"><span class="font-semibold">{{ $x->nama }}</span>@unless($x->akreditasi)<span class="text-kabut-500">*</span>@endunless<span class="block text-xs text-kabut-500">×{{ $x->jumlah }}</span></td>
+                <td class="min-w-[160px]"><span class="font-semibold">{{ $x->nama }}</span>@unless($x->akreditasi)<span class="text-kabut-500">*</span>@endunless<span class="block text-xs text-kabut-500">@if($labelProduk($x)){{ $labelProduk($x) }} · @endif×{{ $x->jumlah }}</span></td>
                 <td data-label="Hasil"><span>{{ $x->hasil ?? '–' }}@if($x->memenuhi !== null)<span class="mt-1 block w-fit {{ $x->memenuhi ? 'badge-ok' : 'badge-bad' }}">{{ $x->memenuhi ? 'Memenuhi' : 'Tidak memenuhi' }}</span>@endif</span></td>
                 <td class="text-sm text-kabut-600" data-label="Persyaratan">{{ $x->persyaratan ?: '–' }}</td>
                 <td class="text-sm text-kabut-600" data-label="Metode">{{ $x->metode }}</td>
@@ -581,7 +584,7 @@
           <tbody>
             @foreach ($parameter as $x)
               <tr>
-                <td class="font-semibold">{{ $x->kode ? $x->kode.' · ' : '' }}{{ $x->nama }}</td>
+                <td class="font-semibold">{{ $x->kode ? $x->kode.' · ' : '' }}{{ $x->nama }}@if($labelProduk($x))<span class="block text-xs font-normal text-kabut-500">{{ $labelProduk($x) }}</span>@endif</td>
                 <td data-label="Bidang">{{ $x->bidang }}</td>
                 <td class="text-sm text-kabut-600" data-label="Metode">{{ $x->metode }}</td>
                 <td class="num text-right" data-label="Jumlah uji">{{ $x->jumlah }}</td>
@@ -679,8 +682,13 @@
     <section class="panel">
       <div class="panel-head"><h2>Data sampel</h2></div>
       <dl class="panel-body grid gap-3.5 text-sm">
-        @if ($p->kode_sampel)<div><dt class="text-xs text-kabut-500">Kode sampel</dt><dd class="kode mt-0.5">{{ $p->kode_sampel }}</dd>@can('buktiTerima', $p)<a href="{{ route('permohonan.bukti-terima', $p) }}" target="_blank" rel="noopener" class="btn-ghost btn-sm mt-2"><x-ikon n="berkas" class="h-4 w-4" />Bukti terima sampel (PDF)</a>@endcan</div>@endif
-        <div><dt class="text-xs text-kabut-500">Nama sampel</dt><dd class="mt-0.5 font-semibold">{{ $p->nama_sampel }}</dd></div>
+        @if ($p->kode_sampel)<div><dt class="text-xs text-kabut-500">Kode sampel</dt><dd class="kode mt-0.5">{{ $p->kode_sampel }}</dd>@if($p->no_agenda && ! $pengguna)<dd class="num mt-0.5 text-xs text-kabut-500">No. agenda {{ $p->no_agenda }}/{{ $p->tahun_agenda }}</dd>@endif @can('buktiTerima', $p)<a href="{{ route('permohonan.bukti-terima', $p) }}" target="_blank" rel="noopener" class="btn-ghost btn-sm mt-2"><x-ikon n="berkas" class="h-4 w-4" />Bukti terima sampel (PDF)</a>@endcan</div>@endif
+        @if ($multiProduk)
+          <div><dt class="text-xs text-kabut-500">Produk ({{ $p->produk->count() }})</dt>
+            <dd class="mt-0.5"><ul class="space-y-1">@foreach ($p->produk as $pr)<li><span class="font-semibold">{{ $pr->nama }}</span> <span class="text-xs text-kabut-500">{{ $pr->jumlah }} sampel</span>@if($pr->kode)<span class="kode block text-xs">{{ $pr->kode }}</span>@endif</li>@endforeach</ul></dd></div>
+        @else
+          <div><dt class="text-xs text-kabut-500">Nama sampel</dt><dd class="mt-0.5 font-semibold">{{ $p->nama_sampel }}</dd></div>
+        @endif
         <div class="grid grid-cols-2 gap-3">
           <div><dt class="text-xs text-kabut-500">Komoditas</dt><dd class="mt-0.5 font-semibold">{{ $p->jenis_komoditas }}</dd></div>
           <div><dt class="text-xs text-kabut-500">Jumlah</dt><dd class="num mt-0.5 font-semibold">{{ $p->jumlah_sampel }} sampel</dd></div>

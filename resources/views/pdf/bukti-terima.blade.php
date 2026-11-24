@@ -34,14 +34,14 @@
   </table>
 
   <h1>Bukti Terima Sampel</h1>
-  <div class="tengah"><b>Kode sampel: {{ $p->kode_sampel }}</b></div>
+  <div class="tengah"><b>Kode sampel: {{ $p->kode_sampel }}</b>@if ($p->no_agenda) &nbsp;·&nbsp; No. agenda: <b>{{ $p->no_agenda }}</b>@endif</div>
 
   <table class="data" style="margin-top:12px">
     @foreach ([
       ['Pelanggan', $pemohon->instansi ?: $pemohon->nama],
       ['Alamat', $p->alamat ?: ($pemohon->alamat ?: '-')],
       ['Penanggung jawab', $pemohon->nama.($pemohon->telepon ? ' ('.$pemohon->telepon.')' : '')],
-      ['Jenis sampel', $p->nama_sampel.' ('.$p->jenis_komoditas.')'],
+      ['Jenis sampel', ($p->produk->count() > 1 ? $p->produk->count().' produk' : $p->nama_sampel).' ('.$p->jenis_komoditas.')'],
       ['Jumlah sampel', $p->jumlah_sampel],
       ['Asal sampel', $p->asal_sampel],
       ['Kondisi saat diterima', collect([$p->bentuk, $p->kemasan, $p->suhu !== null ? $p->suhu.' °C' : null, $p->berat])->filter()->join(', ') ?: '-'],
@@ -54,10 +54,10 @@
 
   <p style="margin:12px 0 2px">Parameter uji yang diminta:</p>
   <table class="tabel">
-    <thead><tr><th style="width:8mm">No.</th><th>Bidang</th><th>Parameter</th><th>Metode acuan</th><th style="width:18mm">Jumlah uji</th></tr></thead>
+    <thead><tr><th style="width:8mm">No.</th>@if ($p->produk->count() > 1)<th>Produk</th>@endif<th>Bidang</th><th>Parameter</th><th>Metode acuan</th><th style="width:18mm">Jumlah uji</th></tr></thead>
     <tbody>
       @foreach ($p->parameter as $i => $x)
-        <tr><td class="tengah">{{ $i + 1 }}</td><td>{{ $x->bidang }}</td><td>{{ $x->nama }}</td><td>{{ $x->metode }}</td><td class="tengah">{{ $x->jumlah }}</td></tr>
+        <tr><td class="tengah">{{ $i + 1 }}</td>@if ($p->produk->count() > 1)<td>{{ $x->produk?->kode }}<br>{{ $x->produk?->nama }}</td>@endif<td>{{ $x->bidang }}</td><td>{{ $x->nama }}</td><td>{{ $x->metode }}</td><td class="tengah">{{ $x->jumlah }}</td></tr>
       @endforeach
     </tbody>
   </table>

@@ -102,33 +102,67 @@
 
   // Perkiraan tagihan di form pengajuan
   // Perkiraan tagihan: tarif tiap parameter terpilih × jumlah pengujian + biaya administrasi.
+  // Beberapa produk dalam satu permohonan: tiap blok [data-produk] punya jumlah sampel & parameter sendiri.
   const est = $('[data-estimasi]');
   if (est) {
     const adm = Number(est.dataset.admin);
-    const jumlahSampel = $('[data-jumlah]');
-    const params = $$('input[data-param]');
+    const daftar = $('[data-produk-daftar]');
+    const tpl = $('[data-produk-template]');
+    const tombolTambah = $('[data-produk-tambah]');
+    const maks = Number(daftar?.dataset.maks || 10);
     const upd = () => {
       let total = 0;
       let n = 0;
-      params.forEach((cb) => {
-        const qty = $(`[data-param-jumlah="${cb.value}"]`);
+      $$('input[data-param]').forEach((cb) => {
+        const qty = $('[data-param-jumlah]', cb.closest('li'));
         if (qty) qty.disabled = !cb.checked;
         if (!cb.checked) return;
         n += 1;
         const j = Math.max(1, Math.min(500, parseInt(qty?.value, 10) || 1));
         total += Number(cb.dataset.tarif) * j;
       });
+      const blok = daftar ? $$('[data-produk]', daftar) : [];
+      blok.forEach((b, i) => {
+        const no = $('[data-produk-no]', b);
+        if (no) no.textContent = i + 1;
+        $('[data-produk-hapus]', b)?.classList.toggle('hidden', blok.length < 2);
+      });
+      if (tombolTambah) tombolTambah.disabled = blok.length >= maks;
+      const np = $('[data-estimasi-produk]', est);
+      if (np) np.textContent = blok.length || 1;
       $('[data-estimasi-n]', est).textContent = n;
       $('[data-estimasi-subtotal]', est).textContent = rupiah(total);
       $('[data-estimasi-total]', est).textContent = rupiah(total + adm);
     };
-    // Jumlah sampel diubah: isi ulang jumlah pengujian yang belum diubah manual.
-    jumlahSampel?.addEventListener('input', () => {
-      $$('[data-param-jumlah]').forEach((q) => { if (!q.dataset.manual) q.value = jumlahSampel.value; });
+    const form = est.closest('form') || document;
+    form.addEventListener('input', (e) => {
+      const t = e.target;
+      // Jumlah sampel diubah: isi ulang jumlah pengujian produk itu yang belum diubah manual.
+      if (t.matches('[data-jumlah]')) {
+        $$('[data-param-jumlah]', t.closest('[data-produk]') || form).forEach((q) => { if (!q.dataset.manual) q.value = t.value; });
+      }
+      if (t.matches('[data-param-jumlah]')) t.dataset.manual = '1';
       upd();
     });
-    $$('[data-param-jumlah]').forEach((q) => q.addEventListener('input', () => { q.dataset.manual = '1'; upd(); }));
-    params.forEach((cb) => cb.addEventListener('change', upd));
+    form.addEventListener('change', (e) => { if (e.target.matches('input[data-param]')) upd(); });
+    // Indeks baru selalu lebih besar dari yang ada, supaya nama field tidak bentrok setelah ada yang dihapus.
+    let berikut = Number(daftar?.dataset.berikut) || (daftar ? $$('[data-produk]', daftar).length : 0);
+    tombolTambah?.addEventListener('click', () => {
+      if (!daftar || !tpl || $$('[data-produk]', daftar).length >= maks) return;
+      const i = berikut++;
+      const wrap = document.createElement('div');
+      wrap.innerHTML = tpl.innerHTML.replaceAll('__i__', String(i));
+      const blok = wrap.firstElementChild;
+      daftar.appendChild(blok);
+      upd();
+      $('input[name$="[nama]"]', blok)?.focus();
+    });
+    daftar?.addEventListener('click', (e) => {
+      const hapus = e.target.closest('[data-produk-hapus]');
+      if (!hapus || $$('[data-produk]', daftar).length < 2) return;
+      hapus.closest('[data-produk]').remove();
+      upd();
+    });
     upd();
   }
 

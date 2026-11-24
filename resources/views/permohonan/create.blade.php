@@ -1,7 +1,6 @@
 @extends('layouts.app')
 @section('title', 'Ajukan uji')
 @section('content')
-@php $dipilih = collect(old('parameter', []))->map(fn ($v) => (int) $v); @endphp
 <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-1 text-sm font-semibold no-underline"><x-ikon n="kembali" class="h-4 w-4" />Beranda</a>
 <h1 class="mt-3">Ajukan permohonan uji</h1>
 <p class="mt-1 max-w-prose text-kabut-600">Permohonan online diajukan sebagai layanan <span class="font-semibold">Mandiri</span>. Setelah dikirim, bawa sampel fisik ke loket penerimaan Balai. Kode billing SIMPONI diterbitkan setelah sampel diverifikasi.</p>
@@ -10,23 +9,13 @@
   @csrf
   <div class="space-y-6">
     <div class="panel">
-      <div class="panel-head"><h2>Data sampel</h2></div>
+      <div class="panel-head"><h2>Data permohonan</h2></div>
       <div class="panel-body grid gap-5 sm:grid-cols-2">
         <div class="sm:col-span-2">
-          <label for="nama_sampel" class="label">Nama/jenis sampel</label>
-          <input id="nama_sampel" name="nama_sampel" value="{{ old('nama_sampel') }}" class="input" placeholder="Contoh: Udang frozen" required maxlength="120" @error('nama_sampel') aria-invalid="true" @enderror>
-          @error('nama_sampel')<p class="error">{{ $message }}</p>@enderror
-        </div>
-        <div>
           <label for="jenis_komoditas" class="label">Jenis komoditas</label>
           <input id="jenis_komoditas" name="jenis_komoditas" value="{{ old('jenis_komoditas') }}" class="input" placeholder="Contoh: Krustasea" required maxlength="80" list="komoditas" @error('jenis_komoditas') aria-invalid="true" @enderror>
           <datalist id="komoditas"><option value="Ikan segar"><option value="Ikan beku"><option value="Krustasea"><option value="Moluska"><option value="Rumput laut"><option value="Produk olahan"></datalist>
           @error('jenis_komoditas')<p class="error">{{ $message }}</p>@enderror
-        </div>
-        <div>
-          <label for="jumlah_sampel" class="label">Jumlah sampel</label>
-          <input id="jumlah_sampel" name="jumlah_sampel" type="number" min="1" max="500" value="{{ old('jumlah_sampel', 1) }}" class="input num" required data-jumlah @error('jumlah_sampel') aria-invalid="true" @enderror>
-          @error('jumlah_sampel')<p class="error">{{ $message }}</p>@enderror
         </div>
         <div class="sm:col-span-2">
           <label for="asal_sampel" class="label">Asal sampel</label>
@@ -50,34 +39,21 @@
       </div>
     </div>
 
-    <div class="panel">
-      <div class="panel-head"><h2>Parameter uji</h2><span class="text-xs text-kabut-500">Pilih parameter &amp; jumlah pengujian</span></div>
-      <div class="panel-body space-y-5">
-        @error('parameter')<p class="error">{{ $message }}</p>@enderror
-        @forelse ($parameter as $bidang => $list)
-          <fieldset>
-            <legend class="mb-2 text-xs font-bold uppercase tracking-wide text-kabut-500">{{ $bidang }}</legend>
-            <ul class="divide-y divide-kabut-100 rounded-lg border border-kabut-200">
-              @foreach ($list as $x)
-                <li class="flex flex-wrap items-center gap-3 px-3 py-2.5">
-                  <label class="flex min-w-0 flex-1 cursor-pointer items-start gap-3">
-                    <input type="checkbox" name="parameter[]" value="{{ $x->id }}" data-param data-tarif="{{ $x->tarif }}" class="mt-1 h-4 w-4 shrink-0 accent-laut-600" @checked($dipilih->contains($x->id))>
-                    <span class="min-w-0"><span class="block text-sm font-semibold">{{ $x->nama }}@unless($x->akreditasi)<span class="text-kabut-500" title="Belum terakreditasi"> *</span>@endunless</span><span class="block text-xs text-kabut-500">{{ $x->kode }} · {{ $x->metode }}</span></span>
-                  </label>
-                  <span class="num w-24 text-right text-xs text-kabut-500">{{ $x->tarif ? rupiah($x->tarif).'/uji' : 'Tarif menyusul' }}</span>
-                  <label class="sr-only" for="jumlah-{{ $x->id }}">Jumlah pengujian {{ $x->nama }}</label>
-                  <input id="jumlah-{{ $x->id }}" name="jumlah[{{ $x->id }}]" type="number" min="1" max="500" value="{{ old("jumlah.{$x->id}", old('jumlah_sampel', 1)) }}" class="input num w-20 py-1.5" data-param-jumlah="{{ $x->id }}" title="Jumlah pengujian">
-                </li>
-              @endforeach
-            </ul>
-          </fieldset>
-        @empty
-          <p class="text-sm text-kabut-500">Belum ada parameter uji yang aktif. Hubungi petugas Balai.</p>
-        @endforelse
-        <p class="hint">Angka di kanan = jumlah pengujian (biasanya sama dengan jumlah sampel). * = parameter belum terakreditasi.</p>
-      </div>
+    @php
+      // Indeks asli dipertahankan supaya pesan galat produk.N.* tampil di blok yang benar.
+      $isianProduk = collect(old('produk', [[]]))->filter(fn ($v, $k) => is_int($k) && is_array($v))->all() ?: [[]];
+    @endphp
+    <div class="space-y-6" data-produk-daftar data-maks="{{ $maksProduk }}" data-berikut="{{ max(array_keys($isianProduk)) + 1 }}">
+      @error('produk')<p class="error">{{ $message }}</p>@enderror
+      @foreach ($isianProduk as $i => $nilai)
+        @include('permohonan._produk', ['i' => $i, 'nilai' => $nilai])
+      @endforeach
     </div>
-
+    <template data-produk-template>@include('permohonan._produk', ['i' => '__i__', 'nilai' => []])</template>
+    <div class="flex flex-wrap items-center gap-3">
+      <button type="button" class="btn-ghost" data-produk-tambah><x-ikon n="tambah" class="h-4 w-4" />Tambah produk</button>
+      <p class="hint">Satu perusahaan menguji beberapa produk di hari yang sama? Tambahkan di sini. Semua produk memakai satu kode sampel (akhiran A, B, C, ...) dan satu nomor LHP. Maksimal {{ $maksProduk }} produk.</p>
+    </div>
     <div class="panel">
       <div class="panel-body grid gap-5">
         <div>
@@ -100,7 +76,7 @@
       <div class="panel-head"><h2>Perkiraan tagihan</h2></div>
       <div class="panel-body text-sm">
         <ul class="space-y-1.5">
-          <li class="flex justify-between"><span><span data-estimasi-n class="num">0</span> parameter dipilih</span><span class="num" data-estimasi-subtotal>{{ rupiah(0) }}</span></li>
+          <li class="flex justify-between"><span><span data-estimasi-n class="num">0</span> parameter dipilih<span class="block text-xs text-kabut-500"><span data-estimasi-produk class="num">1</span> produk</span></span><span class="num" data-estimasi-subtotal>{{ rupiah(0) }}</span></li>
           <li class="flex justify-between text-kabut-500"><span>Biaya administrasi</span><span class="num">{{ rupiah($biayaAdmin) }}</span></li>
         </ul>
         <p class="mt-3 flex items-baseline justify-between border-t border-kabut-200 pt-3"><span class="font-semibold">Total</span><span class="num text-xl font-extrabold text-laut-600" data-estimasi-total>{{ rupiah($biayaAdmin) }}</span></p>

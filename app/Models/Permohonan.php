@@ -24,6 +24,8 @@ class Permohonan extends Model
             'jenis_bayar' => JenisBayar::class,
             'jumlah_sampel' => 'integer',
             'tagihan' => 'integer',
+            'no_agenda' => 'integer',
+            'tahun_agenda' => 'integer',
             'masuk_lab_at' => 'datetime',
             'target_selesai_at' => 'datetime',
             'diterima_at' => 'datetime',
@@ -46,6 +48,12 @@ class Permohonan extends Model
     public function penerima(): BelongsTo
     {
         return $this->belongsTo(User::class, 'diterima_oleh');
+    }
+
+    /** Produk/jenis sampel dalam permohonan ini (minimal satu). */
+    public function produk(): HasMany
+    {
+        return $this->hasMany(PermohonanProduk::class)->orderBy('urut');
     }
 
     /** Parameter yang diminta beserta hasil ujinya. */

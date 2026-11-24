@@ -6,7 +6,6 @@
   $tglUjiAkhir = $p->tahap->max('selesai_at');
   $rentangUji = $tglUji ? tanggal($tglUji, false).($tglUjiAkhir && tanggal($tglUjiAkhir, false) !== tanggal($tglUji, false) ? ' – '.tanggal($tglUjiAkhir, false) : '') : '–';
   $bulanPanjang = fn ($d) => $d ? $d->copy()->setTimezone(config('app.timezone'))->locale('id')->translatedFormat('j F Y') : '–';
-  $perBidang = $parameter->groupBy('bidang');
   $belumAkreditasi = $parameter->contains(fn ($x) => ! $x->akreditasi);
   $paraf = $p->persetujuan->where('jenis', \App\Models\Persetujuan::PARAF);
   $periksa = $p->persetujuan->firstWhere('jenis', \App\Models\Persetujuan::PERIKSA);
@@ -33,7 +32,9 @@
     @endunless
   </div>
 
-  <article class="mx-auto min-h-[297mm] max-w-[210mm] bg-white px-[16mm] py-[12mm] text-[12px] leading-snug text-tinta shadow-xl print:min-h-0 print:shadow-none">
+  @foreach ($halaman as $hal)
+  @php $perBidang = $hal['parameter']->groupBy('bidang'); @endphp
+  <article class="mx-auto mb-6 min-h-[297mm] max-w-[210mm] bg-white px-[16mm] py-[12mm] text-[12px] leading-snug text-tinta shadow-xl print:mb-0 print:min-h-0 print:shadow-none print:break-after-page">
     <header class="flex items-center gap-4 border-b-2 border-tinta pb-3">
       <img src="{{ asset('img/logo-kkp.png') }}" alt="Logo KKP" class="h-14 w-auto">
       <div class="flex-1 text-center">
@@ -44,8 +45,8 @@
       <div class="text-center text-[7px] leading-tight"><img src="{{ asset('img/logo-kan.png') }}" alt="Logo KAN" class="h-9 w-auto">Laboratorium Penguji<br>LP-573-IDN</div>
     </header>
 
-    <h1 class="mt-4 text-center text-[15px] font-extrabold uppercase tracking-wide underline underline-offset-4">Laporan Hasil Pengujian</h1>
-    <p class="text-center text-[11px] italic">Report of Analysis</p>
+    <h1 class="mt-4 text-center text-[15px] font-extrabold uppercase tracking-wide underline underline-offset-4">Hasil Uji</h1>
+    <p class="text-center text-[11px] italic">Test Result</p>
     <p class="num mt-1 text-center font-semibold">Nomor/<i>Number</i> : {{ $lhu->nomor }}</p>
 
     <p class="mt-4">Menyatakan bahwa :<br><i class="text-[11px]">This is certify that</i></p>
@@ -55,8 +56,8 @@
           ['Pelanggan', 'Customer', $pemohon->instansi ?: $pemohon->nama],
           ['Alamat', 'Address', $p->alamat ?: ($pemohon->alamat ?: '-')],
           ['Tanggal Penerimaan', 'Receipt date', $bulanPanjang($p->diterima_at ?? $p->created_at)],
-          ['Jenis sampel', 'Type of sample', $p->nama_sampel],
-          ['Kode sampel', 'Sample code', $p->kode_sampel ?: '-'],
+          ['Jenis sampel', 'Type of sample', $hal['nama']],
+          ['Kode sampel', 'Sample code', $hal['kode'] ?: '-'],
           ['Tanggal Pengujian', 'Testing date', $rentangUji],
         ] as $i => [$id, $en, $isi])
           <tr><td class="w-6">{{ $i + 1 }}.</td><td class="w-48">{{ $id }}/ <i>{{ $en }}</i></td><td class="w-3">:</td><td class="font-semibold">{{ $isi }}</td></tr>
@@ -64,7 +65,7 @@
       </tbody>
     </table>
 
-    @if ($parameter->isNotEmpty())
+    @if ($hal['parameter']->isNotEmpty())
       <table class="mt-4 w-full border-collapse border border-tinta text-[11px]">
         <thead>
           <tr class="[&_th]:border [&_th]:border-tinta [&_th]:px-1.5 [&_th]:py-1 [&_th]:text-center [&_th]:align-middle [&_th]:font-bold">
@@ -107,9 +108,9 @@
       <tbody class="[&_td]:align-top">
         <tr><td class="w-20">Catatan/<br><i>Note</i></td><td class="w-3">:</td><td>
           <ol class="list-decimal space-y-1 pl-4">
-            <li>Hasil uji ini hanya berlaku untuk contoh uji yang diuji.<br><i>This result of the test are only valid for the tested sample.</i></li>
-            <li>Laporan hasil uji ini terdiri dari 1 (satu) lembar asli.<br><i>This report of test consists of 1 (one) page original.</i></li>
-            <li>Laporan hasil uji ini tidak boleh digandakan, kecuali secara lengkap dan seijin tertulis Kepala Balai PPMHKP Surabaya II.<br><i>This report of test shall not be reproduced except for the completed one and with the written permission of the Head of the Technical Implementation Unit.</i></li>
+            <li>Hasil uji ini mewakili populasi yang diambil/ Hasil uji ini hanya berlaku untuk contoh uji yang diuji**)<br><i>This result of the test represent the population taken/ This result of the test are only valid for the tested sample**)</i></li>
+            <li>Laporan hasil uji ini terdiri dari 1 (satu) lembar asli (Stempel Asli).<br><i>This report of test consists of 1 (one) page original (Original Sign).</i></li>
+            <li>Laporan hasil uji ini tidak boleh digandakan, kecuali secara lengkap dan seijin tertulis Kepala Balai PPMHKP Surabaya II (Stempel Copy).<br><i>This report of test shall not be reproduced (copied) except for the completed one and with the written permission of the Head of the Technical Implementation Unit (Copy Sign).</i></li>
           </ol>
         </td></tr>
       </tbody>
@@ -143,5 +144,6 @@
       <div class="mt-1 flex justify-between gap-3"><span class="num">{{ $S::get('kode_formulir_lhp') }}</span><span class="num break-all text-kabut-500">SHA-256 {{ $lhu->hash }}</span></div>
     </footer>
   </article>
+  @endforeach
 </body>
 </html>
