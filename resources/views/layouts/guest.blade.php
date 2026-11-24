@@ -49,8 +49,8 @@
       <nav class="mx-auto flex max-w-6xl flex-col px-4 pb-5" aria-label="Menu seluler">
         <a href="{{ route('panduan') }}" class="mobile-nav-link">Panduan</a>
         <a href="{{ route('home') }}#tarif" class="mobile-nav-link">Tarif</a>
-        <a href="{{ route('verifikasi') }}" class="mobile-nav-link">Cek keaslian LHP</a>
-        <a href="{{ route('home') }}#bantuan" class="mobile-nav-link">Pusat bantuan</a>
+        <a href="{{ route('verifikasi') }}" class="mobile-nav-link">Cek Keaslian LHP</a>
+        <a href="{{ route('home') }}#bantuan" class="mobile-nav-link">Pusat Bantuan</a>
         <div class="mt-4 flex flex-col gap-2">
           @auth
             <a href="{{ route('dashboard') }}" class="btn-primary min-h-[48px]">Buka beranda</a>

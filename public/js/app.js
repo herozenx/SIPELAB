@@ -58,7 +58,122 @@
     const show = input.type === 'password';
     input.type = show ? 'text' : 'password';
     btn.setAttribute('aria-label', show ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi');
+    btn.querySelector('[data-eye-open]')?.classList.toggle('hidden', show);
+    btn.querySelector('[data-eye-closed]')?.classList.toggle('hidden', !show);
   }));
+
+  // Validasi registrasi dimulai setelah pengguna mencoba mengirim formulir.
+  const registerForm = $('[data-register-form]');
+  if (registerForm) {
+    let submitted = false;
+    const clearError = (field) => {
+      field.classList.remove('is-invalid');
+      field.removeAttribute('aria-invalid');
+      field.closest('[data-field]')?.querySelector(`[data-error-icon="${field.id}"]`)?.classList.add('hidden');
+      field.closest('[data-field]')?.querySelector(`[data-field-error="${field.id}"]`)?.classList.add('hidden');
+      field.closest('[data-field]')?.querySelector(`[data-field-error="${field.id}"]`)?.replaceChildren();
+      field.closest('.flex')?.classList.remove('phone-invalid');
+    };
+
+    const setError = (field, message) => {
+      field.classList.add('is-invalid');
+      field.setAttribute('aria-invalid', 'true');
+      field.closest('[data-field]')?.querySelector(`[data-error-icon="${field.id}"]`)?.classList.remove('hidden');
+      field.closest('.flex')?.classList.add('phone-invalid');
+      const error = field.closest('[data-field]')?.querySelector(`[data-field-error="${field.id}"]`);
+      if (error) {
+        error.textContent = message;
+        error.classList.remove('hidden');
+        error.setAttribute('role', 'alert');
+        field.setAttribute('aria-describedby', error.id || `${field.id}-error`);
+        if (!error.id) error.id = `${field.id}-error`;
+      }
+    };
+
+    const validateField = (field) => {
+      clearError(field);
+      const value = field.value.trim();
+      let message = '';
+
+      if (field.required && value === '') {
+        message = 'Wajib diisi.';
+      } else if (field.id === 'nama' && value.length < 3) {
+        message = 'Minimal 3 karakter.';
+      } else if (field.id === 'instansi' && value.length < 2) {
+        message = 'Minimal 2 karakter.';
+      } else if (field.id === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        message = 'Masukkan format email yang benar.';
+      } else if (field.id === 'telepon') {
+        const digits = value.replace(/\D/g, '');
+        if (digits.length < 8) message = 'Masukkan nomor telepon yang lengkap.';
+      } else if (field.id === 'password') {
+        if (value.length < 8) message = 'Minimal 8 karakter.';
+        else if (!/[A-Z]/.test(value)) message = 'Gunakan sedikitnya satu huruf besar.';
+        else if (!/[a-z]/.test(value)) message = 'Gunakan sedikitnya satu huruf kecil.';
+        else if (!/[0-9]/.test(value)) message = 'Gunakan sedikitnya satu angka.';
+      } else if (field.id === 'password_confirmation') {
+        const password = registerForm.querySelector('#password')?.value || '';
+        if (value !== password) message = 'Ulangi kata sandi dengan tepat.';
+      }
+
+      if (message) setError(field, message);
+      return message === '';
+    };
+
+    const fields = Array.from(registerForm.querySelectorAll('input[name]:not([type="hidden"])'));
+    fields.forEach((field) => {
+      field.addEventListener('blur', () => {
+        if (submitted) validateField(field);
+      });
+      field.addEventListener('input', () => {
+        if (submitted && field.getAttribute('aria-invalid') === 'true') validateField(field);
+        if (submitted && field.id === 'password' && registerForm.querySelector('#password_confirmation')?.getAttribute('aria-invalid') === 'true') {
+          validateField(registerForm.querySelector('#password_confirmation'));
+        }
+      });
+    });
+
+    registerForm.addEventListener('submit', (event) => {
+      submitted = true;
+      let firstInvalid = null;
+      fields.forEach((field) => {
+        if (!validateField(field) && !firstInvalid) firstInvalid = field;
+      });
+
+      if (firstInvalid) {
+        event.preventDefault();
+        firstInvalid.focus({ preventScroll: true });
+        firstInvalid.scrollIntoView({
+          block: 'center',
+          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        });
+        return;
+      }
+
+      const button = registerForm.querySelector('[data-submit-button]');
+      const label = registerForm.querySelector('[data-submit-label]');
+      if (button) {
+        button.disabled = true;
+        button.setAttribute('aria-busy', 'true');
+        button.classList.add('cursor-not-allowed', 'opacity-70');
+      }
+      if (label) label.textContent = 'Membuat akun...';
+    });
+
+    requestAnimationFrame(() => {
+      const serverFields = Array.from(registerForm.querySelectorAll('[data-server-error]'));
+      serverFields.forEach((serverField) => {
+        setError(serverField, serverField.dataset.serverError || 'Periksa isian ini.');
+      });
+      if (serverFields.length) {
+        serverFields[0].focus({ preventScroll: true });
+        serverFields[0].scrollIntoView({
+          block: 'center',
+          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        });
+      }
+    });
+  }
 
   // Bagian form yang muncul sesuai pilihan radio (mis. valid / tolak)
   $$('form').forEach((form) => {

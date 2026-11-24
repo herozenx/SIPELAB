@@ -43,6 +43,11 @@
 }
 
 @layer components {
+  .field-error-icon { @apply absolute right-3 top-1/2 flex -translate-y-1/2 items-center justify-center text-karang-600; }
+  .phone-invalid { box-shadow: inset 0 0 0 2px theme('colors.karang.500') !important; }
+  .auth-field-error { @apply mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-karang-700; }
+  .input.is-invalid { box-shadow: inset 0 0 0 2px theme('colors.karang.500'); }
+  .panduan-page-link { @apply inline-flex min-h-[44px] items-center rounded-lg px-3 text-sm font-bold text-laut-700 no-underline transition-colors duration-200 hover:bg-kabut-50 hover:text-laut-600 hover:no-underline; }
   .auth-inline-link { @apply font-semibold text-laut-700 no-underline transition-colors duration-200 hover:text-laut-500 hover:no-underline; }
   .public-nav-link { @apply inline-flex min-h-[44px] items-center rounded-lg px-2 text-sm font-semibold text-kabut-600 no-underline transition-colors duration-200 hover:text-laut-700 hover:no-underline; }
   .mobile-nav-link { @apply flex min-h-[48px] items-center border-b border-kabut-100 text-base font-semibold text-tinta no-underline transition-colors duration-200 hover:bg-kabut-50 hover:px-2 hover:no-underline; }
