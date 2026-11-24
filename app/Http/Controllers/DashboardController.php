@@ -105,10 +105,37 @@ class DashboardController extends Controller
     private function pengguna(Request $request)
     {
         $u = $request->user();
-        $rows = Permohonan::query()->with(['lhu'])->where('user_id', $u->id)->latest('updated_at')->limit(8)->get();
-        $perluTindakan = $rows->where('status', Status::MenungguPembayaran);
+        $baseQuery = Permohonan::query()->where('user_id', $u->id);
 
-        return view('dashboard.pengguna', ['u' => $u, 'rows' => $rows, 'perluTindakan' => $perluTindakan, 'labs' => Lab::query()->aktif()->get()]);
+        $counts = [
+            'total' => (clone $baseQuery)->count(),
+            'pending' => (clone $baseQuery)->whereIn('status', [
+                Status::Diajukan->value,
+                Status::Diterima->value,
+                Status::MenungguBilling->value,
+                Status::MenungguPembayaran->value,
+                Status::MenungguKonfirmasiBayar->value,
+            ])->count(),
+            'diproses' => (clone $baseQuery)->whereIn('status', [
+                Status::SiapUji->value,
+                Status::DiLab->value,
+                Status::MenungguPemeriksaan->value,
+                Status::MenungguParaf->value,
+                Status::MenungguPengesahan->value,
+            ])->count(),
+            'selesai' => (clone $baseQuery)->where('status', Status::Selesai->value)->count(),
+        ];
+
+        $rows = (clone $baseQuery)->with(['lhu'])->latest('updated_at')->limit(5)->get();
+        $perluTindakan = (clone $baseQuery)->with(['lhu'])->where('status', Status::MenungguPembayaran->value)->get();
+
+        return view('dashboard.pengguna', [
+            'u' => $u,
+            'rows' => $rows,
+            'counts' => $counts,
+            'perluTindakan' => $perluTindakan,
+            'labs' => Lab::query()->aktif()->get(),
+        ]);
     }
 
     /** Riwayat pengujian lab petugas (analis & penyelia). */
