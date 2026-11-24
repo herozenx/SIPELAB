@@ -24,6 +24,7 @@ yarn-error.log
 /.agents/
 /AGENTS.md
 /anti-slop/
+/.github
 
 .vercel
 .env*
