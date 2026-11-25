@@ -47,6 +47,9 @@ return new class extends Migration
                 ->update(['komoditas' => mb_substr((string) $p->jenis_komoditas, 0, 80)]);
         }
 
+        // Administrator dipisah lagi dari Super Admin: akun administrasi yang sempat digabung dikembalikan perannya.
+        DB::table('users')->where('email', 'administrasi@lab.local')->where('role', 'superadmin')->update(['role' => 'administrasi']);
+
         // Hanya nilai bawaan lama yang diganti; yang sudah diubah Administrator dibiarkan.
         DB::table('parameter_uji')->where('kode', 'C')->where('nama', 'Coliform')->update(['nama' => 'Total Coliform']);
         DB::table('parameter_uji')->where('kode', 'CK')->where('tarif', 166000)->update(['tarif' => 150000]);

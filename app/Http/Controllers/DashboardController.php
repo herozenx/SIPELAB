@@ -19,15 +19,15 @@ class DashboardController extends Controller
 {
     /**
      * Antrean tugas per status: [status, judul, keterangan, peran yang menindaklanjuti].
-     * Administrator melihat semua antrean (memantau dari awal sampai akhir).
+     * Super Admin dan Administrator melihat semua antrean (memantau dari awal sampai akhir).
      */
     private const ANTREAN = [
-        [Status::Diajukan, 'Verifikasi permohonan', 'Periksa berkas, data, dan kaji ulang permintaan: dapat dilayani, tidak, atau lab eksternal.', [Role::Superadmin, Role::AdminLab]],
+        [Status::Diajukan, 'Verifikasi permohonan', 'Periksa berkas, data, dan kaji ulang permintaan: dapat dilayani, tidak, atau lab eksternal.', [Role::Administrasi, Role::AdminLab]],
         [Status::Diterima, 'Registrasi sampel', 'Terima sampel fisik, kaji ulang permintaan, tetapkan jenis layanan, catat ke buku sampel.', [Role::Operator, Role::AdminLab]],
         [Status::MenungguBilling, 'Terbitkan billing SIMPONI', 'Layanan pengguna jasa sebelum diuji; layanan petugas setelah LHP disahkan.', [Role::Bendahara]],
         [Status::MenungguKonfirmasiBayar, 'Cek pembayaran', 'Cocokkan bukti setor dengan dana masuk di SIMPONI.', [Role::Bendahara]],
         [Status::SiapUji, 'Terbitkan surat tugas', 'Surat tugas pengujian ke penyelia setiap bidang yang terlibat.', [Role::AdminLab]],
-        [Status::MenungguPemeriksaan, 'Validasi hasil pengujian', 'Periksa kesesuaian hasil dengan permohonan dan pastikan semua parameter terisi.', [Role::Superadmin]],
+        [Status::MenungguPemeriksaan, 'Validasi hasil pengujian', 'Periksa kesesuaian hasil dengan permohonan dan pastikan semua parameter terisi.', [Role::Administrasi]],
         [Status::MenungguParaf, 'Menunggu paraf penyelia', 'Penyelia tiap bidang memaraf hasil bidangnya.', []],
         [Status::MenungguPengesahan, 'Validasi akhir LHP', 'Validasi akhir dan pengesahan LHP bernomor.', [Role::PenanggungJawab]],
     ];
@@ -46,7 +46,7 @@ class DashboardController extends Controller
     private function staff(Request $request)
     {
         $u = $request->user();
-        $semua = $u->role === Role::Superadmin;
+        $semua = $u->hasRole(Role::Superadmin, Role::Administrasi);
         $antrean = collect(self::ANTREAN)
             ->filter(fn ($a) => $semua || in_array($u->role, $a[3], true))
             ->map(fn ($a) => [
@@ -61,7 +61,7 @@ class DashboardController extends Controller
             ? Permohonan::query()->with(['pemohon', 'lhu'])->where('status', Status::Selesai->value)->latest('updated_at')->limit(8)->get()
             : collect();
 
-        $papan = in_array($u->role, [Role::Superadmin, Role::AdminLab, Role::PenanggungJawab], true);
+        $papan = in_array($u->role, [Role::Superadmin, Role::Administrasi, Role::AdminLab, Role::PenanggungJawab], true);
         $hitung = Permohonan::query()->select('status', DB::raw('COUNT(*) as n'))->groupBy('status')->pluck('n', 'status');
 
         // Sampel yang sedang di lab dan sudah melewati batas norma waktu lab tersebut.

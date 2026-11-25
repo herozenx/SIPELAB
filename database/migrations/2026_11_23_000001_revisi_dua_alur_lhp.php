@@ -183,8 +183,8 @@ return new class extends Migration
         foreach (['permohonan', 'status_log'] as $tabel) {
             DB::table($tabel)->whereIn('status', ['MENUNGGU_VALIDASI', 'MENUNGGU_CEK_ADM'])->update(['status' => 'MENUNGGU_PEMERIKSAAN']);
         }
-        // Peran Admin/Administrasi versi sistem = Administrator (superadmin) di versi ini.
-        DB::table('users')->whereIn('role', ['administrasi', 'admin'])->update(['role' => 'superadmin']);
+        // Peran Admin versi sistem digabung ke Administrator (administrasi).
+        DB::table('users')->where('role', 'admin')->update(['role' => 'administrasi']);
         DB::table('lhu')->whereNull('nomor')->delete();
 
         // LHP versi sistem: nomor urut agenda sudah ada; sidiknya dihitung dengan cara versi sistem (versi 3).

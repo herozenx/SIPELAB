@@ -48,7 +48,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/permohonan/{permohonan}/bukti-terima.pdf', [PermohonanController::class, 'buktiTerima'])->whereNumber('permohonan')->name('permohonan.bukti-terima');
     Route::get('/permohonan/{permohonan}/surat-tugas.pdf', [PermohonanController::class, 'cetakSuratTugas'])
         ->whereNumber('permohonan')->name('permohonan.surat-tugas');
-    Route::get('/disposisi.pdf', [PermohonanController::class, 'lembarDisposisi'])->middleware('role:superadmin,admin_lab,operator,penyelia,penanggung_jawab')->name('disposisi.pdf');
+    Route::get('/disposisi.pdf', [PermohonanController::class, 'lembarDisposisi'])->middleware('role:superadmin,administrasi,admin_lab,operator,penyelia,penanggung_jawab')->name('disposisi.pdf');
 
     // Tindakan alur; hak akses per tindakan diatur PermohonanPolicy.
     Route::middleware('throttle:aksi')->whereNumber('permohonan')->prefix('/permohonan/{permohonan}')->name('permohonan.')->group(function () {
@@ -67,10 +67,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/kembalikan', [PermohonanController::class, 'kembalikan'])->name('kembalikan');
     });
 
-    Route::get('/laporan', [DashboardController::class, 'laporan'])->middleware('role:superadmin,admin_lab,operator,bendahara,penanggung_jawab')->name('laporan');
+    Route::get('/laporan', [DashboardController::class, 'laporan'])->middleware('role:superadmin,administrasi,admin_lab,operator,bendahara,penanggung_jawab')->name('laporan');
 
     // Tim lab (analis & penyelia): dikelola Admin Laboratorium (dan Administrator)
-    Route::prefix('tim')->name('tim.')->middleware('role:admin_lab,superadmin')->group(function () {
+    Route::prefix('tim')->name('tim.')->middleware('role:admin_lab,superadmin,administrasi')->group(function () {
         Route::get('/', [TimController::class, 'index'])->name('index');
         Route::post('/', [TimController::class, 'store'])->middleware('throttle:aksi')->name('store');
         Route::put('/{user}', [TimController::class, 'update'])->whereNumber('user')->middleware('throttle:aksi')->name('update');

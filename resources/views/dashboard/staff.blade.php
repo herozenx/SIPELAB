@@ -48,7 +48,7 @@
 
 @if ($lewatNorma->isNotEmpty())
   <section class="panel mt-6 overflow-hidden border-l-4 border-karang-600">
-    <div class="panel-head"><h2>Sampel melewati norma waktu</h2>@if(in_array($u->role, [\App\Enums\Role::Superadmin, \App\Enums\Role::AdminLab], true))<a href="{{ route('tim.index') }}" class="text-sm font-semibold">Atur tim lab</a>@endif</div>
+    <div class="panel-head"><h2>Sampel melewati norma waktu</h2>@if(in_array($u->role, [\App\Enums\Role::Superadmin, \App\Enums\Role::Administrasi, \App\Enums\Role::AdminLab], true))<a href="{{ route('tim.index') }}" class="text-sm font-semibold">Atur tim lab</a>@endif</div>
     <div class="overflow-x-auto">
     <table class="tabel tabel-hp">
       <thead><tr><th>Kode sampel</th><th>Lab</th><th>Ditangani</th><th>Batas</th><th>Keterlambatan</th></tr></thead>
