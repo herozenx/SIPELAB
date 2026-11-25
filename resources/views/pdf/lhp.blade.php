@@ -121,11 +121,20 @@
             Kode verifikasi <b>{{ $lhu->kode_verifikasi }}</b>
           </td>
         </tr></table>
+        @php $parafGambar = $p->persetujuan->where('jenis', \App\Models\Persetujuan::PARAF)->filter(fn ($x) => $x->paraf_gambar); @endphp
+        @if ($parafGambar->isNotEmpty())
+          <table style="margin-top:3px"><tr>
+            <td class="kecil" style="vertical-align:middle;padding-right:4px">Paraf penyelia:</td>
+            @foreach ($parafGambar as $pf)
+              <td class="kecil tengah" style="padding-right:6px"><img src="{{ $pf->paraf_gambar }}" style="height:9mm"><br>{{ $pf->lab?->nama }}</td>
+            @endforeach
+          </tr></table>
+        @endif
       </td>
       <td class="tengah" style="vertical-align:bottom">
         {{ $S::get('kota_lhp') }}, {{ $tgl($lhu->validated_at) }}<br>
-        Kepala UPT/Penanggung jawab Laboratorium**)<br>
-        <i>Head of TIU/Laboratory in Charge**)</i><br>
+        {{ $lhu->jabatan()[0] }}<br>
+        <i>{{ $lhu->jabatan()[1] }}</i><br>
         <div style="height:10mm;padding-top:3mm;font-size:6.5pt;color:#2f6b3a">DISAHKAN SECARA ELEKTRONIK</div>
         <b style="text-decoration:underline">{{ $lhu->validator?->nama }}</b><br>
         @if ($lhu->validator?->nip)NIP. {{ $lhu->validator->nip }}@endif

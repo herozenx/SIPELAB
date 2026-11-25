@@ -26,6 +26,18 @@ class Lhu extends Model
         return $this->belongsTo(Permohonan::class);
     }
 
+    /** Jabatan penanda tangan yang dipilih saat pengesahan (rapat 19 Nov): [Indonesia, Inggris]. */
+    public const JABATAN = [
+        'PJ' => ['Penanggung Jawab Laboratorium', 'Laboratory in Charge'],
+        'KEPALA' => ['Kepala UPT', 'Head of TIU'],
+    ];
+
+    /** LHP lama (sebelum ada pilihan) tetap mencetak kedua jabatan seperti format Balai. */
+    public function jabatan(): array
+    {
+        return self::JABATAN[$this->jabatan_penanda] ?? ['Kepala UPT/Penanggung jawab Laboratorium**)', 'Head of TIU/Laboratory in Charge**)'];
+    }
+
     /** Pejabat yang mengesahkan (Penanggung Jawab Lab). */
     public function validator(): BelongsTo
     {

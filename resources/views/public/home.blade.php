@@ -86,7 +86,7 @@
     ['Bayar Lewat SIMPONI', 'Layanan Mandiri: Lihat billing resmi di akun Anda, lalu unggah bukti setornya. Tidak perlu mengetik NTPN.', 'rotate-[1.25deg]'],
     ['Serahkan Sampel', 'Bawa sampel fisik ke loket. Operator memverifikasi dan memberi kode sampel.', '-rotate-[0.5deg]'],
     ['Sampel Diproses', 'Sampel diuji oleh analis di laboratorium Balai. Norma waktu '.\App\Models\Setting::get('norma_total_hari').' hari kerja. Status bisa dipantau dari akun Anda.', 'rotate-1'],
-    ['LHP Selesai', 'LHP bernomor dengan QR Code keaslian bisa diunduh dalam format PDF dari akun anda. Siapapun bisa mengecek keasliannya di situs ini.', '-rotate-[1.25deg]'],
+    ['LHP Selesai', 'Status selesai tampil di akun anda; LHP bernomor dengan QR Code keaslian diserahkan di kantor Balai. Siapapun bisa mengecek keasliannya di situs ini.', '-rotate-[1.25deg]'],
   ];
 @endphp
 <section id="langkah" class="scroll-mt-24 py-14 sm:py-20">

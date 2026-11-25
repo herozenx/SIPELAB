@@ -126,12 +126,20 @@
           @if ($periksa || $paraf->isNotEmpty())
             <p class="mt-1.5 text-[8.5px] text-kabut-600">Diperiksa: {{ $periksa?->user->initials() ?? '-' }} · Paraf: {{ $paraf->map(fn ($x) => $x->user->initials().' ('.$x->lab?->nama.')')->join(', ') ?: '-' }}</p>
           @endif
+          @if ($paraf->contains(fn ($x) => $x->paraf_gambar))
+            <div class="mt-1.5 flex items-end gap-3">
+              <span class="text-[8.5px]">Paraf penyelia:</span>
+              @foreach ($paraf->filter(fn ($x) => $x->paraf_gambar) as $pf)
+                <span class="text-center text-[8px]"><img src="{{ $pf->paraf_gambar }}" alt="Paraf {{ $pf->user->nama }}" class="h-[9mm]"><span class="block">{{ $pf->lab?->nama }}</span></span>
+              @endforeach
+            </div>
+          @endif
         </div>
       </div>
       <div class="min-w-[62mm] text-center">
         <p>{{ $S::get('kota_lhp') }}, {{ $bulanPanjang($lhu->validated_at) }}</p>
-        <p>Kepala UPT/Penanggung jawab Laboratorium**)</p>
-        <p class="text-[10.5px]"><i>Head of TIU/Laboratory in Charge**)</i></p>
+        <p>{{ $lhu->jabatan()[0] }}</p>
+        <p class="text-[10.5px]"><i>{{ $lhu->jabatan()[1] }}</i></p>
         <p class="my-2 text-[9px] font-semibold uppercase tracking-wide text-lamun-700">Disahkan secara elektronik</p>
         <p class="font-bold underline underline-offset-2">{{ $lhu->validator?->nama }}</p>
         @if ($lhu->validator?->nip)<p>NIP. {{ $lhu->validator->nip }}</p>@endif

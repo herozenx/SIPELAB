@@ -502,6 +502,13 @@
               <form method="post" action="{{ route('permohonan.paraf', $p) }}" data-guard>
                 @csrf
                 <p class="mb-3 text-sm text-kabut-600">Dengan memaraf, Anda menyatakan hasil bidang {{ $u->lab->nama }} pada tabel di bawah sudah benar. Paraf digital mencatat nama, waktu, dan sidik hasil; bila hasil berubah setelahnya, paraf gugur.</p>
+                <div class="mb-4" data-paraf>
+                  <label class="label" for="paraf-kanvas">Gambar paraf Anda</label>
+                  <canvas id="paraf-kanvas" width="480" height="160" class="block w-full max-w-sm touch-none rounded-lg border-2 border-dashed border-kabut-300 bg-white" aria-label="Kotak paraf: gambar paraf dengan mouse atau jari"></canvas>
+                  <input type="hidden" name="paraf" value="">
+                  <div class="mt-2 flex items-center gap-3"><button type="button" class="btn-ghost btn-sm" data-paraf-hapus>Hapus</button><span class="hint !mt-0">Paraf ini dicetak di LHP sebelah kiri.</span></div>
+                  @error('paraf')<p class="error">{{ $message }}</p>@enderror
+                </div>
                 <button class="btn-primary" data-confirm="Paraf hasil Lab {{ $u->lab->nama }} untuk {{ $p->kodeTampil() }}?"><x-ikon n="pena" class="h-4 w-4" />Paraf hasil Lab {{ $u->lab->nama }}</button>
               </form>
             @endunless
@@ -521,6 +528,13 @@
             @if ($parameter->contains(fn ($x) => $x->memenuhi === false))
               <div class="alert-warning"><x-ikon n="info" class="mt-0.5 h-4 w-4 shrink-0" />Ada parameter yang <span class="font-semibold">tidak memenuhi</span> persyaratan mutu.</div>
             @endif
+            <fieldset class="grid gap-2 sm:grid-cols-2">
+              <legend class="label">Ditandatangani sebagai</legend>
+              @foreach (\App\Models\Lhu::JABATAN as $kode => [$id, $en])
+                <label class="choice"><input type="radio" name="jabatan" value="{{ $kode }}" @checked(old('jabatan') === $kode)><span><span class="block font-semibold">{{ $id }}</span><span class="text-xs italic text-kabut-500">{{ $en }}</span></span></label>
+              @endforeach
+            </fieldset>
+            @error('jabatan')<p class="error">{{ $message }}</p>@enderror
             <button class="btn-ok" data-confirm="Sahkan LHP {{ $p->kodeTampil() }}? Nomor LHP dibuat dan tidak bisa dibatalkan."><x-ikon n="perisai" class="h-4 w-4" />Sahkan LHP</button>
           </form>
         </section>
@@ -592,7 +606,7 @@
           @endcan
         </div>
         @if ($pengguna)
-          <p class="border-t border-kabut-200 px-5 py-3 text-sm text-kabut-600">{{ $p->status === $S::Selesai ? 'LHP sudah diterbitkan dan dapat diunduh di atas. Dokumen asli diserahkan sesuai mekanisme penyerahan Balai.' : 'LHP dapat diunduh setelah pembayaran dikonfirmasi.' }} Keaslian LHP bisa dicek siapa pun lewat QR Code atau kode verifikasi yang tercetak.</p>
+          <p class="border-t border-kabut-200 px-5 py-3 text-sm text-kabut-600">{{ $p->status === $S::Selesai ? 'LHP sudah selesai. Dokumen LHP dicetak dan diserahkan oleh petugas di kantor Balai.' : 'LHP sudah disahkan. Selesaikan pembayaran, lalu LHP dicetak dan diserahkan oleh petugas di kantor Balai.' }} Keaslian LHP bisa dicek siapa pun lewat QR Code atau kode verifikasi yang tercetak.</p>
         @endif
       </section>
     @endif

@@ -49,7 +49,7 @@
       [
         'Periksa status: verifikasi, pembayaran, pengujian, penyusunan LHP, atau LHP selesai.',
         'Gunakan <b>Perkiraan Selesai</b> sebagai target waktu dalam hari kerja.',
-        'Setelah LHP disahkan, buka atau unduh LHP PDF dari permohonan.',
+        'Setelah LHP selesai, status permohonan berubah menjadi selesai. LHP dicetak dan diserahkan oleh petugas di kantor Balai.',
         'Untuk memeriksa keaslian, pindai QR Code atau masukkan 12 karakter kode verifikasi.',
       ],
       [['info', 'Hari kerja adalah Senin sampai Jumat, di luar hari libur.']], 'norma'],
@@ -133,9 +133,9 @@
               @case('jenis')
                 <div class="grid gap-4 md:grid-cols-3">
                   @foreach ([
-                    ['Ekspor · Uji Mandiri · Uji Banding', 'Diajukan online · bayar di awal', ['Ajukan permohonan online, kode SP.E / SP.M / SP.UB', 'Sampel diregistrasi di loket', 'Bayar billing SIMPONI, unggah bukti', 'Sampel diuji di lab', 'LHP selesai, unduh PDF'], 'bg-laut-600'],
-                    ['Pengujian Eksternal · Uji Profisiensi', 'Ditetapkan petugas · bayar di belakang', ['Permohonan diterima Balai', 'Sampel diverifikasi, kode SP.PE / SP.UP', 'Sampel langsung diuji di lab', 'LHP disahkan, billing terbit', 'Bayar, lalu unduh LHP PDF'], 'bg-lamun-600'],
-                    ['Surveilen · Monitoring', 'Ditetapkan petugas · bayar di belakang', ['Permohonan diterima Balai', 'Sampel diverifikasi, kode SP.S / SP.MN', 'Sampel langsung diuji di lab', 'LHP disahkan, billing terbit', 'Bayar, lalu unduh LHP PDF'], 'bg-laut-800'],
+                    ['Ekspor · Uji Mandiri · Uji Banding', 'Diajukan online · bayar di awal', ['Ajukan permohonan online, kode SP.E / SP.M / SP.UB', 'Sampel diregistrasi di loket', 'Bayar billing SIMPONI, unggah bukti', 'Sampel diuji di lab', 'LHP selesai, diambil di kantor Balai'], 'bg-laut-600'],
+                    ['Pengujian Eksternal · Uji Profisiensi', 'Ditetapkan petugas · bayar di belakang', ['Permohonan diterima Balai', 'Sampel diverifikasi, kode SP.PE / SP.UP', 'Sampel langsung diuji di lab', 'LHP disahkan, billing terbit', 'Bayar, lalu ambil LHP di kantor Balai'], 'bg-lamun-600'],
+                    ['Surveilen · Monitoring', 'Ditetapkan petugas · bayar di belakang', ['Permohonan diterima Balai', 'Sampel diverifikasi, kode SP.S / SP.MN', 'Sampel langsung diuji di lab', 'LHP disahkan, billing terbit', 'Bayar, lalu ambil LHP di kantor Balai'], 'bg-laut-800'],
                   ] as [$nama, $sub, $alur, $warna])
                     <div class="overflow-hidden rounded-xl ring-1 ring-kabut-200">
                       <div class="{{ $warna }} px-4 py-3 text-white"><p class="font-extrabold">{{ $nama }}</p><p class="text-xs opacity-90">{{ $sub }}</p></div>

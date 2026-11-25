@@ -31,6 +31,12 @@ trait AlurUji
         return new UploadedFile($copy, $nama, 'image/png', null, true);
     }
 
+    /** Paraf penyelia yang "digambar" (PNG 1x1 sebagai data URL, seperti hasil kanvas). */
+    protected function paraf(): string
+    {
+        return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+    }
+
     protected function idParameter(string ...$kode): array
     {
         return ParameterUji::query()->whereIn('kode', $kode)->pluck('id')->all();
@@ -108,13 +114,13 @@ trait AlurUji
     protected function parafSemua(Permohonan $p, array $penyelia = ['penyelia.organo@lab.local', 'penyelia.mikro@lab.local', 'penyelia.kimia@lab.local']): void
     {
         foreach ($penyelia as $e) {
-            $this->as($e)->post("/permohonan/{$p->id}/paraf")->assertSessionHas('success');
+            $this->as($e)->post("/permohonan/{$p->id}/paraf", ['paraf' => $this->paraf()])->assertSessionHasNoErrors()->assertSessionHas('success');
         }
     }
 
     protected function sahkan(Permohonan $p): void
     {
-        $this->as('pj@lab.local')->post("/permohonan/{$p->id}/sahkan")->assertSessionHasNoErrors()->assertSessionHas('success');
+        $this->as('pj@lab.local')->post("/permohonan/{$p->id}/sahkan", ['jabatan' => 'PJ'])->assertSessionHasNoErrors()->assertSessionHas('success');
     }
 
     /** Mandiri dari pengajuan sampai LHP selesai. */

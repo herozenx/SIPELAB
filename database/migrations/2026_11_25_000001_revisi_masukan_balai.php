@@ -41,6 +41,10 @@ return new class extends Migration
             $t->foreignId('analis_id')->nullable()->constrained('users')->nullOnDelete();
         });
 
+        // Rapat 19 Nov: paraf penyelia digambar lalu tampil di LHP; jabatan penanda tangan dipilih saat pengesahan.
+        Schema::table('persetujuan', fn (Blueprint $t) => $t->text('paraf_gambar')->nullable());
+        Schema::table('lhu', fn (Blueprint $t) => $t->string('jabatan_penanda', 20)->nullable());
+
         // Komoditas lama (satu per permohonan) disalin ke produknya.
         foreach (DB::table('permohonan')->whereNotNull('jenis_komoditas')->get(['id', 'jenis_komoditas']) as $p) {
             DB::table('permohonan_produk')->where('permohonan_id', $p->id)->whereNull('komoditas')
@@ -64,6 +68,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('permohonan_parameter', fn (Blueprint $t) => $t->dropConstrainedForeignId('analis_id'));
+        Schema::table('persetujuan', fn (Blueprint $t) => $t->dropColumn('paraf_gambar'));
+        Schema::table('lhu', fn (Blueprint $t) => $t->dropColumn('jabatan_penanda'));
         Schema::table('permohonan', fn (Blueprint $t) => $t->dropColumn(['pemohon_setuju_at', 'kaji_ulang']));
         Schema::table('permohonan_produk', fn (Blueprint $t) => $t->dropColumn(['komoditas', 'berat']));
         Schema::table('users', function (Blueprint $t) {
