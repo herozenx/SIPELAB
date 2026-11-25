@@ -14,7 +14,7 @@ class User extends Authenticatable
     /** Dianggap online bila ada aktivitas dalam N menit terakhir. */
     public const ONLINE_MENIT = 2;
 
-    protected $fillable = ['nama', 'email', 'password', 'role', 'lab_id', 'instansi', 'alamat', 'tipe_pengguna', 'telepon', 'nip', 'aktif', 'wajib_ganti_password'];
+    protected $fillable = ['nama', 'email', 'password', 'google_id', 'role', 'lab_id', 'instansi', 'alamat', 'tipe_pengguna', 'telepon', 'nip', 'aktif', 'wajib_ganti_password'];
 
     protected $hidden = ['password', 'remember_token'];
 
@@ -78,7 +78,7 @@ class User extends Authenticatable
     /** Label singkat untuk chat & daftar online, mis. "Penyelia Mikrobiologi". */
     public function jabatan(): string
     {
-        return $this->role->label().($this->lab ? ' '.$this->lab->nama : '');
+        return $this->role->label() . ($this->lab ? ' ' . $this->lab->nama : '');
     }
 
     public function isLab(): bool
@@ -110,6 +110,6 @@ class User extends Authenticatable
     {
         $parts = preg_split('/\s+/', trim($this->nama)) ?: [];
 
-        return mb_strtoupper(mb_substr($parts[0] ?? '?', 0, 1).mb_substr($parts[1] ?? '', 0, 1));
+        return mb_strtoupper(mb_substr($parts[0] ?? '?', 0, 1) . mb_substr($parts[1] ?? '', 0, 1));
     }
 }

@@ -2,46 +2,63 @@
 @section('title', 'Daftar pengguna jasa')
 @section('content')
 <div class="bg-kabut-50 px-4 py-6 sm:px-6 sm:py-8">
-  <div class="mx-auto grid w-full max-w-[900px] overflow-hidden rounded-xl border border-kabut-200 bg-white shadow-[0_18px_44px_rgba(11,61,80,0.14)] lg:grid-cols-[320px_minmax(0,1fr)]">
-    <section class="relative hidden min-h-[620px] flex-col justify-center overflow-hidden bg-laut-700 px-8 py-8 text-white lg:flex" aria-label="Tentang pendaftaran">
+  <div
+    class="mx-auto grid w-full max-w-[900px] overflow-hidden rounded-xl border border-kabut-200 bg-white shadow-[0_18px_44px_rgba(11,61,80,0.14)] lg:grid-cols-[320px_minmax(0,1fr)]">
+    <section
+      class="relative hidden min-h-[620px] flex-col justify-center overflow-hidden bg-laut-700 px-8 py-8 text-white lg:flex"
+      aria-label="Tentang pendaftaran">
       <div class="mx-auto max-w-[250px]">
-        <svg viewBox="0 0 560 400" class="mx-auto h-auto max-h-[220px] w-full" role="img" aria-label="Ilustrasi pengujian hasil perikanan dan penerbitan LHP">
-          <circle cx="300" cy="200" r="185" fill="#0E4D64"/>
+        <svg viewBox="0 0 560 400" class="mx-auto h-auto max-h-[220px] w-full" role="img"
+          aria-label="Ilustrasi pengujian hasil perikanan dan penerbitan LHP">
+          <circle cx="300" cy="200" r="185" fill="#0E4D64" />
           <g transform="rotate(-4 405 195)">
-            <path d="M330 60 H452 L496 104 V316 Q496 328 484 328 H342 Q330 328 330 316 V72 Q330 60 342 60 Z" fill="#F7F9FA"/>
-            <path d="M452 60 L496 104 H462 Q452 104 452 94 Z" fill="#CBD5DA"/>
-            <rect x="354" y="104" width="118" height="11" rx="5.5" fill="#0B3D50"/>
-            <rect x="354" y="130" width="132" height="7" rx="3.5" fill="#CBD5DA"/>
-            <rect x="354" y="144" width="108" height="7" rx="3.5" fill="#CBD5DA"/>
-            <rect x="354" y="182" width="120" height="58" rx="8" fill="#EEF6F8"/>
-            <rect x="366" y="196" width="72" height="6" rx="3" fill="#A9D0DC"/>
-            <rect x="444" y="196" width="18" height="6" rx="3" fill="#1C6F8C"/>
-            <circle cx="468" cy="300" r="30" fill="#1C6F8C"/>
-            <circle cx="468" cy="300" r="22" fill="none" stroke="#A9D0DC" stroke-width="2"/>
-            <path d="M456 300l9 9 17-17" fill="none" stroke="#F7F9FA" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M330 60 H452 L496 104 V316 Q496 328 484 328 H342 Q330 328 330 316 V72 Q330 60 342 60 Z"
+              fill="#F7F9FA" />
+            <path d="M452 60 L496 104 H462 Q452 104 452 94 Z" fill="#CBD5DA" />
+            <rect x="354" y="104" width="118" height="11" rx="5.5" fill="#0B3D50" />
+            <rect x="354" y="130" width="132" height="7" rx="3.5" fill="#CBD5DA" />
+            <rect x="354" y="144" width="108" height="7" rx="3.5" fill="#CBD5DA" />
+            <rect x="354" y="182" width="120" height="58" rx="8" fill="#EEF6F8" />
+            <rect x="366" y="196" width="72" height="6" rx="3" fill="#A9D0DC" />
+            <rect x="444" y="196" width="18" height="6" rx="3" fill="#1C6F8C" />
+            <circle cx="468" cy="300" r="30" fill="#1C6F8C" />
+            <circle cx="468" cy="300" r="22" fill="none" stroke="#A9D0DC" stroke-width="2" />
+            <path d="M456 300l9 9 17-17" fill="none" stroke="#F7F9FA" stroke-width="5" stroke-linecap="round"
+              stroke-linejoin="round" />
           </g>
-          <path d="M232 246L286 210C276 234 276 258 286 282Z" fill="#3F8EA8"/>
-          <path d="M58 248C96 206 172 200 224 238C232 243 232 253 224 258C172 296 96 290 58 248Z" fill="#74B1C4"/>
-          <circle cx="90" cy="240" r="6.5" fill="#05202B"/>
+          <path d="M232 246L286 210C276 234 276 258 286 282Z" fill="#3F8EA8" />
+          <path d="M58 248C96 206 172 200 224 238C232 243 232 253 224 258C172 296 96 290 58 248Z" fill="#74B1C4" />
+          <circle cx="90" cy="240" r="6.5" fill="#05202B" />
           <g fill="none" stroke="#74B1C4" stroke-width="3" stroke-linecap="round">
-            <path d="M44 330Q84 316 124 330T204 330"/>
-            <path d="M84 356Q124 342 164 356T244 356"/>
+            <path d="M44 330Q84 316 124 330T204 330" />
+            <path d="M84 356Q124 342 164 356T244 356" />
           </g>
         </svg>
 
         <h2 class="mt-3 text-lg font-extrabold leading-snug text-white">Ajukan uji dan pantau hasil.</h2>
-        <p class="mt-2 text-sm leading-relaxed text-laut-100">Buat akun untuk mengajukan permohonan dan menerima LHP setelah disahkan.</p>
+        <p class="mt-2 text-sm leading-relaxed text-laut-100">Buat akun untuk mengajukan permohonan dan menerima LHP
+          setelah disahkan.</p>
         <ul class="mt-7 space-y-3 border-t border-white/15 pt-5 text-sm text-laut-100">
-          <li class="flex items-start gap-2"><x-ikon n="cek" class="mt-0.5 h-4 w-4 shrink-0 text-laut-300" /><span>Data permohonan tersimpan dalam satu akun.</span></li>
-          <li class="flex items-start gap-2"><x-ikon n="cek" class="mt-0.5 h-4 w-4 shrink-0 text-laut-300" /><span>Perkembangan pengujian dapat dipantau.</span></li>
-          <li class="flex items-start gap-2"><x-ikon n="cek" class="mt-0.5 h-4 w-4 shrink-0 text-laut-300" /><span>LHP tersedia setelah pengesahan selesai.</span></li>
+          <li class="flex items-start gap-2">
+            <x-ikon n="cek" class="mt-0.5 h-4 w-4 shrink-0 text-laut-300" /><span>Data permohonan tersimpan dalam satu
+              akun.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <x-ikon n="cek" class="mt-0.5 h-4 w-4 shrink-0 text-laut-300" /><span>Perkembangan pengujian dapat
+              dipantau.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <x-ikon n="cek" class="mt-0.5 h-4 w-4 shrink-0 text-laut-300" /><span>LHP tersedia setelah pengesahan
+              selesai.</span>
+          </li>
         </ul>
       </div>
     </section>
 
     <section class="flex min-w-0 items-center justify-center px-5 py-6 sm:px-8" aria-labelledby="judul-daftar">
       <div class="w-full max-w-[480px]">
-        <a href="{{ route('home') }}" class="mb-3 inline-flex min-h-[44px] items-center gap-2 rounded-lg px-1 text-sm font-semibold text-kabut-600 no-underline transition-colors duration-200 hover:text-laut-700 hover:no-underline">
+        <a href="{{ route('home') }}"
+          class="mb-3 inline-flex min-h-[44px] items-center gap-2 rounded-lg px-1 text-sm font-semibold text-kabut-600 no-underline transition-colors duration-200 hover:text-laut-700 hover:no-underline">
           <x-ikon n="kembali" class="h-4 w-4" />
           Kembali
         </a>
@@ -56,7 +73,8 @@
 
         <header>
           <h1 id="judul-daftar" class="text-2xl font-extrabold leading-tight">Buat akun pengguna jasa</h1>
-          <p class="mt-1 text-sm leading-relaxed text-kabut-600"><span class="font-semibold text-karang-600" aria-hidden="true">*</span> Data wajib diisi.</p>
+          <p class="mt-1 text-sm leading-relaxed text-kabut-600"><span class="font-semibold text-karang-600"
+              aria-hidden="true">*</span> Data wajib diisi.</p>
         </header>
 
         <div class="mt-3">@include('partials.flash', ['sembunyikanError' => true])</div>
@@ -65,51 +83,88 @@
           @csrf
 
           <div data-field>
-            <label for="nama" class="label">Nama penanggung jawab <span class="text-karang-600" aria-hidden="true">*</span><span class="sr-only"> wajib</span></label>
+            <label for="nama" class="label">Nama penanggung jawab <span class="text-karang-600"
+                aria-hidden="true">*</span><span class="sr-only"> wajib</span></label>
             <div class="relative">
-              <input id="nama" name="nama" value="{{ old('nama') }}" class="form-input input min-h-[48px] pr-10" autocomplete="name" required @error('nama') aria-invalid="true" aria-describedby="nama-error" data-server-error="{{ $errors->first('nama') }}" @enderror>
-              <span data-error-icon="nama" class="field-error-icon hidden" aria-hidden="true"><x-ikon n="peringatan" class="h-5 w-5" /></span>
+              <input id="nama" name="nama" value="{{ old('nama') }}" class="form-input input min-h-[48px] pr-10"
+                autocomplete="name" required @error('nama') aria-invalid="true" aria-describedby="nama-error"
+                data-server-error="{{ $errors->first('nama') }}" @enderror>
+              <span data-error-icon="nama" class="field-error-icon hidden" aria-hidden="true">
+                <x-ikon n="peringatan" class="h-5 w-5" />
+              </span>
             </div>
             <p data-field-error="nama" class="auth-field-error hidden"></p>
           </div>
 
           <div data-field>
-            <label for="instansi" class="label">Nama usaha atau instansi <span class="text-karang-600" aria-hidden="true">*</span><span class="sr-only"> wajib</span></label>
+            <label for="instansi" class="label">Nama usaha atau instansi <span class="text-karang-600"
+                aria-hidden="true">*</span><span class="sr-only"> wajib</span></label>
             <div class="relative">
-              <input id="instansi" name="instansi" value="{{ old('instansi') }}" class="form-input input min-h-[48px] pr-10" autocomplete="organization" required aria-describedby="instansi-help" @error('instansi') aria-invalid="true" data-server-error="{{ $errors->first('instansi') }}" @enderror>
-              <span data-error-icon="instansi" class="field-error-icon hidden" aria-hidden="true"><x-ikon n="peringatan" class="h-5 w-5" /></span>
+              <input id="instansi" name="instansi" value="{{ old('instansi') }}"
+                class="form-input input min-h-[48px] pr-10" autocomplete="organization" required
+                aria-describedby="instansi-help" @error('instansi') aria-invalid="true"
+                data-server-error="{{ $errors->first('instansi') }}" @enderror>
+              <span data-error-icon="instansi" class="field-error-icon hidden" aria-hidden="true">
+                <x-ikon n="peringatan" class="h-5 w-5" />
+              </span>
             </div>
             <p id="instansi-help" class="hint">Dicetak pada LHP sebagai pemohon.</p>
             <p data-field-error="instansi" class="auth-field-error hidden"></p>
           </div>
 
           <div data-field>
-            <label for="email" class="label">Email <span class="text-karang-600" aria-hidden="true">*</span><span class="sr-only"> wajib</span></label>
+            <label for="email" class="label">Email <span class="text-karang-600" aria-hidden="true">*</span><span
+                class="sr-only"> wajib</span></label>
             <div class="relative">
-              <input id="email" name="email" type="email" value="{{ old('email') }}" class="form-input input min-h-[48px] pr-10" autocomplete="email" inputmode="email" required @error('email') aria-invalid="true" aria-describedby="email-error" data-server-error="{{ $errors->first('email') }}" @enderror>
-              <span data-error-icon="email" class="field-error-icon hidden" aria-hidden="true"><x-ikon n="peringatan" class="h-5 w-5" /></span>
+              <input id="email" name="email" type="email" value="{{ old('email') }}"
+                class="form-input input min-h-[48px] pr-10" autocomplete="email" inputmode="email" required
+                @error('email') aria-invalid="true" aria-describedby="email-error"
+                data-server-error="{{ $errors->first('email') }}" @enderror>
+              <span data-error-icon="email" class="field-error-icon hidden" aria-hidden="true">
+                <x-ikon n="peringatan" class="h-5 w-5" />
+              </span>
             </div>
             <p data-field-error="email" class="auth-field-error hidden"></p>
           </div>
 
           <div data-field>
-            <label for="telepon" class="label">Telepon atau WhatsApp <span class="text-karang-600" aria-hidden="true">*</span><span class="sr-only"> wajib</span></label>
-            <div class="relative flex min-h-[48px] overflow-hidden rounded-lg border border-kabut-300 bg-white focus-within:border-laut-500 focus-within:ring-1 focus-within:ring-laut-500">
-              <span class="flex shrink-0 items-center border-r border-kabut-200 bg-kabut-50 px-3 text-sm font-semibold text-tinta" aria-label="Kode negara Indonesia +62">+62</span>
-              <input id="telepon" name="telepon_lokal" type="tel" value="{{ old('telepon_lokal') }}" class="input num min-h-[48px] min-w-0 border-0 bg-white px-3 pr-10 shadow-none focus:shadow-none" autocomplete="tel" inputmode="tel" required @error('telepon') aria-invalid="true" aria-describedby="telepon-error" data-server-error="{{ $errors->first('telepon') }}" @enderror>
-              <span data-error-icon="telepon" class="field-error-icon !right-3 hidden" aria-hidden="true"><x-ikon n="peringatan" class="h-5 w-5" /></span>
+            <label for="telepon" class="label">Telepon atau WhatsApp <span class="text-karang-600"
+                aria-hidden="true">*</span><span class="sr-only"> wajib</span></label>
+            <div
+              class="relative flex min-h-[48px] overflow-hidden rounded-lg border border-kabut-300 bg-white focus-within:border-laut-500 focus-within:ring-1 focus-within:ring-laut-500">
+              <span
+                class="flex shrink-0 items-center border-r border-kabut-200 bg-kabut-50 px-3 text-sm font-semibold text-tinta"
+                aria-label="Kode negara Indonesia +62">+62</span>
+              <input id="telepon" name="telepon_lokal" type="tel" value="{{ old('telepon_lokal') }}"
+                class="input num min-h-[48px] min-w-0 border-0 bg-white px-3 pr-10 shadow-none focus:shadow-none"
+                autocomplete="tel" inputmode="tel" required @error('telepon') aria-invalid="true"
+                aria-describedby="telepon-error" data-server-error="{{ $errors->first('telepon') }}" @enderror>
+              <span data-error-icon="telepon" class="field-error-icon !right-3 hidden" aria-hidden="true">
+                <x-ikon n="peringatan" class="h-5 w-5" />
+              </span>
             </div>
             <p data-field-error="telepon" class="auth-field-error hidden"></p>
           </div>
 
           <div data-field>
-            <label for="password" class="label">Kata sandi <span class="text-karang-600" aria-hidden="true">*</span><span class="sr-only"> wajib</span></label>
+            <label for="password" class="label">Kata sandi <span class="text-karang-600"
+                aria-hidden="true">*</span><span class="sr-only"> wajib</span></label>
             <div class="relative">
-              <input id="password" name="password" type="password" class="form-input input min-h-[48px] pr-20" autocomplete="new-password" required aria-describedby="password-help" @error('password') aria-invalid="true" data-server-error="{{ $errors->first('password') }}" @enderror>
-              <span data-error-icon="password" class="field-error-icon !right-12 hidden" aria-hidden="true"><x-ikon n="peringatan" class="h-5 w-5" /></span>
-              <button type="button" class="absolute inset-y-0 right-0 min-h-[48px] min-w-[48px] px-3 text-kabut-600 transition-colors duration-200 hover:text-tinta" data-toggle-password="password" aria-label="Tampilkan kata sandi" aria-controls="password">
-                <span data-eye-open><x-ikon n="mata" class="h-5 w-5" /></span>
-                <span data-eye-closed class="hidden"><x-ikon n="mata-tutup" class="h-5 w-5" /></span>
+              <input id="password" name="password" type="password" class="form-input input min-h-[48px] pr-20"
+                autocomplete="new-password" required aria-describedby="password-help" @error('password')
+                aria-invalid="true" data-server-error="{{ $errors->first('password') }}" @enderror>
+              <span data-error-icon="password" class="field-error-icon !right-12 hidden" aria-hidden="true">
+                <x-ikon n="peringatan" class="h-5 w-5" />
+              </span>
+              <button type="button"
+                class="absolute inset-y-0 right-0 min-h-[48px] min-w-[48px] px-3 text-kabut-600 transition-colors duration-200 hover:text-tinta"
+                data-toggle-password="password" aria-label="Tampilkan kata sandi" aria-controls="password">
+                <span data-eye-open>
+                  <x-ikon n="mata" class="h-5 w-5" />
+                </span>
+                <span data-eye-closed class="hidden">
+                  <x-ikon n="mata-tutup" class="h-5 w-5" />
+                </span>
               </button>
             </div>
             <p id="password-help" class="hint">Minimal 8 karakter, huruf besar, huruf kecil, dan angka.</p>
@@ -117,13 +172,26 @@
           </div>
 
           <div data-field>
-            <label for="password_confirmation" class="label">Ulangi kata sandi <span class="text-karang-600" aria-hidden="true">*</span><span class="sr-only"> wajib</span></label>
+            <label for="password_confirmation" class="label">Ulangi kata sandi <span class="text-karang-600"
+                aria-hidden="true">*</span><span class="sr-only"> wajib</span></label>
             <div class="relative">
-              <input id="password_confirmation" name="password_confirmation" type="password" class="form-input input min-h-[48px] pr-20" autocomplete="new-password" required @error('password') aria-invalid="true" data-server-error="Pengulangan kata sandi harus sama dengan kata sandi." @enderror>
-              <span data-error-icon="password_confirmation" class="field-error-icon !right-12 hidden" aria-hidden="true"><x-ikon n="peringatan" class="h-5 w-5" /></span>
-              <button type="button" class="absolute inset-y-0 right-0 min-h-[48px] min-w-[48px] px-3 text-kabut-600 transition-colors duration-200 hover:text-tinta" data-toggle-password="password_confirmation" aria-label="Tampilkan ulangi kata sandi" aria-controls="password_confirmation">
-                <span data-eye-open><x-ikon n="mata" class="h-5 w-5" /></span>
-                <span data-eye-closed class="hidden"><x-ikon n="mata-tutup" class="h-5 w-5" /></span>
+              <input id="password_confirmation" name="password_confirmation" type="password"
+                class="form-input input min-h-[48px] pr-20" autocomplete="new-password" required @error('password')
+                aria-invalid="true" data-server-error="Pengulangan kata sandi harus sama dengan kata sandi." @enderror>
+              <span data-error-icon="password_confirmation" class="field-error-icon !right-12 hidden"
+                aria-hidden="true">
+                <x-ikon n="peringatan" class="h-5 w-5" />
+              </span>
+              <button type="button"
+                class="absolute inset-y-0 right-0 min-h-[48px] min-w-[48px] px-3 text-kabut-600 transition-colors duration-200 hover:text-tinta"
+                data-toggle-password="password_confirmation" aria-label="Tampilkan ulangi kata sandi"
+                aria-controls="password_confirmation">
+                <span data-eye-open>
+                  <x-ikon n="mata" class="h-5 w-5" />
+                </span>
+                <span data-eye-closed class="hidden">
+                  <x-ikon n="mata-tutup" class="h-5 w-5" />
+                </span>
               </button>
             </div>
             <p data-field-error="password_confirmation" class="auth-field-error hidden"></p>
@@ -132,6 +200,27 @@
           <button type="submit" class="btn-primary min-h-[48px] w-full py-3" data-submit-button>
             <span data-submit-label>Buat akun</span>
           </button>
+
+          <div class="relative my-5 flex items-center" aria-hidden="true">
+            <div class="w-full border-t border-kabut-200"></div>
+            <span class="shrink-0 bg-white px-3 text-xs font-medium text-kabut-500">atau</span>
+            <div class="w-full border-t border-kabut-200"></div>
+          </div>
+
+          <a href="{{ route('auth.google') }}"
+            class="inline-flex min-h-[48px] w-full items-center justify-center gap-3 rounded-lg border border-kabut-300 bg-white px-4 text-sm font-semibold text-tinta no-underline shadow-xs transition-colors duration-200 hover:border-kabut-400 hover:bg-kabut-50 hover:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-laut-500 active:translate-y-px">
+            <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+              <path fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+              <path fill="#FBBC05"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" />
+              <path fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+            </svg>
+            Lanjutkan dengan Google
+          </a>
 
           <p class="text-center text-sm text-kabut-600">
             Sudah punya akun?
