@@ -42,7 +42,8 @@ class DatabaseSeeder extends Seeder
         $lab = fn ($n) => Lab::query()->where('nama', $n)->value('id');
         // [nama, email, peran, lab, instansi, jenis pengguna jasa]  (nama petugas fiktif)
         $akun = [
-            ['Administrator', 'superadmin@lab.local', Role::Superadmin, null, null, null],
+            ['Super Admin', 'superadmin@lab.local', Role::Superadmin, null, null, null],
+            ['Administrator', 'administrasi@lab.local', Role::Administrasi, null, null, null],
             ['Admin Laboratorium', 'admin@lab.local', Role::AdminLab, null, null, null],
             ['Operator Loket', 'operator@lab.local', Role::Operator, null, null, null],
             ['Bendahara Penerimaan', 'bendahara@lab.local', Role::Bendahara, null, null, null],

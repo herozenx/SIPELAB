@@ -5,11 +5,12 @@ namespace App\Enums;
 /**
  * Peran pengguna SILANTRO.
  * Nilai lama tetap dipakai agar data yang sudah ada tidak perlu dikonversi:
- * superadmin = Administrator, petugas_lab = Analis/Laboran.
+ * superadmin = Super Admin, administrasi = Administrator, petugas_lab = Analis/Laboran.
  */
 enum Role: string
 {
     case Superadmin = 'superadmin';
+    case Administrasi = 'administrasi';
     case AdminLab = 'admin_lab';
     case Operator = 'operator';
     case Bendahara = 'bendahara';
@@ -21,7 +22,8 @@ enum Role: string
     public function label(): string
     {
         return match ($this) {
-            self::Superadmin => 'Administrator',
+            self::Superadmin => 'Super Admin',
+            self::Administrasi => 'Administrator',
             self::AdminLab => 'Admin Laboratorium',
             self::Operator => 'Operator',
             self::Bendahara => 'Operator Bendahara',
@@ -36,7 +38,8 @@ enum Role: string
     public function tugas(): string
     {
         return match ($this) {
-            self::Superadmin => 'Memantau alur dari awal sampai akhir, memverifikasi permohonan, memvalidasi hasil pengujian, mengelola akun & pengaturan',
+            self::Superadmin => 'Mengelola akun & pengaturan; dapat menjalankan semua tahap alur',
+            self::Administrasi => 'Memantau alur dari awal sampai akhir, memverifikasi permohonan, memvalidasi hasil pengujian',
             self::AdminLab => 'Administrasi laboratorium: registrasi sampel dan pembuatan surat tugas pengujian',
             self::Operator => 'Penerimaan sampel, menetapkan jenis layanan, dan registrasi sampel ke buku sampel',
             self::Bendahara => 'Menerbitkan billing SIMPONI dan mengonfirmasi pembayaran',
@@ -60,7 +63,7 @@ enum Role: string
     /** Petugas kantor: boleh melihat semua permohonan beserta identitas pemohon. */
     public function isStaff(): bool
     {
-        return in_array($this, [self::Superadmin, self::AdminLab, self::Operator, self::Bendahara, self::PenanggungJawab], true);
+        return in_array($this, [self::Superadmin, self::Administrasi, self::AdminLab, self::Operator, self::Bendahara, self::PenanggungJawab], true);
     }
 
     /** Petugas laboratorium yang terikat pada satu lab/bidang (uji independen, tanpa identitas klien). */
@@ -78,7 +81,7 @@ enum Role: string
     /** Boleh membuka & mencetak LHP (dokumen rahasia, hanya petugas kantor). */
     public function bolehCetakLhp(): bool
     {
-        return in_array($this, [self::Superadmin, self::AdminLab, self::Operator, self::PenanggungJawab], true);
+        return in_array($this, [self::Superadmin, self::Administrasi, self::AdminLab, self::Operator, self::PenanggungJawab], true);
     }
 
     /** @return self[] */

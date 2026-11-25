@@ -33,10 +33,10 @@ class PermohonanPolicy
         return $u->role === Role::PenggunaJasa && $u->sePerusahaanDengan($p->user_id);
     }
 
-    /** Verifikasi + kaji ulang permintaan: Administrator dan Admin Laboratorium (masukan Balai 25 Nov). */
+    /** Verifikasi + kaji ulang permintaan: Administrator (dan Super Admin) serta Admin Laboratorium (masukan Balai 25 Nov). */
     public function verifikasi(User $u, Permohonan $p): bool
     {
-        return $u->hasRole(Role::Superadmin, Role::AdminLab);
+        return $u->hasRole(Role::Superadmin, Role::Administrasi, Role::AdminLab);
     }
 
     /** Penentuan jenis layanan & registrasi sampel: Operator dan Admin Laboratorium. */
@@ -47,12 +47,12 @@ class PermohonanPolicy
 
     public function billing(User $u, Permohonan $p): bool
     {
-        return $u->hasRole(Role::Bendahara, Role::Superadmin);
+        return $u->hasRole(Role::Bendahara, Role::Superadmin, Role::Administrasi);
     }
 
     public function suratTugas(User $u, Permohonan $p): bool
     {
-        return $u->hasRole(Role::AdminLab, Role::Superadmin);
+        return $u->hasRole(Role::AdminLab, Role::Superadmin, Role::Administrasi);
     }
 
     public function inputHasil(User $u, Permohonan $p): bool
@@ -62,7 +62,7 @@ class PermohonanPolicy
 
     public function periksa(User $u, Permohonan $p): bool
     {
-        return $u->role === Role::Superadmin;
+        return $u->hasRole(Role::Superadmin, Role::Administrasi);
     }
 
     public function paraf(User $u, Permohonan $p): bool
@@ -82,7 +82,7 @@ class PermohonanPolicy
             return $this->view($u, $p);
         }
 
-        return $u->hasRole(Role::Superadmin, Role::PenanggungJawab);
+        return $u->hasRole(Role::Superadmin, Role::Administrasi, Role::PenanggungJawab);
     }
 
     /** LHP: petugas kantor begitu disahkan; pengguna jasa pemilik setelah permohonan selesai (lunas). */
@@ -106,7 +106,7 @@ class PermohonanPolicy
 
     public function cetakSuratTugas(User $u, Permohonan $p): bool
     {
-        return $u->hasRole(Role::AdminLab, Role::Superadmin, Role::Operator)
+        return $u->hasRole(Role::AdminLab, Role::Superadmin, Role::Administrasi, Role::Operator)
             || ($u->isLab() && $this->view($u, $p));
     }
 }

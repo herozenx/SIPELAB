@@ -185,6 +185,20 @@ class RevisiMasukanBalaiTest extends TestCase
         $this->as('pengguna@lab.local')->get('/disposisi.pdf')->assertForbidden();
     }
 
+    public function test_administrator_terpisah_dari_super_admin(): void
+    {
+        $this->assertSame('Super Admin', \App\Enums\Role::Superadmin->label());
+        $this->assertSame('Administrator', \App\Enums\Role::Administrasi->label());
+
+        $p = $this->ajukan();
+        $this->as('administrasi@lab.local')->post("/permohonan/{$p->id}/verifikasi", ['kesimpulan' => 'dapat', 'kaji' => ['personel' => 1, 'bahan' => 1, 'alat' => 1]])
+            ->assertSessionHasNoErrors()->assertSessionHas('success');
+
+        // Kelola akun & pengaturan tetap khusus Super Admin.
+        $this->as('administrasi@lab.local')->get('/admin/pengguna')->assertForbidden();
+        $this->as('superadmin@lab.local')->get('/admin/pengguna')->assertOk();
+    }
+
     public function test_tarif_dan_nama_parameter_sesuai_daftar_resmi(): void
     {
         $this->assertSame(150000, ParameterUji::query()->where('kode', 'CK')->value('tarif'));

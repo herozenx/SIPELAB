@@ -12,7 +12,7 @@
   if ($u->isStaff()) {
       $nav[] = ['permohonan.index', 'Semua permohonan', 'daftar', 'permohonan.index|permohonan.show|permohonan.lhu'];
       $nav[] = ['chat', 'Chat pengguna', 'chat', 'chat'];
-      if ($u->hasRole($R::Superadmin, $R::AdminLab)) {
+      if ($u->hasRole($R::Superadmin, $R::Administrasi, $R::AdminLab)) {
           $nav[] = ['tim.index', 'Tim lab', 'tim', 'tim.*'];
       }
       $nav[] = ['laporan', 'Laporan', 'grafik', 'laporan'];
@@ -60,7 +60,7 @@
         </a>
       @endforeach
       @if ($admin)
-        <p class="mb-1 mt-5 px-3 text-2xs font-semibold text-laut-300">Administrator</p>
+        <p class="mb-1 mt-5 px-3 text-2xs font-semibold text-laut-300">Super Admin</p>
         @foreach ($admin as [$route, $label, $ikon, $pola])
           <a href="{{ route($route) }}" class="nav-link" @if($aktif($pola)) aria-current="page" @endif><x-ikon :n="$ikon" />{{ $label }}</a>
         @endforeach
