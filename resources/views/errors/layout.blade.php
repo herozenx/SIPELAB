@@ -7,7 +7,7 @@
 </head>
 <body class="grid min-h-screen place-items-center bg-kabut-100 px-4">
   <main class="max-w-md text-center">
-    <img src="{{ asset('favicon.svg') }}" alt="" class="mx-auto h-12 w-12">
+    <img src="{{ asset('img/logo-kkp.png') }}" alt="Logo KKP" class="mx-auto h-12 w-auto object-contain">
     <p class="num mt-6 text-sm font-bold text-laut-500">Kode @yield('kode')</p>
     <h1 class="mt-1">@yield('judul')</h1>
     <p class="mt-2 text-kabut-600">@yield('isi')</p>
