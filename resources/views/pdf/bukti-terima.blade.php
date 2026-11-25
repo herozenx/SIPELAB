@@ -41,12 +41,16 @@
       ['Pelanggan', $pemohon->instansi ?: $pemohon->nama],
       ['Alamat', $p->alamat ?: ($pemohon->alamat ?: '-')],
       ['Penanggung jawab', $pemohon->nama.($pemohon->telepon ? ' ('.$pemohon->telepon.')' : '')],
-      ['Jenis sampel', ($p->produk->count() > 1 ? $p->produk->count().' produk' : $p->nama_sampel).' ('.$p->jenis_komoditas.')'],
+      ['Jenis sampel', $p->produk->isNotEmpty()
+          ? $p->produk->map(fn ($x) => ($p->produk->count() > 1 && $x->kode ? $x->kode.' ' : '').$x->nama.($x->komoditas ? ' ('.$x->komoditas.')' : '').' – '.$x->jumlah.' sampel'.($x->berat ? ', '.$x->berat : ''))->join('; ')
+          : $p->nama_sampel.' ('.$p->jenis_komoditas.')'],
       ['Jumlah sampel', $p->jumlah_sampel],
-      ['Asal sampel', $p->asal_sampel],
+      ...($p->asal_sampel ? [['Asal sampel', $p->asal_sampel]] : []),
       ['Kondisi saat diterima', collect([$p->bentuk, $p->kemasan, $p->suhu !== null ? $p->suhu.' °C' : null, $p->berat])->filter()->join(', ') ?: '-'],
-      ['Jenis layanan', $p->jenis_bayar->label().' ('.$p->jenis_bayar->keterangan().')'],
+      ['Tujuan permohonan', $p->jenis_bayar->label().' ('.$p->jenis_bayar->keterangan().')'],
       ['Tanggal diterima', $tgl($p->diterima_at)],
+      ...($p->pemohon_setuju_at ? [['Pemohon menyetujui', 'Metode, biaya, dan waktu pengujian']] : []),
+      ...($p->kaji_ulang ? [['Kaji ulang permintaan', 'Personel, bahan uji, dan alat uji siap. '.(\App\Services\Workflow::KESIMPULAN[$p->kaji_ulang['kesimpulan'] ?? ''] ?? '').(! empty($p->kaji_ulang['catatan']) ? ' ('.$p->kaji_ulang['catatan'].')' : '')]] : []),
     ] as [$label, $isi])
       <tr><td style="width:48mm">{{ $label }}</td><td style="width:4mm">:</td><td><b>{{ $isi }}</b></td></tr>
     @endforeach

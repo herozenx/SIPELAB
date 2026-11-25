@@ -30,13 +30,13 @@ class PermohonanPolicy
 
     public function bayar(User $u, Permohonan $p): bool
     {
-        return $u->role === Role::PenggunaJasa && $p->user_id === $u->id;
+        return $u->role === Role::PenggunaJasa && $u->sePerusahaanDengan($p->user_id);
     }
 
-    /** Verifikasi berkas & data permohonan: Administrator. */
+    /** Verifikasi + kaji ulang permintaan: Administrator dan Admin Laboratorium (masukan Balai 25 Nov). */
     public function verifikasi(User $u, Permohonan $p): bool
     {
-        return $u->role === Role::Superadmin;
+        return $u->hasRole(Role::Superadmin, Role::AdminLab);
     }
 
     /** Penentuan jenis layanan & registrasi sampel: Operator dan Admin Laboratorium. */
@@ -92,7 +92,7 @@ class PermohonanPolicy
             return false;
         }
         if ($u->role === Role::PenggunaJasa) {
-            return $p->user_id === $u->id && $p->status === Status::Selesai;
+            return $u->sePerusahaanDengan($p->user_id) && $p->status === Status::Selesai;
         }
 
         return $u->role->bolehCetakLhp();
@@ -101,7 +101,7 @@ class PermohonanPolicy
     /** Bukti terima sampel: setelah sampel diregistrasi, untuk pemohon dan petugas kantor. */
     public function buktiTerima(User $u, Permohonan $p): bool
     {
-        return $p->kode_sampel !== null && ($u->isStaff() || ($u->role === Role::PenggunaJasa && $p->user_id === $u->id));
+        return $p->kode_sampel !== null && $p->diterima_at !== null && ($u->isStaff() || ($u->role === Role::PenggunaJasa && $u->sePerusahaanDengan($p->user_id)));
     }
 
     public function cetakSuratTugas(User $u, Permohonan $p): bool

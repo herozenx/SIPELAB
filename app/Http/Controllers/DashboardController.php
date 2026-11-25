@@ -22,9 +22,9 @@ class DashboardController extends Controller
      * Administrator melihat semua antrean (memantau dari awal sampai akhir).
      */
     private const ANTREAN = [
-        [Status::Diajukan, 'Verifikasi permohonan', 'Periksa berkas dan data permohonan: diterima atau ditolak dengan alasan.', [Role::Superadmin]],
+        [Status::Diajukan, 'Verifikasi permohonan', 'Periksa berkas, data, dan kaji ulang permintaan: dapat dilayani, tidak, atau lab eksternal.', [Role::Superadmin, Role::AdminLab]],
         [Status::Diterima, 'Registrasi sampel', 'Terima sampel fisik, kaji ulang permintaan, tetapkan jenis layanan, catat ke buku sampel.', [Role::Operator, Role::AdminLab]],
-        [Status::MenungguBilling, 'Terbitkan billing SIMPONI', 'Mandiri sebelum diuji; layanan lain setelah LHP disahkan.', [Role::Bendahara]],
+        [Status::MenungguBilling, 'Terbitkan billing SIMPONI', 'Layanan pengguna jasa sebelum diuji; layanan petugas setelah LHP disahkan.', [Role::Bendahara]],
         [Status::MenungguKonfirmasiBayar, 'Cek pembayaran', 'Cocokkan bukti setor dengan dana masuk di SIMPONI.', [Role::Bendahara]],
         [Status::SiapUji, 'Terbitkan surat tugas', 'Surat tugas pengujian ke penyelia setiap bidang yang terlibat.', [Role::AdminLab]],
         [Status::MenungguPemeriksaan, 'Validasi hasil pengujian', 'Periksa kesesuaian hasil dengan permohonan dan pastikan semua parameter terisi.', [Role::Superadmin]],
@@ -105,7 +105,7 @@ class DashboardController extends Controller
     private function pengguna(Request $request)
     {
         $u = $request->user();
-        $baseQuery = Permohonan::query()->where('user_id', $u->id);
+        $baseQuery = Permohonan::query()->milikPerusahaan($u);
 
         $counts = [
             'total' => (clone $baseQuery)->count(),
@@ -159,9 +159,10 @@ class DashboardController extends Controller
 
         // PNBP terkonfirmasi: Mandiri setelah lunas (sudah lewat tahap bayar), lainnya setelah pelunasan (selesai).
         $lunasMandiri = [Status::SiapUji, Status::DiLab, Status::MenungguPemeriksaan, Status::MenungguParaf, Status::MenungguPengesahan, Status::Selesai];
+        $diAwal = array_map(fn (JenisBayar $j) => $j->value, JenisBayar::pilihanPengguna());
         $pnbp = (int) Permohonan::query()->where(fn ($q) => $q
-            ->where(fn ($m) => $m->where('jenis_bayar', JenisBayar::Mandiri->value)->whereIn('status', array_map(fn ($s) => $s->value, $lunasMandiri)))
-            ->orWhere(fn ($m) => $m->where('jenis_bayar', '!=', JenisBayar::Mandiri->value)->where('status', Status::Selesai->value))
+            ->where(fn ($m) => $m->whereIn('jenis_bayar', $diAwal)->whereIn('status', array_map(fn ($s) => $s->value, $lunasMandiri)))
+            ->orWhere(fn ($m) => $m->whereNotIn('jenis_bayar', $diAwal)->where('status', Status::Selesai->value))
         )->sum('tagihan');
 
         $durasi = Lhu::query()->whereNotNull('validated_at')->with('permohonan:id,created_at')->get(['permohonan_id', 'validated_at'])

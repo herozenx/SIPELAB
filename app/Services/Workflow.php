@@ -127,7 +127,7 @@ class Workflow
     }
 
     // =====================================================================================
-    // 1. Pengajuan (pengguna jasa, selalu Mandiri)
+    // 1. Pengajuan (pengguna jasa: Ekspor/Test Result, Uji Mandiri, Uji Banding)
     // =====================================================================================
 
     /**
@@ -138,7 +138,7 @@ class Workflow
      * @param  array<int, array{nama:string, jumlah:int, parameter:array<int,int>}>  $produk  [ [nama, jumlah, [parameter_id => jumlah pengujian]] ]
      * @param  UploadedFile[]  $files
      */
-    public function ajukan(User $u, array $data, array $produk, array $files): Permohonan
+    public function ajukan(User $u, array $data, array $produk, array $files, JenisBayar $jenis = JenisBayar::Mandiri): Permohonan
     {
         $produk = array_values(array_filter($produk, fn ($x) => ! empty($x['parameter'])));
         if ($produk === []) {
@@ -153,18 +153,28 @@ class Workflow
             throw new WorkflowException('Pilih minimal satu parameter uji.');
         }
 
-        return $this->tx(function () use ($u, $data, $produk, $files, $master) {
+        return $this->tx(function () use ($u, $data, $produk, $files, $master, $jenis) {
+            $komoditas = collect($produk)->pluck('komoditas')->map(fn ($k) => trim((string) $k))->filter()->unique()->join(', ');
             $p = Permohonan::query()->create([
                 'nama_sampel' => mb_substr(collect($produk)->pluck('nama')->join(', '), 0, 120),
                 'jumlah_sampel' => min(65535, collect($produk)->sum(fn ($x) => max(1, (int) $x['jumlah']))),
+                'jenis_komoditas' => mb_substr($komoditas !== '' ? $komoditas : (string) ($data['jenis_komoditas'] ?? '-'), 0, 80),
+                'tujuan' => $jenis->tujuan(),
             ] + $data + [
-                'user_id' => $u->id, 'status' => Status::Diajukan, 'jenis_bayar' => JenisBayar::Mandiri,
+                'user_id' => $u->id, 'status' => Status::Diajukan, 'jenis_bayar' => $jenis,
+                'pemohon_setuju_at' => now(),
             ]);
-            $this->beriNomor($p, 'kode', fn () => $this->nomorPermohonanBaru(now()->format('dmy')));
+            $tgl = now()->format('dmy');
+            $this->beriNomor($p, 'kode', fn () => $this->nomorPermohonanBaru($tgl));
+            // Kode sampel SP langsung diberikan saat diajukan (masukan Balai). Saat registrasi kode ini dipakai
+            // bila jenis layanan & tanggal terima sama; bila berbeda, diberi nomor baru sesuai buku sampel.
+            $this->beriNomor($p, 'kode_sampel', fn () => $this->kodeSampelBaru($jenis, $tgl));
             foreach ($produk as $i => $x) {
                 $pr = PermohonanProduk::query()->create([
                     'permohonan_id' => $p->id, 'urut' => $i + 1, 'nama' => mb_substr(trim((string) $x['nama']), 0, 120),
                     'jumlah' => max(1, min(500, (int) $x['jumlah'])),
+                    'komoditas' => ($x['komoditas'] ?? '') !== '' ? mb_substr(trim((string) $x['komoditas']), 0, 80) : null,
+                    'berat' => ($x['berat'] ?? '') !== '' ? mb_substr(trim((string) $x['berat']), 0, 30) : null,
                 ]);
                 foreach ($x['parameter'] as $id => $jumlah) {
                     $m = $master->get($id);
@@ -182,11 +192,12 @@ class Workflow
             if (! PermohonanParameter::query()->where('permohonan_id', $p->id)->exists()) {
                 throw new WorkflowException('Pilih minimal satu parameter uji.');
             }
+            $this->kodeProduk($p, (string) $p->kode_sampel);
             if (! empty($data['alamat']) && ! $u->alamat) {
                 $u->forceFill(['alamat' => $data['alamat']])->save();
             }
             $this->simpanBerkas($files, $p, Dokumen::PENDUKUNG, $u);
-            $this->catat($p, Status::Diajukan, 'Permohonan diajukan secara online (layanan Mandiri)', $u);
+            $this->catat($p, Status::Diajukan, "Permohonan {$p->kode_sampel} diajukan secara online ({$jenis->label()}). Pemohon menyetujui metode, biaya, dan waktu pengujian", $u);
 
             return $p;
         });
@@ -196,11 +207,26 @@ class Workflow
     // 2. Verifikasi permohonan (Administrator) & registrasi sampel (Operator/Admin Lab)
     // =====================================================================================
 
-    /** Administrator: berkas & data permohonan sesuai, permohonan diterima. */
-    public function verifikasi(Permohonan $p, User $admin): void
+    /** Kesimpulan kaji ulang permintaan (FPPCU FL/OK/SUB II/8.5.2.a). */
+    public const KESIMPULAN = [
+        'dapat' => 'Permintaan dapat dilayani',
+        'tidak' => 'Permintaan tidak dapat dilayani',
+        'eksternal' => 'Laboratorium eksternal (terlampir)',
+    ];
+
+    /**
+     * Verifikasi + kaji ulang permintaan: personel, bahan uji, dan alat uji siap; kesimpulan dapat dilayani
+     * atau dirujuk ke laboratorium eksternal. Permohonan lalu diterima dan menunggu sampel diregistrasi.
+     */
+    public function verifikasi(Permohonan $p, User $admin, string $kesimpulan = 'dapat', ?string $catatan = null): void
     {
-        $this->tx(fn () => $this->transisi($p, Status::Diajukan, ['status' => Status::Diterima->value],
-            'Permohonan diterima: berkas dan data sudah diperiksa. Silakan serahkan sampel ke loket untuk diregistrasi', $admin));
+        $kaji = ['personel' => true, 'bahan' => true, 'alat' => true, 'kesimpulan' => $kesimpulan,
+            'catatan' => $catatan ? mb_substr($catatan, 0, 500) : null, 'oleh' => $admin->id, 'at' => now()->toIso8601String()];
+        $teks = $kesimpulan === 'eksternal'
+            ? 'Permohonan diterima; sebagian pengujian dirujuk ke laboratorium eksternal'.($catatan ? " ({$catatan})" : '').'.'
+            : 'Permohonan diterima: kaji ulang permintaan selesai (personel, bahan, dan alat uji siap).';
+        $this->tx(fn () => $this->transisi($p, Status::Diajukan, ['status' => Status::Diterima->value, 'kaji_ulang' => json_encode($kaji)],
+            $teks.' Silakan serahkan sampel ke loket untuk diregistrasi', $admin));
     }
 
     /**
@@ -217,11 +243,17 @@ class Workflow
             $tagihan = $this->tagihan($p);
             $tgl = now()->format('dmy');
             $ke = $jenis->bayarDiAwal() ? Status::MenungguBilling : Status::SiapUji;
-            $lama = (string) $p->kode;
-            // Data versi sebelumnya sudah memegang kode SP saat diajukan: dipakai bila jenis & tanggalnya cocok.
-            if (str_starts_with($lama, $jenis->kodeSurat()."/{$tgl}.")) {
-                Permohonan::query()->whereKey($p->id)->update(['kode_sampel' => $lama]);
-                $p->kode_sampel = $lama;
+            // Kode SP yang diberikan saat diajukan dipakai bila jenis layanan & tanggal terima cocok;
+            // data versi sebelumnya menyimpannya di kolom kode.
+            $awalan = $jenis->kodeSurat()."/{$tgl}.";
+            $cocok = collect([(string) $p->kode_sampel, (string) $p->kode])->first(fn ($k) => str_starts_with($k, $awalan));
+            // Jenis layanan diganti petugas di hari yang sama: nomor urut tetap, hanya awalannya berubah.
+            if ($cocok === null && preg_match('#^SP\.[A-Z]+/'.$tgl.'\.(\d+)$#', (string) $p->kode_sampel, $m)) {
+                $cocok = $awalan.$m[1];
+            }
+            if ($cocok !== null) {
+                Permohonan::query()->whereKey($p->id)->update(['kode_sampel' => $cocok]);
+                $p->kode_sampel = $cocok;
             } else {
                 $this->beriNomor($p, 'kode_sampel', fn () => $this->kodeSampelBaru($jenis, $tgl));
             }
@@ -230,11 +262,11 @@ class Workflow
             $this->kodeProduk($p, $kode);
 
             $this->transisi($p, Status::Diterima, [
-                'status' => $ke->value, 'jenis_bayar' => $jenis->value,
+                'status' => $ke->value, 'jenis_bayar' => $jenis->value, 'tujuan' => $jenis->tujuan()->value,
                 'tagihan' => $tagihan, 'diterima_at' => now(), 'diterima_oleh' => $operator->id,
             ] + array_map(fn ($v) => $v === '' ? null : $v, $kondisi),
                 'Sampel diterima dan diregistrasi dengan kode '.$kode.' (No. agenda '.$p->no_agenda.'). '
-                ."Jenis layanan: {$jenis->label()}. "
+                ."Tujuan permohonan: {$jenis->label()}. "
                 .($jenis->bayarDiAwal() ? 'Menunggu penerbitan kode billing SIMPONI.' : 'Dibayar di belakang; siap dibuatkan surat tugas.'), $operator);
 
             return $kode;
@@ -316,8 +348,14 @@ class Workflow
 
     public function tolak(Permohonan $p, string $alasan, User $admin): void
     {
-        $this->tx(fn () => $this->transisi($p, Status::Diajukan,
-            ['status' => Status::Ditolak->value, 'alasan_tolak' => $alasan], "Ditolak: {$alasan}", $admin));
+        $kaji = json_encode(['kesimpulan' => 'tidak', 'catatan' => $alasan, 'oleh' => $admin->id, 'at' => now()->toIso8601String()]);
+        $this->tx(function () use ($p, $alasan, $admin, $kaji) {
+            // Kode SP dilepas agar nomor urut buku sampel bisa dipakai permohonan berikutnya.
+            $this->transisi($p, Status::Diajukan,
+                ['status' => Status::Ditolak->value, 'alasan_tolak' => $alasan, 'kaji_ulang' => $kaji, 'kode_sampel' => null],
+                "Ditolak (permintaan tidak dapat dilayani): {$alasan}", $admin);
+            PermohonanProduk::query()->where('permohonan_id', $p->id)->update(['kode' => null]);
+        });
     }
 
     // =====================================================================================
@@ -490,6 +528,50 @@ class Workflow
     }
 
     /**
+     * Disposisi: penyelia menugaskan analis lab-nya untuk tiap parameter (Lembar Disposisi).
+     * Analis yang ditugaskan ikut tercatat menangani sampel.
+     *
+     * @param  array<int, int|null>  $analis  [permohonan_parameter_id => user_id analis | null]
+     */
+    public function disposisi(Permohonan $p, User $penyelia, array $analis): int
+    {
+        if ($penyelia->role !== Role::Penyelia) {
+            throw new WorkflowException('Hanya penyelia yang dapat membuat disposisi analis.');
+        }
+        $tahap = $this->tahapTerbuka($p, $penyelia->lab_id) ?? throw new WorkflowException('Sampel ini tidak ada di antrean lab Anda.');
+
+        return $this->tx(function () use ($p, $penyelia, $analis, $tahap) {
+            $boleh = User::query()->where('role', Role::PetugasLab->value)->where('lab_id', $penyelia->lab_id)->where('aktif', true)->pluck('nama', 'id');
+            $baris = PermohonanParameter::query()->where('permohonan_id', $p->id)->where('lab_id', $penyelia->lab_id)->get();
+            $ubah = 0;
+            foreach ($baris as $b) {
+                if (! array_key_exists($b->id, $analis)) {
+                    continue;
+                }
+                $id = $analis[$b->id] ? (int) $analis[$b->id] : null;
+                if ($id !== null && ! $boleh->has($id)) {
+                    throw new WorkflowException('Analis yang dipilih bukan analis aktif di lab Anda.');
+                }
+                if ($b->analis_id !== $id) {
+                    $b->update(['analis_id' => $id]);
+                    $ubah++;
+                }
+            }
+            $dipakai = $baris->fresh()->pluck('analis_id')->filter()->unique();
+            if ($dipakai->isNotEmpty()) {
+                $tahap->operator()->syncWithoutDetaching($dipakai->mapWithKeys(fn ($id) => [$id => ['created_at' => now()]])->all());
+            }
+            Permohonan::query()->whereKey($p->id)->update(['updated_at' => now()]);
+            if ($ubah > 0) {
+                $this->catat($p, Status::DiLab, "Disposisi Lab {$penyelia->lab?->nama} oleh {$penyelia->nama}: "
+                    .$dipakai->map(fn ($id) => $boleh[$id] ?? '?')->join(', '), $penyelia);
+            }
+
+            return $ubah;
+        });
+    }
+
+    /**
      * Simpan hasil parameter lab petugas. Bila $selesai, semua parameter lab itu wajib terisi,
      * tahap lab ditutup, dan bila seluruh lab sudah selesai sampel masuk pemeriksaan LHP.
      *
@@ -511,7 +593,8 @@ class Workflow
             $baris = PermohonanParameter::query()->where('permohonan_id', $p->id)->where('lab_id', $lab->id)->get();
             foreach ($baris as $b) {
                 $in = $hasil[$b->id] ?? null;
-                if (! is_array($in)) {
+                // Parameter yang didisposisikan ke analis lain hanya diisi analis itu (atau penyelia).
+                if (! is_array($in) || ($petugas->role === Role::PetugasLab && $b->analis_id && $b->analis_id !== $petugas->id)) {
                     continue;
                 }
                 $nilai = trim((string) ($in['hasil'] ?? ''));
@@ -832,7 +915,7 @@ class Workflow
             return true;
         }
         if ($u->role === Role::PenggunaJasa) {
-            return $p->user_id === $u->id;
+            return $u->sePerusahaanDengan($p->user_id);
         }
 
         // Analis & penyelia: hanya sampel yang pernah/sedang diuji di lab-nya.

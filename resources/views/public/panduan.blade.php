@@ -21,17 +21,17 @@
     ['akun', 'Akun dan Jenis Layanan', 'akun',
       'Buat akun lalu pilih jenis layanan yang diinginkan',
       [
-        'Isi nama penanggung jawab, nama usaha/instansi, email, telepon, dan kata sandi.',
-        'Permohonan online umumnya diajukan sebagai <b>Mandiri</b>: bayar sebelum pengujian.',
-        'Pengujian Eksternal atau Surveilen ditetapkan petugas Balai dan dibayar setelah LHP terbit.',
+        'Isi nama penanggung jawab, nama usaha/instansi, alamat, email, telepon, dan kata sandi. Akun ini menjadi <b>admin perusahaan</b> yang bisa menambah akun operator.',
+        'Saat mengajukan, pilih tujuan permohonan: <b>Ekspor (Test Result)</b>, <b>Uji Mandiri</b>, atau <b>Uji Banding</b>. Ketiganya dibayar sebelum pengujian.',
+        'Surveilen, Monitoring, Uji Profisiensi, dan Pengujian Eksternal ditetapkan petugas Balai dan dibayar setelah LHP terbit.',
       ],
       [['info', 'Nama usaha/instansi dicetak sebagai pemohon pada dokumen resmi.']], null],
     ['ajukan', 'Ajukan dan serahkan sampel', 'tambah',
       'Isi permohonan, lalu bawa sampel fisik ke loket Balai.',
       [
-        'Klik <b>Ajukan uji</b>, lalu isi data sampel, komoditas, jumlah, asal, tujuan, dan alamat. Menguji beberapa produk sekaligus? Klik <b>Tambah produk</b>.',
-        'Pilih parameter uji dan lampiran pendukung bila ada.',
-        'Setelah dikirim, bawa sampel ke loket dan sebutkan kode permohonan.',
+        'Klik <b>Ajukan uji</b>, pilih tujuan permohonan, lalu isi tiap produk: komoditas, nama sampel, jumlah, dan berat. Menguji beberapa produk sekaligus? Klik <b>Tambah produk</b>.',
+        'Pilih parameter uji dan jumlah pengujiannya, centang persetujuan metode, biaya, dan waktu, lalu lampirkan dokumen pendukung bila ada.',
+        'Setelah dikirim, Anda mendapat kode sampel (mis. SP.E/251126.01). Bawa sampel ke loket dan sebutkan kode itu.',
         'Petugas memverifikasi, meregistrasi sampel, dan menerbitkan kode sampel atau billing bila diperlukan.',
       ],
       [['info', 'Dokumen pendukung boleh berupa PDF, JPG, atau PNG, maksimal 5 MB per berkas.']], null],
@@ -133,9 +133,9 @@
               @case('jenis')
                 <div class="grid gap-4 md:grid-cols-3">
                   @foreach ([
-                    ['Mandiri', 'Diajukan online · bayar di awal', ['Ajukan permohonan online', 'Sampel diregistrasi, kode SP.M', 'Bayar billing SIMPONI, unggah bukti', 'Sampel diuji di lab', 'LHP selesai, unduh PDF'], 'bg-laut-600'],
-                    ['Pengujian Eksternal', 'Ditetapkan petugas · bayar di belakang', ['Permohonan diterima Balai', 'Sampel diverifikasi, kode SP.PE', 'Sampel langsung diuji di lab', 'LHP disahkan, billing terbit', 'Bayar, lalu unduh LHP PDF'], 'bg-lamun-600'],
-                    ['Surveilen', 'Ditetapkan petugas · bayar di belakang', ['Permohonan diterima Balai', 'Sampel diverifikasi, kode SP.S', 'Sampel langsung diuji di lab', 'LHP disahkan, billing terbit', 'Bayar, lalu unduh LHP PDF'], 'bg-laut-800'],
+                    ['Ekspor · Uji Mandiri · Uji Banding', 'Diajukan online · bayar di awal', ['Ajukan permohonan online, kode SP.E / SP.M / SP.UB', 'Sampel diregistrasi di loket', 'Bayar billing SIMPONI, unggah bukti', 'Sampel diuji di lab', 'LHP selesai, unduh PDF'], 'bg-laut-600'],
+                    ['Pengujian Eksternal · Uji Profisiensi', 'Ditetapkan petugas · bayar di belakang', ['Permohonan diterima Balai', 'Sampel diverifikasi, kode SP.PE / SP.UP', 'Sampel langsung diuji di lab', 'LHP disahkan, billing terbit', 'Bayar, lalu unduh LHP PDF'], 'bg-lamun-600'],
+                    ['Surveilen · Monitoring', 'Ditetapkan petugas · bayar di belakang', ['Permohonan diterima Balai', 'Sampel diverifikasi, kode SP.S / SP.MN', 'Sampel langsung diuji di lab', 'LHP disahkan, billing terbit', 'Bayar, lalu unduh LHP PDF'], 'bg-laut-800'],
                   ] as [$nama, $sub, $alur, $warna])
                     <div class="overflow-hidden rounded-xl ring-1 ring-kabut-200">
                       <div class="{{ $warna }} px-4 py-3 text-white"><p class="font-extrabold">{{ $nama }}</p><p class="text-xs opacity-90">{{ $sub }}</p></div>

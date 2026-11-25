@@ -14,7 +14,7 @@ class User extends Authenticatable
     /** Dianggap online bila ada aktivitas dalam N menit terakhir. */
     public const ONLINE_MENIT = 2;
 
-    protected $fillable = ['nama', 'email', 'password', 'role', 'lab_id', 'instansi', 'alamat', 'tipe_pengguna', 'telepon', 'nip', 'aktif', 'wajib_ganti_password'];
+    protected $fillable = ['nama', 'email', 'password', 'role', 'lab_id', 'instansi', 'alamat', 'tipe_pengguna', 'telepon', 'nip', 'nik', 'induk_id', 'aktif', 'wajib_ganti_password'];
 
     protected $hidden = ['password', 'remember_token'];
 
@@ -42,6 +42,52 @@ class User extends Authenticatable
     public function permohonan(): HasMany
     {
         return $this->hasMany(Permohonan::class);
+    }
+
+    /** Akun operator perusahaan: induknya admin perusahaan (pengguna jasa yang mendaftar). */
+    public function induk(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'induk_id');
+    }
+
+    /** Operator (personel yang dihubungi) milik admin perusahaan ini. */
+    public function operatorPerusahaan(): HasMany
+    {
+        return $this->hasMany(self::class, 'induk_id')->orderBy('nama');
+    }
+
+    /** Admin perusahaan = pengguna jasa tanpa induk; boleh menambah/menonaktifkan operator. */
+    public function adminPerusahaan(): bool
+    {
+        return $this->role === Role::PenggunaJasa && $this->induk_id === null;
+    }
+
+    /** Id admin perusahaan tempat akun ini bernaung (dirinya sendiri bila admin). */
+    public function perusahaanId(): int
+    {
+        return (int) ($this->induk_id ?? $this->id);
+    }
+
+    /** Semua akun dalam perusahaan yang sama: permohonan mereka saling terlihat. */
+    public function scopeSePerusahaan(Builder $q, self $u): Builder
+    {
+        $id = $u->perusahaanId();
+
+        return $q->where(fn ($w) => $w->where('id', $id)->orWhere('induk_id', $id));
+    }
+
+    /** Akun ini satu perusahaan dengan pemilik user_id tersebut. */
+    public function sePerusahaanDengan(?int $userId): bool
+    {
+        if ($userId === null) {
+            return false;
+        }
+        if ($userId === $this->id) {
+            return true;
+        }
+        $lain = self::query()->whereKey($userId)->first(['id', 'induk_id']);
+
+        return $lain !== null && (int) ($lain->induk_id ?? $lain->id) === $this->perusahaanId();
     }
 
     public function hasRole(Role ...$roles): bool

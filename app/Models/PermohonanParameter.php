@@ -35,6 +35,12 @@ class PermohonanParameter extends Model
         return $this->belongsTo(Lab::class);
     }
 
+    /** Analis yang ditugaskan penyelia (disposisi). */
+    public function analis(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'analis_id');
+    }
+
     public function penginput(): BelongsTo
     {
         return $this->belongsTo(User::class, 'diinput_oleh');
