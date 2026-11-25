@@ -189,7 +189,8 @@ class RevisiMasukanBalaiTest extends TestCase
     {
         $this->assertSame(150000, ParameterUji::query()->where('kode', 'CK')->value('tarif'));
         $this->assertSame('Total Coliform', ParameterUji::query()->where('kode', 'C')->value('nama'));
-        $this->assertSame(80000, ParameterUji::query()->where('kode', 'CM')->value('tarif'));
-        $this->assertSame(80000, ParameterUji::query()->where('kode', 'ECM')->value('tarif'));
+        $this->assertSame(160000, ParameterUji::query()->where('kode', 'CM')->value('tarif'));
+        $this->assertSame('Escherichia coli & Coliform (Air/Es proses UPI)', ParameterUji::query()->where('kode', 'CM')->value('nama'));
+        $this->assertFalse(ParameterUji::query()->where('kode', 'ECM')->where('aktif', true)->exists());
     }
 }

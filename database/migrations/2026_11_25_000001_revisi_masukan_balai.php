@@ -50,8 +50,12 @@ return new class extends Migration
         // Hanya nilai bawaan lama yang diganti; yang sudah diubah Administrator dibiarkan.
         DB::table('parameter_uji')->where('kode', 'C')->where('nama', 'Coliform')->update(['nama' => 'Total Coliform']);
         DB::table('parameter_uji')->where('kode', 'CK')->where('tarif', 166000)->update(['tarif' => 150000]);
-        // Air/Es proses UPI "E. coli & Coliform" Rp160.000 per contoh, dibagi rata ke CM dan ECM.
-        DB::table('parameter_uji')->whereIn('kode', ['CM', 'ECM'])->where('tarif', 50000)->update(['tarif' => 80000]);
+        // Air/Es proses UPI "E. coli & Coliform": satu parameter, Rp160.000 per contoh, sesuai daftar tarif.
+        DB::table('parameter_uji')->where('kode', 'CM')->where('nama', 'Coliform (membran filter)')
+            ->update(['nama' => 'Escherichia coli & Coliform (Air/Es proses UPI)']);
+        DB::table('parameter_uji')->where('kode', 'CM')->where('tarif', 50000)->update(['tarif' => 160000]);
+        // ECM dinonaktifkan (bukan dihapus) agar permohonan lama yang memakainya tetap utuh.
+        DB::table('parameter_uji')->where('kode', 'ECM')->update(['aktif' => false]);
     }
 
     public function down(): void

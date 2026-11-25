@@ -6,7 +6,7 @@ namespace App\Support;
  * Daftar parameter uji bawaan, diambil dari FPPCU 2026 (FL/OK/SUB II/8.5.2.a) dan LHP Balai 2026.
  * Bidang di LHP: Organoleptik, Biologi, Kimia, Radionuklida. akreditasi=false dicetak dengan tanda * di LHP.
  * Tarif mengikuti daftar Jenis dan Tarif PNBP Laboratorium (PMK 1 Tahun 2025) yang dipasang di BPPMHKP Surabaya II.
- * Air/Es proses UPI "E. coli & Coliform" satu tarif Rp160.000 per contoh: dibagi rata ke CM dan ECM.
+ * Air/Es proses UPI "E. coli & Coliform" satu parameter, satu tarif Rp160.000 per contoh (sesuai daftar tarif).
  * Kadar air, kadar garam, dan Listeria tidak ada di daftar tarif: 0.
  */
 class ParameterBawaan
@@ -16,7 +16,7 @@ class ParameterBawaan
         'O' => 200000, 'A' => 100000, 'E1' => 245000, 'E2' => 245000, 'EK' => 300000, 'S' => 350000,
         'VC' => 375000, 'VP' => 375000, 'SA' => 360000, 'H' => 555000,
         'CAP' => 400000, 'AOZ' => 400000, 'AMOZ' => 400000, 'AHD' => 400000, 'SEM' => 400000,
-        'C' => 75000, 'CK' => 150000, 'F' => 66000, 'CM' => 80000, 'ECM' => 80000, 'ENTM' => 100000,
+        'C' => 75000, 'CK' => 150000, 'F' => 66000, 'CM' => 160000, 'ENTM' => 100000,
         'HG' => 150000, 'PB' => 150000, 'CD' => 150000, 'CS' => 500000,
     ];
 
@@ -55,8 +55,7 @@ class ParameterBawaan
             $p('VC', 'Vibrio cholerae', 'Biologi', 'Mikrobiologi', 'SNI 01-2332.4-2006', 'Negatif/25 g'),
             $p('SA', 'Staphylococcus aureus', 'Biologi', 'Mikrobiologi', 'SNI 2332.9-2015', 'Maks. 1,0 x 10³ kol/g'),
             $p('ENTM', 'Enterococci', 'Biologi', 'Mikrobiologi', 'SNI ISO 7899-2-2010', '0 kol/100 ml'),
-            $p('CM', 'Coliform (membran filter)', 'Biologi', 'Mikrobiologi', 'SNI ISO 9308-1:2014', '0 kol/100 ml'),
-            $p('ECM', 'Escherichia coli (membran filter)', 'Biologi', 'Mikrobiologi', 'SNI ISO 9308-1:2014', '0 kol/100 ml'),
+            $p('CM', 'Escherichia coli & Coliform (Air/Es proses UPI)', 'Biologi', 'Mikrobiologi', 'SNI ISO 9308-1:2014', '0 kol/100 ml'),
             $p('LM', 'Listeria monocytogenes', 'Biologi', 'Mikrobiologi', '-', 'Negatif/25 g', null, false),
 
             $p('F', 'Formalin', 'Kimia', 'Kimia', 'IKM/OK/LP/SUB II/6', 'Negatif', 'LoD 1,5 mg/kg'),
