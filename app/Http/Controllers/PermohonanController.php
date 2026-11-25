@@ -334,7 +334,7 @@ class PermohonanController extends Controller
             Audit::log('BAYAR_DITERIMA', 'permohonan', $permohonan->id);
 
             return back()->with('success', $ke === Status::Selesai
-                ? 'Pelunasan dikonfirmasi. LHP selesai dan dapat diunduh pengguna jasa.'
+                ? 'Pelunasan dikonfirmasi. LHP selesai dan dapat dicetak untuk diserahkan ke pengguna jasa.'
                 : 'Pembayaran dikonfirmasi. Sampel siap dibuatkan surat tugas oleh Admin Laboratorium.');
         }
 
@@ -488,7 +488,17 @@ class PermohonanController extends Controller
     {
         $this->authorizeOr404('view', $permohonan);
         abort_unless(Gate::allows('paraf', $permohonan), 403);
-        $lengkap = $this->wf->paraf($permohonan, $request->user());
+        // Paraf digambar di layar (rapat 19 Nov) lalu dicetak di LHP: hanya PNG kecil dari kanvas.
+        $request->validate(
+            ['paraf' => ['required', 'string', 'max:200000', 'starts_with:data:image/png;base64,', function ($attr, $v, $fail) {
+                $png = base64_decode(substr((string) $v, 22), true);
+                if ($png === false || ! str_starts_with($png, "\x89PNG\r\n\x1a\n")) {
+                    $fail('Gambar paraf tidak valid. Gambar ulang paraf Anda.');
+                }
+            }]],
+            ['paraf.required' => 'Gambar paraf Anda di kotak paraf terlebih dahulu.', 'paraf.starts_with' => 'Gambar paraf tidak valid. Gambar ulang paraf Anda.', 'paraf.max' => 'Gambar paraf terlalu besar. Hapus lalu gambar ulang.'],
+        );
+        $lengkap = $this->wf->paraf($permohonan, $request->user(), (string) $request->input('paraf'));
         Audit::log('PARAF_LHP', 'permohonan', $permohonan->id);
 
         return back()->with('success', $lengkap ? 'Paraf tercatat. Semua bidang lengkap, LHP menunggu pengesahan.' : 'Paraf tercatat. Menunggu paraf penyelia bidang lain.');
@@ -497,7 +507,11 @@ class PermohonanController extends Controller
     public function sahkan(Request $request, Permohonan $permohonan)
     {
         Gate::authorize('sahkan', $permohonan);
-        $lhu = $this->wf->sahkan($permohonan, $request->user());
+        $data = $request->validate(
+            ['jabatan' => ['required', Rule::in(array_keys(\App\Models\Lhu::JABATAN))]],
+            ['jabatan.required' => 'Pilih jabatan penanda tangan LHP.'],
+        );
+        $lhu = $this->wf->sahkan($permohonan, $request->user(), $data['jabatan']);
         Audit::log('SAHKAN_LHP', 'permohonan', $permohonan->id, ['nomor' => $lhu->nomor]);
 
         return back()->with('success', "LHP {$lhu->nomor} disahkan."
@@ -604,7 +618,7 @@ class PermohonanController extends Controller
     public function lhpPdf(Request $request, Permohonan $permohonan)
     {
         $this->authorizeOr404('lihatLhu', $permohonan);
-        $p = $permohonan->load(['lhu.validator', 'produk', 'parameter', 'hasil.lab', 'pemohon', 'tahap']);
+        $p = $permohonan->load(['lhu.validator', 'produk', 'parameter', 'hasil.lab', 'pemohon', 'tahap', 'persetujuan.lab']);
         Audit::log('UNDUH_LHP_PDF', 'permohonan', $p->id);
 
         return Pdf::respons('pdf.lhp', [

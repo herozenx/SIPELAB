@@ -25,7 +25,7 @@
       </span>
       <span class="min-w-0">
         <span class="block font-bold leading-snug">
-          {{ $p->lhpTerbit() ? 'LHP '.$p->kodeTampil().' selesai, bayar tagihan untuk mengunduh' : 'Bayar tagihan '.$p->kodeTampil() }}
+          {{ $p->lhpTerbit() ? 'LHP '.$p->kodeTampil().' sudah disahkan, bayar tagihan lalu ambil LHP di kantor Balai' : 'Bayar tagihan '.$p->kodeTampil() }}
         </span>
         <span class="mt-1 block text-sm leading-relaxed text-laut-100">
           {{ rupiah($p->tagihan) }} lewat SIMPONI &middot;

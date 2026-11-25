@@ -97,8 +97,8 @@ class AlurLhpTest extends TestCase
         // Admin Lab periksa -> penyelia paraf (satu per bidang) -> PJ sahkan.
         $this->periksa($p);
         $this->assertSame(Status::MenungguParaf, $p->fresh()->status);
-        $this->as('penyelia.organo@lab.local')->post("/permohonan/{$p->id}/paraf")->assertSessionHas('success');
-        $this->as('penyelia.organo@lab.local')->post("/permohonan/{$p->id}/paraf")->assertSessionHas('error'); // tidak dobel
+        $this->as('penyelia.organo@lab.local')->post("/permohonan/{$p->id}/paraf", ['paraf' => $this->paraf()])->assertSessionHas('success');
+        $this->as('penyelia.organo@lab.local')->post("/permohonan/{$p->id}/paraf", ['paraf' => $this->paraf()])->assertSessionHas('error'); // tidak dobel
         $this->assertSame(Status::MenungguParaf, $p->fresh()->status);
         $this->parafSemua($p, ['penyelia.mikro@lab.local', 'penyelia.kimia@lab.local']);
         $this->assertSame(Status::MenungguPengesahan, $p->fresh()->status);
@@ -113,12 +113,12 @@ class AlurLhpTest extends TestCase
         $this->assertSame(1, $p->no_agenda);
         $this->assertSame(['PARAF', 'PARAF', 'PARAF', 'PERIKSA', 'SAH'], Persetujuan::query()->where('permohonan_id', $p->id)->pluck('jenis')->sort()->values()->all());
 
-        // LHP: petugas kantor membuka pratinjau (dengan QR); pengguna jasa mengunduh PDF setelah selesai.
+        // LHP: petugas kantor membuka pratinjau (dengan QR); pengguna jasa hanya melihat status selesai (rapat 19 Nov).
         $this->as('operator@lab.local')->get("/permohonan/{$p->id}/lhp")->assertOk()
             ->assertSee($lhu->nomor)->assertSee('SP.M/191126.01')->assertSee('Jl. Rungkut Madya, Surabaya')
             ->assertSee('Histamin')->assertSee('Pindai untuk cek keaslian')->assertSee('<svg', false)->assertSee('NIP. 198001012005012001');
         $this->as('pengguna@lab.local')->get("/permohonan/{$p->id}")->assertOk()
-            ->assertSee('LHP selesai')->assertSee('LHP (PDF)')->assertSee('ND')->assertDontSee('Pratinjau')->assertDontSee('Analis Kimia');
+            ->assertSee('LHP selesai')->assertDontSee('LHP (PDF)')->assertSee('ND')->assertDontSee('Pratinjau')->assertDontSee('Analis Kimia');
         $this->as('mikro@lab.local')->get("/permohonan/{$p->id}/lhp")->assertNotFound();
 
         // Cek keaslian publik.
@@ -284,7 +284,7 @@ class AlurLhpTest extends TestCase
 
         // 2) Paraf/validasi akhir tidak disetujui: perbaikan data -> kembali ke validasi hasil (Administrator).
         $this->periksa($p);
-        $this->as('penyelia.kimia@lab.local')->post("/permohonan/{$p->id}/paraf");
+        $this->as('penyelia.kimia@lab.local')->post("/permohonan/{$p->id}/paraf", ['paraf' => $this->paraf()]);
         $this->as('penyelia.kimia@lab.local')->post("/permohonan/{$p->id}/kembalikan", ['lab_id' => $kimia, 'jenis' => 'REVISI', 'catatan' => 'revisi tidak berlaku di tahap paraf'])->assertSessionHas('error');
         $this->as('pj@lab.local')->post("/permohonan/{$p->id}/kembalikan", ['jenis' => 'PERBAIKAN', 'catatan' => 'Nama sampel di LHP salah ketik'])->assertSessionHas('success');
         $this->assertSame(Status::MenungguPemeriksaan, $p->fresh()->status);
@@ -337,7 +337,9 @@ class AlurLhpTest extends TestCase
         $this->periksa($p);
         $this->parafSemua($p);
         $this->sahkan($p);
-        $pdf = $this->as('pengguna@lab.local')->get("/permohonan/{$p->id}/lhp.pdf");
+        // Rapat 19 Nov: pengguna jasa tidak mengunduh LHP; LHP dicetak & diserahkan di kantor.
+        $this->as('pengguna@lab.local')->get("/permohonan/{$p->id}/lhp.pdf")->assertNotFound();
+        $pdf = $this->as('operator@lab.local')->get("/permohonan/{$p->id}/lhp.pdf");
         $pdf->assertOk()->assertHeader('Content-Type', 'application/pdf');
         $this->assertStringStartsWith('%PDF-', $pdf->getContent());
         $this->as('pj@lab.local')->get("/permohonan/{$p->id}/lhp.pdf")->assertOk();
@@ -355,7 +357,7 @@ class AlurLhpTest extends TestCase
         $this->parafSemua($p);
 
         PermohonanParameter::query()->where('permohonan_id', $p->id)->where('kode', 'H')->update(['hasil' => '150 mg/kg']);
-        $this->as('pj@lab.local')->post("/permohonan/{$p->id}/sahkan")->assertSessionHas('error');
+        $this->as('pj@lab.local')->post("/permohonan/{$p->id}/sahkan", ['jabatan' => 'PJ'])->assertSessionHas('error');
         $this->assertSame(Status::MenungguPengesahan, $p->fresh()->status);
 
         PermohonanParameter::query()->where('permohonan_id', $p->id)->where('kode', 'H')->update(['hasil' => 'Negatif']);

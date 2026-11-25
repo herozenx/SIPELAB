@@ -1093,4 +1093,51 @@
             if (!document.hidden) tarik();
         });
     }
+
+  // Paraf penyelia: digambar di kanvas (mouse/jari/pena), disimpan sebagai PNG ke input tersembunyi.
+  $$('[data-paraf]').forEach((box) => {
+    const kanvas = $('canvas', box);
+    const input = $('input[name="paraf"]', box);
+    const ctx = kanvas.getContext('2d');
+    let gambar = false;
+    let ada = false;
+    const titik = (e) => {
+      const r = kanvas.getBoundingClientRect();
+      return [(e.clientX - r.left) * (kanvas.width / r.width), (e.clientY - r.top) * (kanvas.height / r.height)];
+    };
+    const kosongkan = () => {
+      ctx.clearRect(0, 0, kanvas.width, kanvas.height);
+      input.value = '';
+      ada = false;
+    };
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#0b2a6b';
+    kanvas.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      kanvas.setPointerCapture(e.pointerId);
+      gambar = true;
+      const [x, y] = titik(e);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + 0.1, y + 0.1);
+      ctx.stroke();
+    });
+    kanvas.addEventListener('pointermove', (e) => {
+      if (!gambar) return;
+      const [x, y] = titik(e);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+      ada = true;
+    });
+    const selesai = () => {
+      if (!gambar) return;
+      gambar = false;
+      if (ada) input.value = kanvas.toDataURL('image/png');
+    };
+    kanvas.addEventListener('pointerup', selesai);
+    kanvas.addEventListener('pointercancel', selesai);
+    $('[data-paraf-hapus]', box)?.addEventListener('click', kosongkan);
+  });
 })();

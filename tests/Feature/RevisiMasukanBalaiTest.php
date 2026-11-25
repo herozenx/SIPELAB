@@ -199,6 +199,35 @@ class RevisiMasukanBalaiTest extends TestCase
         $this->as('superadmin@lab.local')->get('/admin/pengguna')->assertOk();
     }
 
+    public function test_paraf_digambar_jabatan_dipilih_dan_lhp_tidak_diunduh_pengguna(): void
+    {
+        $p = $this->ajukan();
+        $this->verifikasi($p);
+        $this->bayarLunas($p);
+        $this->suratTugas($p);
+        $this->ujiSemua($p);
+        $this->periksa($p);
+
+        // Paraf wajib digambar; selain PNG ditolak.
+        $this->as('penyelia.organo@lab.local')->post("/permohonan/{$p->id}/paraf")->assertSessionHasErrors('paraf');
+        $this->as('penyelia.organo@lab.local')->post("/permohonan/{$p->id}/paraf", ['paraf' => 'data:image/png;base64,'.base64_encode('bukan png')])->assertSessionHasErrors('paraf');
+        $this->parafSemua($p);
+        $this->assertSame(3, \App\Models\Persetujuan::query()->where('permohonan_id', $p->id)->where('jenis', 'PARAF')->whereNotNull('paraf_gambar')->count());
+
+        // Jabatan penanda tangan wajib dipilih dan tercetak di LHP.
+        $this->as('pj@lab.local')->post("/permohonan/{$p->id}/sahkan")->assertSessionHasErrors('jabatan');
+        $this->as('pj@lab.local')->post("/permohonan/{$p->id}/sahkan", ['jabatan' => 'KEPALA'])->assertSessionHasNoErrors()->assertSessionHas('success');
+        $this->assertSame('KEPALA', $p->fresh()->lhu->jabatan_penanda);
+        $this->as('operator@lab.local')->get("/permohonan/{$p->id}/lhp")->assertOk()
+            ->assertSee('Kepala UPT')->assertDontSee('Kepala UPT/Penanggung jawab')->assertSee('Paraf penyelia');
+        $this->as('operator@lab.local')->get("/permohonan/{$p->id}/lhp.pdf")->assertOk();
+
+        // Pengguna jasa hanya melihat status selesai.
+        $this->assertSame(\App\Enums\Status::Selesai, $p->fresh()->status);
+        $this->as('pengguna@lab.local')->get("/permohonan/{$p->id}/lhp")->assertNotFound();
+        $this->as('pengguna@lab.local')->get("/permohonan/{$p->id}")->assertOk()->assertSee('diserahkan oleh petugas di kantor Balai')->assertDontSee('LHP (PDF)');
+    }
+
     public function test_tarif_dan_nama_parameter_sesuai_daftar_resmi(): void
     {
         $this->assertSame(150000, ParameterUji::query()->where('kode', 'CK')->value('tarif'));

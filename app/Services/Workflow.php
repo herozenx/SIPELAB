@@ -410,7 +410,7 @@ class Workflow
                 'dibayar_at' => ! empty($bayar['dibayar_at']) ? \Illuminate\Support\Carbon::parse($bayar['dibayar_at']) : now(),
                 'bank_bayar' => ($bayar['bank_bayar'] ?? null) ?: null, 'channel_bayar' => ($bayar['channel_bayar'] ?? null) ?: null, 'ntb' => ($bayar['ntb'] ?? null) ?: null],
             'Pembayaran SIMPONI terkonfirmasi'.($ntpn ? " (NTPN {$ntpn})" : '').'. '
-            .($ke === Status::Selesai ? 'LHP selesai dan dapat diunduh' : 'Sampel siap dibuatkan surat tugas pengujian'), $bendahara));
+            .($ke === Status::Selesai ? 'LHP selesai dan dapat diambil di kantor Balai' : 'Sampel siap dibuatkan surat tugas pengujian'), $bendahara));
 
         return $ke;
     }
@@ -654,9 +654,10 @@ class Workflow
     }
 
     /** Penyelia memaraf hasil bidangnya. Bila semua bidang sudah diparaf, LHP menunggu pengesahan. */
-    public function paraf(Permohonan $p, User $penyelia): bool
+    /** @param string|null $gambar paraf yang digambar penyelia (data URL PNG), dicetak di LHP */
+    public function paraf(Permohonan $p, User $penyelia, ?string $gambar = null): bool
     {
-        return $this->tx(function () use ($p, $penyelia) {
+        return $this->tx(function () use ($p, $penyelia, $gambar) {
             $this->kunci($p);
             $this->pastikanStatus($p, Status::MenungguParaf);
             $p->load('parameter');
@@ -667,7 +668,7 @@ class Workflow
             if (Persetujuan::query()->where('permohonan_id', $p->id)->where('jenis', Persetujuan::PARAF)->where('lab_id', $penyelia->lab_id)->exists()) {
                 throw new WorkflowException('Hasil bidang Anda sudah diparaf.');
             }
-            $this->setujui($p, Persetujuan::PARAF, $penyelia->lab_id, $penyelia);
+            $this->setujui($p, Persetujuan::PARAF, $penyelia->lab_id, $penyelia, null, $gambar);
             $sudah = Persetujuan::query()->where('permohonan_id', $p->id)->where('jenis', Persetujuan::PARAF)->pluck('lab_id');
             if ($labs->diff($sudah)->isEmpty()) {
                 $this->transisi($p, Status::MenungguParaf, ['status' => Status::MenungguPengesahan->value],
@@ -686,13 +687,16 @@ class Workflow
      * Penanggung Jawab mengesahkan: LHP bernomor (urut agenda per tahun), kode verifikasi + QR.
      * Mandiri => selesai. Lainnya => menunggu billing (bayar di belakang).
      */
-    public function sahkan(Permohonan $p, User $pj): Lhu
+    public function sahkan(Permohonan $p, User $pj, ?string $jabatan = null): Lhu
     {
         if ($pj->role !== Role::PenanggungJawab) {
             throw new WorkflowException('Hanya Penanggung Jawab Laboratorium yang dapat mengesahkan LHP.');
         }
+        if ($jabatan !== null && ! isset(Lhu::JABATAN[$jabatan])) {
+            throw new WorkflowException('Jabatan penanda tangan tidak dikenal.');
+        }
 
-        return $this->tx(function () use ($p, $pj) {
+        return $this->tx(function () use ($p, $pj, $jabatan) {
             $this->kunci($p);
             $this->pastikanStatus($p, Status::MenungguPengesahan);
             $sidik = $this->sidikHasil($p);
@@ -722,6 +726,7 @@ class Workflow
                 'nomor' => $nomor, 'tahun' => $tahun, 'nomor_urut' => $urut, 'versi_sidik' => 4,
                 'status_izin' => $memenuhi ? StatusIzin::Lulus : StatusIzin::TidakLulus,
                 'kode_verifikasi' => strtoupper(bin2hex(random_bytes(6))), 'validated_by' => $pj->id, 'validated_at' => now(),
+                'jabatan_penanda' => $jabatan,
             ]);
             $lhu->setRelation('permohonan', $p);
             [$hash, $sig] = $this->sidik($p, $lhu);
@@ -737,11 +742,12 @@ class Workflow
         });
     }
 
-    private function setujui(Permohonan $p, string $jenis, ?int $labId, User $u, ?string $catatan = null): void
+    private function setujui(Permohonan $p, string $jenis, ?int $labId, User $u, ?string $catatan = null, ?string $gambar = null): void
     {
         Persetujuan::query()->create([
             'permohonan_id' => $p->id, 'jenis' => $jenis, 'lab_id' => $labId, 'user_id' => $u->id,
             'catatan' => $catatan ? mb_substr($catatan, 0, 500) : null, 'sidik' => $this->sidikHasil($p), 'created_at' => now(),
+            'paraf_gambar' => $gambar,
         ]);
     }
 

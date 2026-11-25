@@ -85,16 +85,12 @@ class PermohonanPolicy
         return $u->hasRole(Role::Superadmin, Role::Administrasi, Role::PenanggungJawab);
     }
 
-    /** LHP: petugas kantor begitu disahkan; pengguna jasa pemilik setelah permohonan selesai (lunas). */
+    /** LHP: hanya petugas kantor. Pengguna jasa cukup melihat status selesai; LHP dicetak & diserahkan di kantor (rapat 19 Nov). */
     public function lihatLhu(User $u, Permohonan $p): bool
     {
         if ($p->lhu?->nomor === null) {
             return false;
         }
-        if ($u->role === Role::PenggunaJasa) {
-            return $u->sePerusahaanDengan($p->user_id) && $p->status === Status::Selesai;
-        }
-
         return $u->role->bolehCetakLhp();
     }
 
