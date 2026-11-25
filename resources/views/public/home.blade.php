@@ -1,5 +1,5 @@
 @extends('layouts.guest')
-@section('title', 'Layanan uji mutu hasil perikanan')
+@section('title', 'Layanan Uji Mutu Hasil Perikanan')
 @section('content')
 @php
   // Ikon ikan kecil yang dipakai berulang di ilustrasi
@@ -82,11 +82,11 @@
 {{-- Lima langkah --}}
 @php
   $langkah = [
-    ['Ajukan online', 'Isi formulir dan data sampel, serta lampirkan dokumen pendukung bila ada.', '-rotate-1'],
-    ['Serahkan sampel', 'Bawa sampel fisik ke loket. Operator memverifikasi dan memberi kode sampel.', 'rotate-[1.25deg]'],
-    ['Bayar lewat SIMPONI', 'Layanan Mandiri bayar di awal: lihat billing resmi di akun Anda, lalu unggah bukti setornya. Tidak perlu mengetik NTPN.', '-rotate-[0.5deg]'],
-    ['Sampel diproses', 'Sampel diuji oleh laboratorium Balai. Norma waktu '.\App\Models\Setting::get('norma_total_hari').' hari kerja; status bisa dipantau dari akun Anda.', 'rotate-1'],
-    ['LHP selesai', 'LHP bernomor dengan QR Code keaslian, bisa diunduh dalam format PDF dari akun Anda. Siapa pun bisa mengecek keasliannya di situs ini.', '-rotate-[1.25deg]'],
+    ['Ajukan Online', 'Isi formulir dan data sampel, serta lampirkan dokumen pendukung bila ada. Tunggu pengajuan disetujui petugas.', '-rotate-1'],
+    ['Bayar Lewat SIMPONI', 'Layanan Mandiri: Lihat billing resmi di akun Anda, lalu unggah bukti setornya. Tidak perlu mengetik NTPN.', 'rotate-[1.25deg]'],
+    ['Serahkan Sampel', 'Bawa sampel fisik ke loket. Operator memverifikasi dan memberi kode sampel.', '-rotate-[0.5deg]'],
+    ['Sampel Diproses', 'Sampel diuji oleh analis di laboratorium Balai. Norma waktu '.\App\Models\Setting::get('norma_total_hari').' hari kerja. Status bisa dipantau dari akun Anda.', 'rotate-1'],
+    ['LHP Selesai', 'LHP bernomor dengan QR Code keaslian bisa diunduh dalam format PDF dari akun anda. Siapapun bisa mengecek keasliannya di situs ini.', '-rotate-[1.25deg]'],
   ];
 @endphp
 <section id="langkah" class="scroll-mt-24 py-14 sm:py-20">
@@ -118,14 +118,6 @@
                   </g>
                   @break
                 @case(1)
-                  <rect x="22" y="12" width="52" height="10" rx="4" fill="#74B1C4"/>
-                  <rect x="26" y="20" width="44" height="52" rx="7" fill="#F7F9FA" stroke="#CBD5DA" stroke-width="1.5"/>
-                  <path d="M28 45c4-3 8-3 12 0s8 3 12 0 8-3 12 0c2 1.2 4 1.2 6 .5V66q0 4-4 4H32q-4 0-4-4Z" fill="#A9D0DC"/>
-                  <g transform="translate(34 47) scale(0.85)"><path d="{{ $ikan }}" fill="#1C6F8C"/><circle cx="9.5" cy="15" r="1.6" fill="#A9D0DC"/></g>
-                  <rect x="50" y="26" width="16" height="10" rx="2" fill="#F7F9FA" stroke="#CBD5DA" stroke-width="1.5"/>
-                  <g fill="none" stroke="#3F8EA8" stroke-width="2"><circle cx="18" cy="36" r="3"/><circle cx="13" cy="27" r="2"/></g>
-                  @break
-                @case(2)
                   <g transform="rotate(-6 40 56)">
                     <rect x="12" y="42" width="54" height="28" rx="4" fill="#1C6F8C"/>
                     <circle cx="39" cy="56" r="10" fill="none" stroke="#A9D0DC" stroke-width="2"/>
@@ -140,6 +132,14 @@
                     <rect x="23" y="18" width="3.5" height="3.5" fill="#1C6F8C"/><rect x="18" y="23" width="3.5" height="3.5" fill="#1C6F8C"/>
                     <rect x="23" y="23" width="3.5" height="3.5" fill="#0B3D50"/>
                   </g>
+                  @break
+                @case(2)
+                  <rect x="22" y="12" width="52" height="10" rx="4" fill="#74B1C4"/>
+                  <rect x="26" y="20" width="44" height="52" rx="7" fill="#F7F9FA" stroke="#CBD5DA" stroke-width="1.5"/>
+                  <path d="M28 45c4-3 8-3 12 0s8 3 12 0 8-3 12 0c2 1.2 4 1.2 6 .5V66q0 4-4 4H32q-4 0-4-4Z" fill="#A9D0DC"/>
+                  <g transform="translate(34 47) scale(0.85)"><path d="{{ $ikan }}" fill="#1C6F8C"/><circle cx="9.5" cy="15" r="1.6" fill="#A9D0DC"/></g>
+                  <rect x="50" y="26" width="16" height="10" rx="2" fill="#F7F9FA" stroke="#CBD5DA" stroke-width="1.5"/>
+                  <g fill="none" stroke="#3F8EA8" stroke-width="2"><circle cx="18" cy="36" r="3"/><circle cx="13" cy="27" r="2"/></g>
                   @break
                 @case(3)
                   <path d="M40 14h16v12l14 30c3 7-2 12-8 12H34c-6 0-11-5-8-12l14-30Z" fill="#F7F9FA" stroke="#CBD5DA" stroke-width="1.5"/>
@@ -182,7 +182,7 @@
 
       <div class="relative mt-8 max-w-md -rotate-1 rounded-sm bg-white p-6 shadow-[0_12px_32px_rgba(11,61,80,0.16)] sm:p-7">
         <div class="flex items-center justify-between border-b border-dashed border-kabut-300 pb-4">
-          <img src="{{ asset('favicon.svg') }}" alt="" class="h-9 w-9">
+          <img src="{{ asset('img/logo-kkp.png') }}" alt="Logo KKP" class="h-9 w-auto object-contain">
           <div class="text-right">
             <p class="text-sm font-bold leading-none">Nota Tarif Uji</p>
             <p class="mt-1 text-xs text-kabut-500">SILANTRO · BPPMHKP Surabaya II</p>
