@@ -54,31 +54,38 @@
 
         <header>
           <h1 id="judul-masuk" class="text-2xl font-extrabold leading-tight">Masuk ke SILANTRO</h1>
+        </header>
 
-        <div class="mt-3">@include('partials.flash')</div>
+        <div class="mt-3">@include('partials.flash', ['sembunyikanError' => true, 'sembunyikanSuccess' => true])</div>
 
-        <form method="post" action="{{ url('/masuk') }}" class="mt-4 space-y-4" novalidate>
+        <form method="post" action="{{ url('/masuk') }}" class="mt-4 space-y-4" novalidate data-login-form>
           @csrf
 
-          <div>
+          <div data-field>
             <label for="email" class="label">Email <span class="text-karang-600" aria-hidden="true">*</span><span class="sr-only"> wajib</span></label>
-            <input id="email" name="email" type="email" value="{{ old('email') }}" class="form-input input min-h-[48px]" autocomplete="username" inputmode="email" required autofocus @error('email') aria-invalid="true" aria-describedby="email-error" @enderror>
-            @error('email')<p id="email-error" class="error" role="alert">{{ $message }}</p>@enderror
+            <div class="relative">
+              <input id="email" name="email" type="email" value="{{ old('email') }}" class="form-input input min-h-[48px] pr-10" autocomplete="username" inputmode="email" required autofocus @error('email') aria-invalid="true" aria-describedby="email-error" data-server-error="{{ $errors->first('email') }}" @enderror>
+              <span data-error-icon="email" class="field-error-icon hidden" aria-hidden="true"><x-ikon n="peringatan" class="h-5 w-5" /></span>
+            </div>
+            <p data-field-error="email" class="auth-field-error hidden"></p>
           </div>
 
-          <div>
+          <div data-field>
             <label for="password" class="label">Kata sandi <span class="text-karang-600" aria-hidden="true">*</span><span class="sr-only"> wajib</span></label>
             <div class="relative">
-              <input id="password" name="password" type="password" class="form-input input min-h-[48px] pr-12" autocomplete="current-password" required @error('password') aria-invalid="true" aria-describedby="password-error" @enderror>
+              <input id="password" name="password" type="password" class="form-input input min-h-[48px] pr-20" autocomplete="current-password" required @error('password') aria-invalid="true" aria-describedby="password-error" data-server-error="{{ $errors->first('password') }}" @enderror>
+              <span data-error-icon="password" class="field-error-icon !right-12 hidden" aria-hidden="true"><x-ikon n="peringatan" class="h-5 w-5" /></span>
               <button type="button" class="absolute inset-y-0 right-0 min-h-[48px] min-w-[48px] px-3 text-kabut-600 transition-colors duration-200 hover:text-tinta" data-toggle-password="password" aria-label="Tampilkan kata sandi" aria-controls="password">
                 <span data-eye-open><x-ikon n="mata" class="h-5 w-5" /></span>
                 <span data-eye-closed class="hidden"><x-ikon n="mata-tutup" class="h-5 w-5" /></span>
               </button>
             </div>
-            @error('password')<p id="password-error" class="error" role="alert">{{ $message }}</p>@enderror
+            <p data-field-error="password" class="auth-field-error hidden"></p>
           </div>
 
-          <button type="submit" class="btn-primary min-h-[48px] w-full py-3">Masuk</button>
+          <button type="submit" class="btn-primary min-h-[48px] w-full py-3" data-submit-button>
+            <span data-submit-label data-loading-label="Memproses...">Masuk</span>
+          </button>
 
           <p class="border-t border-kabut-200 pt-5 text-center text-sm text-kabut-600">
             Belum punya akun?
@@ -89,4 +96,18 @@
     </section>
   </div>
 </div>
+
+@if (session('success'))
+  <div data-snackbar data-snackbar-duration="4500" role="status" aria-live="polite"
+       class="fixed left-1/2 top-[84px] z-50 flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-2 items-center gap-3 rounded-xl bg-tinta px-4 py-3 text-sm font-medium text-white opacity-0 shadow-lg transition-all duration-300 motion-reduce:transition-none">
+    <span class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-lamun-600/25 text-lamun-500" aria-hidden="true">
+      <x-ikon n="cek" class="h-4 w-4" />
+    </span>
+    <span class="min-w-0 flex-1">{{ session('success') }}</span>
+    <button type="button" data-snackbar-close aria-label="Tutup notifikasi"
+            class="-mr-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-kabut-300 transition-colors hover:bg-white/10 hover:text-white">
+      <x-ikon n="silang" class="h-4 w-4" />
+    </button>
+  </div>
+@endif
 @endsection

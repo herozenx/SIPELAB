@@ -1,5 +1,5 @@
 @foreach (['success' => 'cek', 'error' => 'silang', 'warning' => 'info'] as $jenis => $ikon)
-  @if (session($jenis))
+  @if (session($jenis) && ! ($jenis === 'success' && ($sembunyikanSuccess ?? false)))
     <div class="alert-{{ $jenis }} mb-5" role="{{ $jenis === 'error' ? 'alert' : 'status' }}"><x-ikon :n="$ikon" class="mt-0.5 h-4 w-4 shrink-0" /><div>{{ session($jenis) }}</div></div>
   @endif
 @endforeach

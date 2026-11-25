@@ -104,7 +104,7 @@
 
           <div data-field>
             <label for="telepon" class="label">Telepon atau WhatsApp <span class="text-karang-600" aria-hidden="true">*</span><span class="sr-only"> wajib</span></label>
-            <div class="relative flex min-h-[48px] overflow-hidden rounded-lg border border-kabut-300 bg-white focus-within:border-laut-500 focus-within:ring-1 focus-within:ring-laut-500">
+            <div data-phone-box class="relative flex min-h-[48px] overflow-hidden rounded-lg border border-kabut-300 bg-white focus-within:border-laut-500 focus-within:ring-1 focus-within:ring-laut-500">
               <span class="flex shrink-0 items-center border-r border-kabut-200 bg-kabut-50 px-3 text-sm font-semibold text-tinta" aria-label="Kode negara Indonesia +62">+62</span>
               <input id="telepon" name="telepon_lokal" type="tel" value="{{ old('telepon_lokal') }}" class="input num min-h-[48px] min-w-0 border-0 bg-white px-3 pr-10 shadow-none focus:shadow-none" autocomplete="tel" inputmode="tel" required @error('telepon') aria-invalid="true" aria-describedby="telepon-error" data-server-error="{{ $errors->first('telepon') }}" @enderror>
               <span data-error-icon="telepon" class="field-error-icon !right-3 hidden" aria-hidden="true"><x-ikon n="peringatan" class="h-5 w-5" /></span>
@@ -141,19 +141,52 @@
 
           @php
             $isianOp = collect(old('operator', []))->filter(fn ($v, $k) => is_int($k) && is_array($v))->values()->all();
+            $maksOp = \App\Http\Controllers\AuthController::MAKS_OPERATOR;
           @endphp
-          <fieldset class="rounded-xl border border-kabut-200 p-4">
-            <legend class="px-1 text-sm font-bold">Akun operator <span class="font-normal text-kabut-500">(opsional)</span></legend>
-            <p class="hint !mt-0">Akun ini menjadi <b>admin perusahaan</b>. Tambahkan operator (personel yang dihubungi) agar setiap permohonan tercatat atas nama yang mengajukan. Operator juga bisa ditambah nanti di menu Akun. Maksimal {{ \App\Http\Controllers\AuthController::MAKS_OPERATOR }} operator.</p>
-            @error('operator')<p class="error">{{ $message }}</p>@enderror
-            <div class="mt-3 space-y-3" data-ulang-daftar="operator" data-maks="{{ \App\Http\Controllers\AuthController::MAKS_OPERATOR }}" data-berikut="{{ count($isianOp) }}">
+          <section class="rounded-xl border border-kabut-200 bg-white" aria-labelledby="judul-operator" data-operator-section>
+            <div class="flex items-start justify-between gap-3 px-4 pt-4">
+              <div class="min-w-0">
+                <h2 id="judul-operator" class="text-sm font-bold text-tinta">Operator perusahaan <span class="font-normal text-kabut-600">(opsional)</span></h2>
+                <p class="mt-1 text-xs leading-relaxed text-kabut-600">Staf lain bisa ikut masuk dan mengajukan uji atas nama perusahaan ini. Dapat diatur nanti di menu Akun.</p>
+              </div>
+              <span class="hidden shrink-0 rounded-full bg-laut-50 px-2.5 py-1 text-xs font-semibold text-laut-700 num" data-operator-counter>{{ count($isianOp) }}/{{ $maksOp }}</span>
+            </div>
+
+            @error('operator')<p class="mx-4 mt-2.5 text-xs font-semibold text-karang-700" role="alert">{{ $message }}</p>@enderror
+
+            <div class="p-4 pt-3" data-operator-empty @if(count($isianOp) > 0) hidden @endif>
+              <div class="flex flex-col gap-3 rounded-lg border border-dashed border-kabut-300 bg-kabut-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex items-start gap-3">
+                  <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-laut-50 text-laut-700" aria-hidden="true">
+                    <x-ikon n="tim" class="h-5 w-5" />
+                  </span>
+                  <div class="min-w-0">
+                    <p class="text-sm font-semibold text-tinta">Belum ada operator</p>
+                    <p class="mt-0.5 text-xs leading-relaxed text-kabut-600">Daftar sebagai admin perusahaan saja, atau tambahkan hingga {{ $maksOp }} operator.</p>
+                  </div>
+                </div>
+                <button type="button" class="btn-ghost btn-sm min-h-[44px] w-full shrink-0 sm:w-auto" data-ulang-tambah="operator">
+                  <x-ikon n="tambah" class="h-4 w-4" />
+                  <span>Tambah operator</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="space-y-2.5 px-4 pt-3" data-ulang-daftar="operator" data-maks="{{ $maksOp }}" data-berikut="{{ count($isianOp) }}" aria-live="polite" @if(count($isianOp) === 0) hidden @endif>
               @foreach ($isianOp as $i => $op)
                 @include('auth._operator', ['i' => $i, 'op' => $op])
               @endforeach
             </div>
             <template data-ulang-template="operator">@include('auth._operator', ['i' => '__i__', 'op' => []])</template>
-            <button type="button" class="btn-ghost btn-sm mt-3" data-ulang-tambah="operator"><x-ikon n="tambah" class="h-4 w-4" />Tambah operator</button>
-          </fieldset>
+
+            <div class="px-4 pb-4 pt-3" data-operator-footer @if(count($isianOp) === 0) hidden @endif>
+              <button type="button" class="btn-ghost btn-sm min-h-[44px] w-full justify-center border-dashed" data-ulang-tambah="operator">
+                <x-ikon n="tambah" class="h-4 w-4" />
+                <span data-operator-add-label>Tambah operator lain</span>
+              </button>
+              <p class="mt-1.5 text-center text-xs text-kabut-600 hidden" data-operator-limit>Batas maksimal {{ $maksOp }} operator sudah tercapai.</p>
+            </div>
+          </section>
 
           <button type="submit" class="btn-primary min-h-[48px] w-full py-3" data-submit-button>
             <span data-submit-label>Buat akun</span>
@@ -166,6 +199,41 @@
         </form>
       </div>
     </section>
+  </div>
+</div>
+
+<div class="op-modal fixed inset-0 z-50 flex items-center justify-center bg-tinta/45 p-4" role="dialog" aria-modal="true" aria-labelledby="judul-hapus-operator" aria-hidden="true" data-operator-modal>
+  <div class="op-modal-panel w-full max-w-[380px] overflow-hidden rounded-2xl border border-kabut-200 bg-white shadow-[0_22px_50px_rgba(11,61,80,0.22)]" data-operator-modal-panel>
+    <div class="relative flex items-center justify-center border-b border-karang-100 bg-karang-50 px-6 pb-4 pt-6">
+      <button type="button"
+        class="absolute right-3 top-3 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-karang-700 shadow-sm ring-1 ring-karang-100 transition-colors duration-150 hover:bg-karang-100"
+        data-operator-modal-cancel
+        aria-label="Tutup konfirmasi">
+        <x-ikon n="silang" class="h-4 w-4" />
+      </button>
+
+      <svg viewBox="0 0 180 112" class="h-24 w-auto" role="img" aria-label="Ilustrasi pemeriksaan data operator sebelum dihapus">
+        <path d="M36 74C24 48 44 20 74 22C94 23 102 12 122 18C146 25 156 54 142 78C128 100 50 102 36 74Z" fill="#FDDCD8"/>
+        <rect x="48" y="24" width="76" height="68" rx="10" fill="#FFFFFF" stroke="#0B3D50" stroke-width="2.5"/>
+        <circle cx="70" cy="46" r="9" fill="#EEF6F8" stroke="#0B3D50" stroke-width="2"/>
+        <path d="M58 67C60 60 64 57 70 57C76 57 80 60 82 67" fill="none" stroke="#0B3D50" stroke-width="2" stroke-linecap="round"/>
+        <rect x="86" y="40" width="26" height="5" rx="2.5" fill="#CBD5DA"/>
+        <rect x="86" y="50" width="20" height="5" rx="2.5" fill="#CBD5DA"/>
+        <rect x="60" y="75" width="52" height="5" rx="2.5" fill="#E3E9EC"/>
+        <circle cx="122" cy="70" r="18" fill="#B42318" stroke="#FFFFFF" stroke-width="3"/>
+        <path d="M115 65h14M119 65v-2.5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V65M117.5 65l.8 11a1.5 1.5 0 0 0 1.5 1.4h4.4a1.5 1.5 0 0 0 1.5-1.4l.8-11" fill="none" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <div class="px-6 pb-6 pt-5 text-center">
+      <h2 id="judul-hapus-operator" class="text-lg font-extrabold text-tinta">Hapus data operator?</h2>
+      <p class="mt-1.5 text-sm leading-relaxed text-kabut-600">Isian pada <span class="font-semibold text-tinta" data-operator-modal-name></span> akan dihapus dan tidak dapat dikembalikan.</p>
+
+      <div class="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+        <button type="button" class="btn min-h-[44px] w-full rounded-xl bg-karang-600 text-white hover:bg-karang-700" data-operator-modal-confirm>Ya, hapus</button>
+        <button type="button" class="btn min-h-[44px] w-full rounded-xl bg-karang-50 text-karang-700 hover:bg-karang-100" data-operator-modal-cancel>Batal</button>
+      </div>
+    </div>
   </div>
 </div>
 @endsection
