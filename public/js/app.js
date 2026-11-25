@@ -114,29 +114,38 @@
       } else if (field.id === 'password_confirmation') {
         const password = registerForm.querySelector('#password')?.value || '';
         if (value !== password) message = 'Ulangi kata sandi dengan tepat.';
+      } else if (field.id === 'alamat' && value.length < 5) {
+        message = 'Tulis alamat lengkap.';
+      } else if (field.name.endsWith('[nik]') && !/^\d{16}$/.test(value)) {
+        message = 'NIK terdiri dari 16 angka.';
+      } else if (field.name.endsWith('[email]') && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        message = 'Masukkan format email yang benar.';
+      } else if (field.name.endsWith('[password]') && (value.length < 8 || !/[A-Z]/.test(value) || !/[a-z]/.test(value) || !/[0-9]/.test(value))) {
+        message = 'Minimal 8 karakter dengan huruf besar, huruf kecil, dan angka.';
       }
 
       if (message) setError(field, message);
       return message === '';
     };
 
-    const fields = Array.from(registerForm.querySelectorAll('input[name]:not([type="hidden"])'));
-    fields.forEach((field) => {
-      field.addEventListener('blur', () => {
-        if (submitted) validateField(field);
-      });
-      field.addEventListener('input', () => {
-        if (submitted && field.getAttribute('aria-invalid') === 'true') validateField(field);
-        if (submitted && field.id === 'password' && registerForm.querySelector('#password_confirmation')?.getAttribute('aria-invalid') === 'true') {
-          validateField(registerForm.querySelector('#password_confirmation'));
-        }
-      });
+    // Dibaca ulang setiap kali: blok operator bisa ditambah/dihapus.
+    const fields = () => Array.from(registerForm.querySelectorAll('input[name]:not([type="hidden"])'));
+    registerForm.addEventListener('focusout', (e) => {
+      if (submitted && e.target.matches('input[name]')) validateField(e.target);
+    });
+    registerForm.addEventListener('input', (e) => {
+      const field = e.target;
+      if (!field.matches('input[name]')) return;
+      if (submitted && field.getAttribute('aria-invalid') === 'true') validateField(field);
+      if (submitted && field.id === 'password' && registerForm.querySelector('#password_confirmation')?.getAttribute('aria-invalid') === 'true') {
+        validateField(registerForm.querySelector('#password_confirmation'));
+      }
     });
 
     registerForm.addEventListener('submit', (event) => {
       submitted = true;
       let firstInvalid = null;
-      fields.forEach((field) => {
+      fields().forEach((field) => {
         if (!validateField(field) && !firstInvalid) firstInvalid = field;
       });
 
@@ -174,6 +183,36 @@
       }
     });
   }
+
+  // Blok isian yang bisa ditambah/dihapus (mis. operator perusahaan saat daftar).
+  $$('[data-ulang-daftar]').forEach((daftar) => {
+    const nama = daftar.dataset.ulangDaftar;
+    const tpl = $(`[data-ulang-template="${nama}"]`);
+    const tambah = $(`[data-ulang-tambah="${nama}"]`);
+    const maks = Number(daftar.dataset.maks || 10);
+    let berikut = Number(daftar.dataset.berikut) || 0;
+    const upd = () => {
+      const blok = $$('[data-ulang]', daftar);
+      blok.forEach((b, i) => { const no = $('[data-ulang-no]', b); if (no) no.textContent = i + 1; });
+      if (tambah) tambah.disabled = blok.length >= maks;
+    };
+    tambah?.addEventListener('click', () => {
+      if (!tpl || $$('[data-ulang]', daftar).length >= maks) return;
+      const wrap = document.createElement('div');
+      wrap.innerHTML = tpl.innerHTML.replaceAll('__i__', String(berikut++));
+      const blok = wrap.firstElementChild;
+      daftar.appendChild(blok);
+      upd();
+      $('input', blok)?.focus();
+    });
+    daftar.addEventListener('click', (e) => {
+      const hapus = e.target.closest('[data-ulang-hapus]');
+      if (!hapus) return;
+      hapus.closest('[data-ulang]').remove();
+      upd();
+    });
+    upd();
+  });
 
   // Bagian form yang muncul sesuai pilihan radio (mis. valid / tolak)
   $$('form').forEach((form) => {
@@ -251,12 +290,7 @@
     };
     const form = est.closest('form') || document;
     form.addEventListener('input', (e) => {
-      const t = e.target;
-      // Jumlah sampel diubah: isi ulang jumlah pengujian produk itu yang belum diubah manual.
-      if (t.matches('[data-jumlah]')) {
-        $$('[data-param-jumlah]', t.closest('[data-produk]') || form).forEach((q) => { if (!q.dataset.manual) q.value = t.value; });
-      }
-      if (t.matches('[data-param-jumlah]')) t.dataset.manual = '1';
+      // Jumlah sampel tidak mengisi jumlah pengujian: tiap parameter diisi sendiri (bawaan 1).
       upd();
     });
     form.addEventListener('change', (e) => { if (e.target.matches('input[data-param]')) upd(); });

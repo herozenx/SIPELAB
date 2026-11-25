@@ -92,18 +92,37 @@
           <div class="panel-head"><h2>Verifikasi permohonan</h2></div>
           <form method="post" action="{{ route('permohonan.verifikasi', $p) }}" class="panel-body space-y-5" data-guard>
             @csrf
-            <p class="text-sm text-kabut-600">Periksa berkas dan data permohonan: data sampel, alamat, parameter uji yang diminta, dan dokumen pendukung.</p>
-            <fieldset class="grid gap-2 sm:grid-cols-2">
-              <legend class="sr-only">Keputusan</legend>
-              <label class="choice"><input type="radio" name="keputusan" value="valid" @checked(old('keputusan', 'valid') === 'valid') data-reveal="valid"><span><span class="block font-semibold">Permohonan diterima</span><span class="text-xs text-kabut-500">Lanjut ke registrasi sampel oleh Operator/Admin Lab</span></span></label>
-              <label class="choice"><input type="radio" name="keputusan" value="tolak" @checked(old('keputusan') === 'tolak') data-reveal="tolak"><span><span class="block font-semibold">Tolak permohonan</span><span class="text-xs text-kabut-500">Berkas/data tidak sesuai; pengguna menerima alasannya</span></span></label>
+            <p class="text-sm text-kabut-600">Periksa berkas dan data permohonan (data sampel, berat, parameter uji, dokumen pendukung), lalu lakukan kaji ulang permintaan sesuai FPPCU.</p>
+            <fieldset>
+              <legend class="label">Kaji ulang permintaan <span class="font-normal italic text-kabut-500">/ Order review</span></legend>
+              <div class="grid gap-2 sm:grid-cols-3">
+                @foreach (['personel' => ['Kesiapan personel laboratorium', 'Ability of laboratory personnel'], 'bahan' => ['Kesiapan bahan uji', 'Ability of analysis material'], 'alat' => ['Kesiapan alat uji', 'Ability of analysis instrument']] as $k => [$l, $en])
+                  <label class="choice"><input type="checkbox" name="kaji[{{ $k }}]" value="1" @checked(old("kaji.$k")) class="h-4 w-4 accent-laut-600"><span><span class="block text-sm font-semibold">{{ $l }}</span><span class="text-xs italic text-kabut-500">{{ $en }}</span></span></label>
+                @endforeach
+              </div>
+              @error('kaji')<p class="error">{{ $message }}</p>@enderror
+              @error('kaji.*')<p class="error">{{ $message }}</p>@enderror
             </fieldset>
-            <div data-reveal-target="tolak" hidden>
+            <fieldset>
+              <legend class="label">Kesimpulan</legend>
+              <div class="grid gap-2 sm:grid-cols-3">
+                @foreach (['dapat' => ['Permintaan dapat dilayani', 'Order can be serviced', 'Lanjut ke registrasi sampel'], 'tidak' => ['Permintaan tidak dapat dilayani', "Order can't be serviced", 'Ditolak; pemohon menerima alasannya'], 'eksternal' => ['Laboratorium eksternal (terlampir)', 'External laboratory', 'Diterima, sebagian uji dirujuk']] as $k => [$l, $en, $ket])
+                  <label class="choice"><input type="radio" name="kesimpulan" value="{{ $k }}" @checked(old('kesimpulan', 'dapat') === $k) data-reveal="{{ $k }}"><span><span class="block font-semibold">{{ $l }}</span><span class="block text-xs italic text-kabut-500">{{ $en }}</span><span class="text-xs text-kabut-500">{{ $ket }}</span></span></label>
+                @endforeach
+              </div>
+              @error('kesimpulan')<p class="error">{{ $message }}</p>@enderror
+            </fieldset>
+            <div data-reveal-target="eksternal" hidden>
+              <label for="catatan_eksternal" class="label">Laboratorium eksternal &amp; parameter yang dirujuk</label>
+              <textarea id="catatan_eksternal" name="catatan_eksternal" rows="2" maxlength="500" class="input" placeholder="Contoh: Listeria monocytogenes dirujuk ke Lab ...">{{ old('catatan_eksternal') }}</textarea>
+              @error('catatan_eksternal')<p class="error">{{ $message }}</p>@enderror
+            </div>
+            <div data-reveal-target="tidak" hidden>
               <label for="alasan" class="label">Alasan penolakan</label>
               <textarea id="alasan" name="alasan" rows="3" maxlength="500" class="input" placeholder="Jelaskan agar pengguna jasa tahu apa yang harus diperbaiki">{{ old('alasan') }}</textarea>
               @error('alasan')<p class="error">{{ $message }}</p>@enderror
             </div>
-            <button class="btn-primary" data-confirm="Simpan keputusan verifikasi untuk {{ $p->kode }}?">Simpan keputusan</button>
+            <button class="btn-primary" data-confirm="Simpan hasil verifikasi untuk {{ $p->kodeTampil() }}?">Simpan verifikasi</button>
           </form>
         </section>
       @endcan
@@ -123,41 +142,42 @@
           <div class="panel-head"><h2>Registrasi sampel</h2></div>
           <form method="post" action="{{ route('permohonan.registrasi', $p) }}" class="panel-body space-y-5" data-guard>
             @csrf
-            <p class="text-sm text-kabut-600">Cocokkan sampel yang diserahkan di loket dengan permohonan dan parameter yang diminta, tetapkan jenis layanan, lalu catat ke buku sampel. Kode sampel dibuat otomatis.</p>
-            <fieldset>
-              <legend class="label">Jenis layanan</legend>
-              <div class="grid gap-2 sm:grid-cols-3">
-                @foreach ($J::pilihan() as $jb)
-                  <label class="choice"><input type="radio" name="jenis_bayar" value="{{ $jb->value }}" @checked(old('jenis_bayar', $p->jenis_bayar?->value ?? 'MANDIRI') === $jb->value)><span><span class="block font-semibold">{{ $jb->label() }}</span><span class="num block text-xs text-laut-700">{{ $wf->kodeSampelBaru($jb, $tgl) }}</span><span class="text-xs text-kabut-500">{{ $jb->keterangan() }}</span></span></label>
-                @endforeach
-              </div>
-              @error('jenis_bayar')<p class="error">{{ $message }}</p>@enderror
-              <p class="hint">Pengguna jasa mengajukan sebagai Mandiri. Tetapkan Pengujian Eksternal atau Surveilen bila sesuai. Kode di bawah tiap pilihan adalah kode sampel yang akan dibuat.</p>
-            </fieldset>
-            <fieldset>
-              <legend class="label">Kaji ulang permintaan</legend>
-              <div class="grid gap-2 sm:grid-cols-3">
-                @foreach (['personel' => 'Personel laboratorium siap', 'bahan' => 'Bahan uji siap', 'alat' => 'Alat uji siap'] as $k => $l)
-                  <label class="choice"><input type="checkbox" name="kaji[{{ $k }}]" value="1" @checked(old("kaji.$k")) class="h-4 w-4 accent-laut-600"><span class="text-sm font-semibold">{{ $l }}</span></label>
-                @endforeach
-              </div>
-              @error('kaji')<p class="error">{{ $message }}</p>@enderror
-              @error('kaji.*')<p class="error">{{ $message }}</p>@enderror
-            </fieldset>
+            <p class="text-sm text-kabut-600">Cocokkan sampel yang diserahkan di loket dengan permohonan dan parameter yang diminta, pastikan tujuan permohonan benar, lalu catat ke buku sampel.</p>
+            @php
+              // Kode yang akan dipakai: kode saat diajukan bila jenis & tanggal sama; ganti jenis di hari yang sama hanya mengganti awalan.
+              $kodeNanti = function ($jb) use ($p, $wf, $tgl) {
+                  $awalan = $jb->kodeSurat()."/{$tgl}.";
+                  if (str_starts_with((string) $p->kode_sampel, $awalan)) return $p->kode_sampel;
+                  if (preg_match('#^SP\.[A-Z]+/'.$tgl.'\.(\d+)$#', (string) $p->kode_sampel, $m)) return $awalan.$m[1];
+                  return $wf->kodeSampelBaru($jb, $tgl);
+              };
+            @endphp
+            @foreach (['Layanan pengguna jasa' => $J::pilihanPengguna(), 'Layanan petugas' => $J::pilihanPetugas()] as $grup => $daftarJenis)
+              <fieldset>
+                <legend class="label">Tujuan permohonan <span class="font-normal text-kabut-500">· {{ $grup }}</span></legend>
+                <div class="grid gap-2 {{ count($daftarJenis) === 4 ? 'sm:grid-cols-4' : 'sm:grid-cols-3' }}">
+                  @foreach ($daftarJenis as $jb)
+                    <label class="choice"><input type="radio" name="jenis_bayar" value="{{ $jb->value }}" @checked(old('jenis_bayar', $p->jenis_bayar?->value ?? 'MANDIRI') === $jb->value)><span><span class="block font-semibold">{{ $jb->label() }}</span><span class="num block text-xs text-laut-700">{{ $kodeNanti($jb) }}</span><span class="text-xs text-kabut-500">{{ $jb->keterangan() }}</span></span></label>
+                  @endforeach
+                </div>
+              </fieldset>
+            @endforeach
+            @error('jenis_bayar')<p class="error">{{ $message }}</p>@enderror
+            <p class="hint">Pilihan pengguna jasa sudah terpilih. Ganti ke layanan petugas (Surveilen, Monitoring, Uji Profisiensi, Pengujian Eksternal) bila sesuai. Kode di bawah tiap pilihan adalah kode sampel yang akan dicatat.</p>
             <div class="grid gap-4 sm:grid-cols-4">
               <div><label for="bentuk" class="label">Bentuk</label><select id="bentuk" name="bentuk" class="input"><option value="">–</option>@foreach (['Beku', 'Segar', 'Kering', 'Cair', 'Lainnya'] as $o)<option @selected(old('bentuk') === $o)>{{ $o }}</option>@endforeach</select></div>
               <div><label for="kemasan" class="label">Kemasan</label><select id="kemasan" name="kemasan" class="input"><option value="">–</option>@foreach (['Plastik', 'Karton (MC)', 'Kaleng', 'Botol', 'Lainnya'] as $o)<option @selected(old('kemasan') === $o)>{{ $o }}</option>@endforeach</select></div>
               <div><label for="suhu" class="label">Suhu (°C)</label><input id="suhu" name="suhu" value="{{ old('suhu') }}" class="input num" maxlength="10" placeholder="-18"></div>
               <div><label for="berat" class="label">Berat/volume</label><input id="berat" name="berat" value="{{ old('berat') }}" class="input num" maxlength="20" placeholder="500 g"></div>
             </div>
-            <button class="btn-primary" data-confirm="Registrasi sampel {{ $p->kode }}? Kode sampel akan dibuat.">Registrasi sampel</button>
+            <button class="btn-primary" data-confirm="Registrasi sampel {{ $p->kodeTampil() }} ke buku sampel?">Registrasi sampel</button>
           </form>
         </section>
       @endcan
       @if ($pengguna)
         <section class="panel ring-2 ring-laut-500"><div class="panel-body">
           <h2>Permohonan diterima: serahkan sampel ke loket</h2>
-          <p class="mt-2 text-sm text-kabut-600">Bawa {{ $p->jumlah_sampel }} sampel {{ $p->nama_sampel }} ke loket penerimaan Balai dan sebutkan kode <span class="kode">{{ $p->kode }}</span>. Petugas meregistrasi sampel ke buku sampel; bukti terima sampel bisa diunduh di halaman ini.</p>
+          <p class="mt-2 text-sm text-kabut-600">Bawa {{ $p->jumlah_sampel }} sampel {{ $p->nama_sampel }} ke loket penerimaan Balai dan sebutkan kode <span class="kode">{{ $p->kodeTampil() }}</span>. Petugas meregistrasi sampel ke buku sampel; bukti terima sampel bisa diunduh di halaman ini.</p>
         </div></section>
       @endif
     @endif
@@ -362,12 +382,42 @@
             <form method="post" action="{{ route('permohonan.tangani', $p) }}" data-guard>@csrf<button class="btn-ghost btn-sm"><x-ikon n="tangan" class="h-4 w-4" />Tangani sampel</button></form>
           @endif
         </div>
+        @if ($u->role === $R::Penyelia)
+          {{-- Disposisi: penyelia menugaskan analis untuk tiap parameter (Lembar Disposisi FL/OK/SUB II/8.5.2.a). --}}
+          <form method="post" action="{{ route('permohonan.disposisi', $p) }}" class="border-b border-kabut-200 px-5 py-4" data-guard>
+            @csrf
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h3 class="text-sm font-bold">Disposisi analis</h3>
+              <a href="{{ route('disposisi.pdf', ['tanggal' => ($p->masuk_lab_at ?? now())->format('Y-m-d')]) }}" target="_blank" rel="noopener" class="btn-ghost btn-sm"><x-ikon n="berkas" class="h-4 w-4" />Lembar disposisi</a>
+            </div>
+            <p class="hint !mt-1">Tugaskan analis untuk tiap parameter. Analis yang ditugaskan mengisi hasilnya; isiannya menjadi paraf analis di agenda pengujian.</p>
+            @if ($analisLab->isEmpty())
+              <p class="mt-2 text-sm text-karang-600">Belum ada akun analis aktif di Lab {{ $u->lab->nama }}. Minta Admin Laboratorium menambahkannya di menu Tim lab.</p>
+            @else
+              <ul class="mt-3 divide-y divide-kabut-100 rounded-lg border border-kabut-200">
+                @foreach ($parameter as $x)
+                  <li class="flex flex-wrap items-center gap-3 px-3 py-2">
+                    <label for="analis-{{ $x->id }}" class="min-w-0 flex-1 text-sm">@if($labelProduk($x))<span class="block text-xs font-semibold text-laut-700">{{ $labelProduk($x) }}</span>@endif<span class="font-semibold">{{ $x->kode ? $x->kode.' · ' : '' }}{{ $x->nama }}</span> <span class="text-kabut-500">×{{ $x->jumlah }}</span></label>
+                    <select id="analis-{{ $x->id }}" name="analis[{{ $x->id }}]" class="input w-56 py-1.5">
+                      <option value="">– Belum ditugaskan –</option>
+                      @foreach ($analisLab as $a)<option value="{{ $a->id }}" @selected((int) old("analis.{$x->id}", $x->analis_id) === $a->id)>{{ $a->nama }}</option>@endforeach
+                    </select>
+                  </li>
+                @endforeach
+              </ul>
+              @error('analis')<p class="error">{{ $message }}</p>@enderror
+              <button class="btn-ghost btn-sm mt-3"><x-ikon n="cek" class="h-4 w-4" />Simpan disposisi</button>
+            @endif
+          </form>
+        @endif
         <form method="post" action="{{ route('permohonan.hasil', $p) }}" enctype="multipart/form-data" class="panel-body space-y-5" data-guard>
           @csrf
           @foreach ($parameter as $x)
-            <fieldset class="rounded-lg border border-kabut-200 p-4">
+            @php $bukanTugasSaya = $u->role === $R::PetugasLab && $x->analis_id && $x->analis_id !== $u->id; @endphp
+            <fieldset class="rounded-lg border border-kabut-200 p-4 {{ $bukanTugasSaya ? 'bg-kabut-50 opacity-75' : '' }}" @disabled($bukanTugasSaya)>
               <legend class="px-1 text-sm font-bold">@if($labelProduk($x))<span class="block text-xs font-semibold text-laut-700">{{ $labelProduk($x) }}</span>@endif{{ $x->kode ? $x->kode.' · ' : '' }}{{ $x->nama }} <span class="font-normal text-kabut-500">×{{ $x->jumlah }}</span></legend>
-              <p class="text-xs text-kabut-500">Metode {{ $x->metode }} · Persyaratan: <span class="font-semibold text-tinta">{{ $x->persyaratan ?: '–' }}</span>@if($x->satuan) · Satuan {{ $x->satuan }}@endif</p>
+              @if ($x->analis_id)<p class="mb-1 text-xs font-semibold {{ $x->analis_id === $u->id ? 'text-lamun-700' : 'text-kabut-500' }}">Analis: {{ $x->analis?->nama }}{{ $x->analis_id === $u->id ? ' (Anda)' : '' }}</p>@endif
+                <p class="text-xs text-kabut-500">Metode {{ $x->metode }} · Persyaratan: <span class="font-semibold text-tinta">{{ $x->persyaratan ?: '–' }}</span>@if($x->satuan) · Satuan {{ $x->satuan }}@endif</p>
               <div class="mt-3 grid gap-3 sm:grid-cols-[1fr_auto]">
                 <div>
                   <label for="hasil-{{ $x->id }}" class="label">Hasil</label>
@@ -683,23 +733,19 @@
       <div class="panel-head"><h2>Data sampel</h2></div>
       <dl class="panel-body grid gap-3.5 text-sm">
         @if ($p->kode_sampel)<div><dt class="text-xs text-kabut-500">Kode sampel</dt><dd class="kode mt-0.5">{{ $p->kode_sampel }}</dd>@if($p->no_agenda && ! $pengguna)<dd class="num mt-0.5 text-xs text-kabut-500">No. agenda {{ $p->no_agenda }}/{{ $p->tahun_agenda }}</dd>@endif @can('buktiTerima', $p)<a href="{{ route('permohonan.bukti-terima', $p) }}" target="_blank" rel="noopener" class="btn-ghost btn-sm mt-2"><x-ikon n="berkas" class="h-4 w-4" />Bukti terima sampel (PDF)</a>@endcan</div>@endif
-        @if ($multiProduk)
-          <div><dt class="text-xs text-kabut-500">Produk ({{ $p->produk->count() }})</dt>
-            <dd class="mt-0.5"><ul class="space-y-1">@foreach ($p->produk as $pr)<li><span class="font-semibold">{{ $pr->nama }}</span> <span class="text-xs text-kabut-500">{{ $pr->jumlah }} sampel</span>@if($pr->kode)<span class="kode block text-xs">{{ $pr->kode }}</span>@endif</li>@endforeach</ul></dd></div>
-        @else
-          <div><dt class="text-xs text-kabut-500">Nama sampel</dt><dd class="mt-0.5 font-semibold">{{ $p->nama_sampel }}</dd></div>
-        @endif
-        <div class="grid grid-cols-2 gap-3">
-          <div><dt class="text-xs text-kabut-500">Komoditas</dt><dd class="mt-0.5 font-semibold">{{ $p->jenis_komoditas }}</dd></div>
-          <div><dt class="text-xs text-kabut-500">Jumlah</dt><dd class="num mt-0.5 font-semibold">{{ $p->jumlah_sampel }} sampel</dd></div>
-        </div>
+        <div><dt class="text-xs text-kabut-500">{{ $multiProduk ? 'Produk ('.$p->produk->count().')' : 'Produk' }}</dt>
+          <dd class="mt-0.5"><ul class="space-y-2">@foreach ($p->produk as $pr)<li><span class="font-semibold">{{ $pr->nama }}</span>@if($pr->komoditas)<span class="text-kabut-500"> · {{ $pr->komoditas }}</span>@endif<span class="num block text-xs text-kabut-500">{{ $pr->jumlah }} sampel{{ $pr->berat ? ' · '.$pr->berat : '' }}</span>@if($multiProduk && $pr->kode)<span class="kode block text-xs">{{ $pr->kode }}</span>@endif</li>@endforeach</ul>
+          @if ($p->produk->isEmpty())<span class="font-semibold">{{ $p->nama_sampel }}</span><span class="block text-xs text-kabut-500">{{ $p->jenis_komoditas }} · {{ $p->jumlah_sampel }} sampel</span>@endif</dd></div>
         @if ($p->bentuk || $p->kemasan || $p->suhu || $p->berat)
           <div><dt class="text-xs text-kabut-500">Kondisi saat diterima</dt><dd class="mt-0.5 font-semibold">{{ collect([$p->bentuk, $p->kemasan, $p->suhu !== null ? $p->suhu.' °C' : null, $p->berat])->filter()->join(' · ') }}</dd></div>
         @endif
         @unless ($lab)
-          <div><dt class="text-xs text-kabut-500">Asal</dt><dd class="mt-0.5 font-semibold">{{ $p->asal_sampel }}</dd></div>
-          <div><dt class="text-xs text-kabut-500">Tujuan</dt><dd class="mt-0.5 font-semibold">{{ $p->tujuan->label() }}</dd></div>
-          <div><dt class="text-xs text-kabut-500">Jenis layanan</dt><dd class="mt-0.5 font-semibold">{{ $p->jenis_bayar->label() }}<span class="block text-xs font-normal text-kabut-500">{{ $p->jenis_bayar->keterangan() }}</span></dd></div>
+          @if ($p->asal_sampel)<div><dt class="text-xs text-kabut-500">Asal</dt><dd class="mt-0.5 font-semibold">{{ $p->asal_sampel }}</dd></div>@endif
+          <div><dt class="text-xs text-kabut-500">Tujuan permohonan</dt><dd class="mt-0.5 font-semibold">{{ $p->jenis_bayar->label() }}<span class="block text-xs font-normal text-kabut-500">{{ $p->jenis_bayar->keterangan() }}</span></dd></div>
+          @if ($p->pemohon_setuju_at)<div><dt class="text-xs text-kabut-500">Pemohon menyetujui</dt><dd class="mt-0.5">Metode, biaya, dan waktu pengujian</dd></div>@endif
+          @if ($p->kaji_ulang && ($p->kaji_ulang['kesimpulan'] ?? null) !== 'tidak')
+            <div><dt class="text-xs text-kabut-500">Kaji ulang permintaan</dt><dd class="mt-0.5">{{ \App\Services\Workflow::KESIMPULAN[$p->kaji_ulang['kesimpulan']] ?? '–' }}@if(! empty($p->kaji_ulang['catatan']))<span class="block text-xs text-kabut-500">{{ $p->kaji_ulang['catatan'] }}</span>@endif</dd></div>
+          @endif
         @endunless
         @if ($p->keterangan)<div><dt class="text-xs text-kabut-500">Keterangan</dt><dd class="mt-0.5 whitespace-pre-line">{{ $p->keterangan }}</dd></div>@endif
         <div><dt class="text-xs text-kabut-500">Diajukan</dt><dd class="mt-0.5">{{ tanggal($p->created_at) }}</dd></div>

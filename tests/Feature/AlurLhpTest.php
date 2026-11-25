@@ -44,8 +44,8 @@ class AlurLhpTest extends TestCase
         $p = $this->ajukan();
         $this->assertSame(Status::Diajukan, $p->status);
         $this->assertSame(JenisBayar::Mandiri, $p->jenis_bayar);
-        $this->assertSame('PMH-191126-001', $p->kode); // nomor permohonan; kode SP baru saat registrasi
-        $this->assertNull($p->kode_sampel);
+        $this->assertSame('PMH-191126-001', $p->kode); // nomor internal permohonan
+        $this->assertSame('SP.M/191126.01', $p->kode_sampel); // kode SP langsung diberikan saat diajukan
         $this->assertSame(['E1', 'H', 'O'], $p->parameter()->pluck('kode')->sort()->values()->all());
 
         // Administrator: verifikasi -> diterima; Operator: registrasi -> kode sampel SP.M, menunggu billing.
@@ -115,7 +115,7 @@ class AlurLhpTest extends TestCase
 
         // LHP: petugas kantor membuka pratinjau (dengan QR); pengguna jasa mengunduh PDF setelah selesai.
         $this->as('operator@lab.local')->get("/permohonan/{$p->id}/lhp")->assertOk()
-            ->assertSee($lhu->nomor)->assertSee('SP.M/191126.01')->assertSee('Jalan Rungkut Madya')
+            ->assertSee($lhu->nomor)->assertSee('SP.M/191126.01')->assertSee('Jl. Rungkut Madya, Surabaya')
             ->assertSee('Histamin')->assertSee('Pindai untuk cek keaslian')->assertSee('<svg', false)->assertSee('NIP. 198001012005012001');
         $this->as('pengguna@lab.local')->get("/permohonan/{$p->id}")->assertOk()
             ->assertSee('LHP selesai')->assertSee('LHP (PDF)')->assertSee('ND')->assertDontSee('Pratinjau')->assertDontSee('Analis Kimia');
@@ -190,8 +190,8 @@ class AlurLhpTest extends TestCase
     public function test_hak_akses_tiap_peran_dibatasi(): void
     {
         $p = $this->ajukan();
-        // Verifikasi hanya Administrator; registrasi hanya Operator & Admin Lab.
-        foreach (['pengguna', 'bendahara', 'operator', 'admin', 'penyelia.kimia'] as $akun) {
+        // Verifikasi hanya Administrator & Admin Lab; registrasi hanya Operator & Admin Lab.
+        foreach (['pengguna', 'bendahara', 'operator', 'penyelia.kimia'] as $akun) {
             $this->as("{$akun}@lab.local")->post("/permohonan/{$p->id}/verifikasi", ['keputusan' => 'valid'])->assertForbidden();
         }
         $this->as('superadmin@lab.local')->post("/permohonan/{$p->id}/verifikasi", ['keputusan' => 'valid'])->assertSessionHas('success');
@@ -200,9 +200,15 @@ class AlurLhpTest extends TestCase
             $this->as("{$akun}@lab.local")->post("/permohonan/{$p->id}/registrasi", $kaji)->assertForbidden();
         }
 
-        // Kaji ulang wajib lengkap.
-        $this->as('operator@lab.local')->post("/permohonan/{$p->id}/registrasi", ['jenis_bayar' => 'MANDIRI', 'kaji' => ['personel' => 1]])
+        // Kaji ulang permintaan (saat verifikasi) wajib lengkap; Admin Lab boleh memverifikasi.
+        $q = $this->ajukan();
+        $this->as('admin@lab.local')->post("/permohonan/{$q->id}/verifikasi", ['kesimpulan' => 'dapat', 'kaji' => ['personel' => 1]])
             ->assertSessionHasErrors('kaji.bahan');
+        $this->as('admin@lab.local')->post("/permohonan/{$q->id}/verifikasi", ['kesimpulan' => 'eksternal', 'kaji' => ['personel' => 1, 'bahan' => 1, 'alat' => 1]])
+            ->assertSessionHasErrors('catatan_eksternal');
+        $this->as('admin@lab.local')->post("/permohonan/{$q->id}/verifikasi", ['kesimpulan' => 'eksternal', 'kaji' => ['personel' => 1, 'bahan' => 1, 'alat' => 1], 'catatan_eksternal' => 'Listeria dirujuk ke lab mitra'])
+            ->assertSessionHas('success');
+        $this->assertSame('eksternal', $q->fresh()->kaji_ulang['kesimpulan']);
         $this->registrasi($p, 'MANDIRI', 'admin@lab.local');
 
         $this->as('operator@lab.local')->post("/permohonan/{$p->id}/billing", ['kode_billing' => '820260000000001', 'tagihan' => 1000])->assertForbidden();
@@ -429,9 +435,9 @@ class AlurLhpTest extends TestCase
     public function test_dashboard_tiap_peran_menampilkan_antreannya(): void
     {
         $p = $this->ajukan();
-        $this->as('superadmin@lab.local')->get('/beranda')->assertOk()->assertSee('Verifikasi permohonan')->assertSee($p->kode);
+        $this->as('superadmin@lab.local')->get('/beranda')->assertOk()->assertSee('Verifikasi permohonan')->assertSee($p->kodeTampil());
         $this->as('superadmin@lab.local')->post("/permohonan/{$p->id}/verifikasi", ['keputusan' => 'valid']);
-        $this->as('operator@lab.local')->get('/beranda')->assertOk()->assertSee('Registrasi sampel')->assertSee($p->kode);
+        $this->as('operator@lab.local')->get('/beranda')->assertOk()->assertSee('Registrasi sampel')->assertSee($p->kodeTampil());
         $this->registrasi($p);
         $p->refresh();
         $this->as('bendahara@lab.local')->get('/beranda')->assertOk()->assertSee('Terbitkan billing SIMPONI')->assertSee($p->kode_sampel);

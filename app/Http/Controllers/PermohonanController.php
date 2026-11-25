@@ -32,7 +32,7 @@ class PermohonanController extends Controller
         $q = Permohonan::query()->with(['lhu', 'pemohon', 'tahap']);
 
         if ($u->role === Role::PenggunaJasa) {
-            $q->where('user_id', $u->id);
+            $q->milikPerusahaan($u);
         } elseif ($u->isLab()) {
             $q->whereHas('tahap', fn ($t) => $t->where('lab_id', $u->lab_id));
         }
@@ -64,12 +64,21 @@ class PermohonanController extends Controller
     {
         Gate::authorize('create', Permohonan::class);
 
+        $u = $request->user();
+
         return view('permohonan.create', [
             'parameter' => $this->wf->parameterAktif()->groupBy('bidang'),
             'biayaAdmin' => (int) Setting::get('biaya_admin'),
-            'alamat' => $request->user()->alamat,
+            'pemohon' => $u,
+            'alamat' => $this->alamatPemohon($u),
             'maksProduk' => Workflow::MAKS_PRODUK,
         ]);
+    }
+
+    /** Alamat dicetak di LHP: diisi saat daftar (akun operator memakai alamat admin perusahaannya). */
+    private function alamatPemohon(\App\Models\User $u): ?string
+    {
+        return $u->alamat ?: $u->induk?->alamat;
     }
 
     public function store(Request $request)
@@ -79,28 +88,40 @@ class PermohonanController extends Controller
         if (! $request->has('produk') && $request->hasAny(['nama_sampel', 'parameter'])) {
             $request->merge(['produk' => [[
                 'nama' => $request->input('nama_sampel'), 'jumlah' => $request->input('jumlah_sampel', 1),
+                'komoditas' => $request->input('jenis_komoditas'), 'berat' => $request->input('berat'),
                 'parameter' => $request->input('parameter', []), 'jumlah_uji' => $request->input('jumlah', []),
             ]]]);
         }
+        $u = $request->user();
+        $alamatAkun = $this->alamatPemohon($u);
         $data = $request->validate([
+            'jenis_layanan' => ['required', Rule::in(array_map(fn (JenisBayar $j) => $j->value, JenisBayar::pilihanPengguna()))],
             'produk' => ['required', 'array', 'min:1', 'max:'.Workflow::MAKS_PRODUK],
+            'produk.*.komoditas' => ['required', 'string', 'min:2', 'max:80'],
             'produk.*.nama' => ['required', 'string', 'min:2', 'max:120'],
             'produk.*.jumlah' => ['required', 'integer', 'min:1', 'max:500'],
+            'produk.*.berat' => ['required', 'string', 'min:1', 'max:30'],
             'produk.*.parameter' => ['required', 'array', 'min:1', 'max:40'],
             'produk.*.parameter.*' => ['integer', 'exists:parameter_uji,id'],
             'produk.*.jumlah_uji' => ['nullable', 'array'],
             'produk.*.jumlah_uji.*' => ['nullable', 'integer', 'min:1', 'max:500'],
-            'jenis_komoditas' => ['required', 'string', 'min:2', 'max:80'],
-            'asal_sampel' => ['required', 'string', 'min:2', 'max:150'],
-            'alamat' => ['required', 'string', 'min:5', 'max:300'],
-            'tujuan' => ['required', Rule::enum(Tujuan::class)],
+            'alamat' => [Rule::requiredIf($alamatAkun === null), 'nullable', 'string', 'min:5', 'max:300'],
+            'setuju' => ['required', 'array'],
+            'setuju.metode' => ['accepted'],
+            'setuju.biaya' => ['accepted'],
+            'setuju.waktu' => ['accepted'],
             'keterangan' => ['nullable', 'string', 'max:1000'],
             'dokumen' => ['nullable', 'array', 'max:3'],
             'dokumen.*' => ['file', 'max:5120', 'mimes:pdf,jpg,jpeg,png'],
         ], [
-            'alamat.required' => 'Isi alamat pelanggan; alamat ini dicetak di LHP.',
+            'jenis_layanan.required' => 'Pilih tujuan permohonan: Ekspor (Test Result), Uji Mandiri, atau Uji Banding.',
+            'alamat.required' => 'Isi alamat usaha/instansi; alamat ini dicetak di LHP.',
+            'setuju.required' => 'Centang persetujuan metode, biaya, dan waktu pengujian.',
+            'setuju.*.accepted' => 'Centang persetujuan metode, biaya, dan waktu pengujian.',
             'produk.max' => 'Satu permohonan paling banyak '.Workflow::MAKS_PRODUK.' produk. Ajukan sisanya di permohonan baru.',
+            'produk.*.komoditas.required' => 'Isi jenis komoditas produk ini.',
             'produk.*.nama.required' => 'Isi nama/jenis sampel produk ini.',
+            'produk.*.berat.required' => 'Isi berat sampel produk ini, mis. 500 g.',
             'produk.*.parameter.required' => 'Pilih minimal satu parameter uji untuk produk ini.',
             'produk.*.parameter.min' => 'Pilih minimal satu parameter uji untuk produk ini.',
             'dokumen.max' => 'Dokumen pendukung maksimal 3 berkas.',
@@ -108,6 +129,7 @@ class PermohonanController extends Controller
             'dokumen.*.mimes' => 'Format berkas harus PDF, JPG, atau PNG.',
         ], [
             'produk.*.nama' => 'nama sampel', 'produk.*.jumlah' => 'jumlah sampel', 'produk.*.parameter' => 'parameter uji',
+            'produk.*.komoditas' => 'jenis komoditas', 'produk.*.berat' => 'berat sampel',
         ]);
 
         $produk = collect($data['produk'])->values()->map(function ($x) {
@@ -115,15 +137,22 @@ class PermohonanController extends Controller
 
             return [
                 'nama' => trim($x['nama']), 'jumlah' => (int) $x['jumlah'],
-                'parameter' => collect($x['parameter'])->unique()->mapWithKeys(fn ($id) => [(int) $id => (int) ($uji[$id] ?? $x['jumlah'])])->all(),
+                'komoditas' => trim($x['komoditas']), 'berat' => trim($x['berat']),
+                // Jumlah pengujian diisi per parameter (bawaan 1), tidak mengikuti jumlah sampel.
+                'parameter' => collect($x['parameter'])->unique()->mapWithKeys(fn ($id) => [(int) $id => (int) ($uji[$id] ?? 1)])->all(),
             ];
         })->all();
-        $isi = collect($data)->except(['dokumen', 'produk'])->map(fn ($v) => is_string($v) ? trim($v) : $v)->all();
+        $jenis = JenisBayar::from($data['jenis_layanan']);
+        $isi = [
+            'alamat' => trim((string) ($alamatAkun ?? $data['alamat'])),
+            'keterangan' => isset($data['keterangan']) ? trim($data['keterangan']) : null,
+            'tujuan' => $jenis->tujuan(),
+        ];
 
-        $p = $this->wf->ajukan($request->user(), $isi, $produk, $request->file('dokumen', []));
+        $p = $this->wf->ajukan($u, $isi, $produk, $request->file('dokumen', []), $jenis);
         Audit::log('AJUKAN_PERMOHONAN', 'permohonan', $p->id);
 
-        return redirect()->route('permohonan.show', $p)->with('success', "Permohonan {$p->kode} terkirim. Bawa sampel fisik ke loket penerimaan Balai untuk diverifikasi.");
+        return redirect()->route('permohonan.show', $p)->with('success', "Permohonan {$p->kodeTampil()} terkirim. Bawa sampel fisik ke loket penerimaan Balai untuk diverifikasi.");
     }
 
     public function show(Request $request, Permohonan $permohonan)
@@ -131,7 +160,7 @@ class PermohonanController extends Controller
         $this->authorizeOr404('view', $permohonan);
         $u = $request->user();
         $p = $permohonan->load([
-            'lhu.validator', 'produk', 'parameter.lab', 'parameter.penginput', 'parameter.produk', 'dokumen', 'riwayat.user', 'pemohon', 'penerima',
+            'lhu.validator', 'produk', 'parameter.lab', 'parameter.penginput', 'parameter.produk', 'parameter.analis', 'dokumen', 'riwayat.user', 'pemohon', 'penerima',
             'tahap.lab', 'tahap.operator', 'suratTugas.lab', 'suratTugas.penyelia', 'persetujuan.user', 'persetujuan.lab',
             'pengembalian.lab', 'pengembalian.pengirim',
         ]);
@@ -175,6 +204,9 @@ class PermohonanController extends Controller
             'parameter' => $parameter, 'dokumen' => $dokumen->values(), 'riwayat' => $riwayat->values(),
             'tahap' => $tahap, 'tahapSaya' => $tahapSaya, 'pengembalian' => $pengembalian,
             'penyeliaPerLab' => $penyeliaPerLab,
+            'analisLab' => $tahapSaya && $u->role === Role::Penyelia
+                ? \App\Models\User::query()->where('role', Role::PetugasLab->value)->where('lab_id', $u->lab_id)->where('aktif', true)->orderBy('nama')->get(['id', 'nama'])
+                : collect(),
             'sudahMenangani' => $tahapSaya && $tahapSaya->operator->contains('id', $u->id),
             'perkiraanTagihan' => $p->tagihan ?? $this->wf->tagihan($p),
         ]);
@@ -184,11 +216,28 @@ class PermohonanController extends Controller
     public function verifikasi(Request $request, Permohonan $permohonan)
     {
         Gate::authorize('verifikasi', $permohonan);
-        $request->validate(['keputusan' => ['required', Rule::in(['valid', 'tolak'])]]);
+        // Bentuk lama (keputusan valid/tolak, tanpa ceklis) tetap diterima.
+        if (! $request->has('kesimpulan') && $request->has('keputusan')) {
+            $request->merge(['kesimpulan' => $request->input('keputusan') === 'tolak' ? 'tidak' : 'dapat',
+                'kaji' => $request->input('kaji', ['personel' => 1, 'bahan' => 1, 'alat' => 1])]);
+        }
+        $data = $request->validate([
+            'kesimpulan' => ['required', Rule::in(array_keys(Workflow::KESIMPULAN))],
+            'kaji' => ['exclude_if:kesimpulan,tidak', 'required', 'array'],
+            'kaji.personel' => ['exclude_if:kesimpulan,tidak', 'accepted'],
+            'kaji.bahan' => ['exclude_if:kesimpulan,tidak', 'accepted'],
+            'kaji.alat' => ['exclude_if:kesimpulan,tidak', 'accepted'],
+            'catatan_eksternal' => ['exclude_unless:kesimpulan,eksternal', 'required', 'string', 'max:500'],
+        ], [
+            'kesimpulan.required' => 'Pilih kesimpulan kaji ulang permintaan.',
+            'kaji.required' => 'Lengkapi kaji ulang permintaan: personel, bahan uji, dan alat uji.',
+            'kaji.*.accepted' => 'Lengkapi kaji ulang permintaan: personel, bahan uji, dan alat uji harus siap.',
+            'catatan_eksternal.required' => 'Tulis laboratorium eksternal dan parameter yang dirujuk.',
+        ]);
 
-        if ($request->input('keputusan') === 'valid') {
-            $this->wf->verifikasi($permohonan, $request->user());
-            Audit::log('VERIFIKASI_DITERIMA', 'permohonan', $permohonan->id);
+        if ($data['kesimpulan'] !== 'tidak') {
+            $this->wf->verifikasi($permohonan, $request->user(), $data['kesimpulan'], isset($data['catatan_eksternal']) ? trim($data['catatan_eksternal']) : null);
+            Audit::log('VERIFIKASI_DITERIMA', 'permohonan', $permohonan->id, ['kesimpulan' => $data['kesimpulan']]);
 
             return back()->with('success', 'Permohonan diterima. Sampel menunggu registrasi oleh Operator/Admin Laboratorium.');
         }
@@ -206,18 +255,12 @@ class PermohonanController extends Controller
         Gate::authorize('registrasi', $permohonan);
         $data = $request->validate([
             'jenis_bayar' => ['required', Rule::in(array_map(fn (JenisBayar $j) => $j->value, JenisBayar::pilihan()))],
-            'kaji' => ['required', 'array'],
-            'kaji.personel' => ['accepted'],
-            'kaji.bahan' => ['accepted'],
-            'kaji.alat' => ['accepted'],
             'bentuk' => ['nullable', 'string', 'max:20'],
             'kemasan' => ['nullable', 'string', 'max:20'],
             'suhu' => ['nullable', 'string', 'max:10'],
             'berat' => ['nullable', 'string', 'max:20'],
         ], [
-            'kaji.required' => 'Lengkapi kaji ulang permintaan: personel, bahan uji, dan alat uji.',
-            'kaji.*.accepted' => 'Lengkapi kaji ulang permintaan: personel, bahan uji, dan alat uji harus siap.',
-            'jenis_bayar.required' => 'Tetapkan jenis layanan: Mandiri, Pengujian Eksternal, atau Surveilen.',
+            'jenis_bayar.required' => 'Tetapkan tujuan permohonan (jenis layanan).',
         ]);
         $jenis = JenisBayar::from($data['jenis_bayar']);
         $kode = $this->wf->registrasi($permohonan, $request->user(), $jenis, collect($data)->only(['bentuk', 'kemasan', 'suhu', 'berat'])->all());
@@ -384,6 +427,46 @@ class PermohonanController extends Controller
         return back()->with('success', "Anda tercatat menangani {$permohonan->kodeTampil()}.");
     }
 
+    /** Penyelia: tugaskan analis untuk tiap parameter lab-nya (disposisi). */
+    public function disposisi(Request $request, Permohonan $permohonan)
+    {
+        $this->authorizeOr404('view', $permohonan);
+        if ($request->user()->role !== Role::Penyelia || Gate::denies('inputHasil', $permohonan)) {
+            return back()->with('error', 'Hanya penyelia lab yang sedang menguji sampel ini yang dapat membuat disposisi.');
+        }
+        $data = $request->validate(['analis' => ['required', 'array'], 'analis.*' => ['nullable', 'integer']],
+            ['analis.required' => 'Pilih analis untuk minimal satu parameter.']);
+        $n = $this->wf->disposisi($permohonan, $request->user(), $data['analis']);
+        Audit::log('DISPOSISI_ANALIS', 'permohonan', $permohonan->id, ['analis' => $data['analis']]);
+
+        return back()->with('success', $n > 0 ? 'Disposisi analis disimpan.' : 'Tidak ada perubahan disposisi.');
+    }
+
+    /**
+     * Lembar Disposisi harian (FL/OK/SUB II/8.5.2.a): semua sampel yang masuk lab pada tanggal itu,
+     * per produk, dengan analis per bidang dan jumlah uji per parameter.
+     */
+    public function lembarDisposisi(Request $request)
+    {
+        $u = $request->user();
+        $tanggal = \Illuminate\Support\Carbon::parse($request->query('tanggal', now()->format('Y-m-d')), config('app.timezone'))->startOfDay();
+        $q = Permohonan::query()->whereNotNull('kode_sampel')
+            ->whereBetween('masuk_lab_at', [$tanggal->copy(), $tanggal->copy()->endOfDay()])
+            ->with(['produk', 'parameter.analis', 'parameter.lab', 'tahap.operator']);
+        if ($u->isLab()) {
+            $q->whereHas('tahap', fn ($t) => $t->where('lab_id', $u->lab_id));
+        }
+        $rows = $q->get()->sortBy(fn ($p) => [preg_match('#\.(\d+)$#', (string) $p->kode_sampel, $m) ? (int) $m[1] : 0, $p->id])->values();
+        $labs = Lab::query()->aktif()->orderBy('urutan')->with('penyelia')->get();
+        $kodeParam = $rows->flatMap(fn ($p) => $p->parameter)->sortBy(fn ($x) => [$x->lab?->urutan, $x->parameter_id])
+            ->map(fn ($x) => $x->kode ?: $x->nama)->unique()->values();
+        Audit::log('CETAK_DISPOSISI', 'permohonan', null, ['tanggal' => $tanggal->format('Y-m-d')]);
+
+        return Pdf::respons('pdf.disposisi', [
+            'tanggal' => $tanggal, 'rows' => $rows, 'labs' => $labs, 'kodeParam' => $kodeParam,
+        ], 'Lembar Disposisi '.$tanggal->format('Y-m-d').'.pdf', $request->boolean('unduh'), 'landscape');
+    }
+
     /** Admin Laboratorium: periksa kesesuaian data LHP dengan permohonan. */
     public function periksa(Request $request, Permohonan $permohonan)
     {
@@ -536,7 +619,7 @@ class PermohonanController extends Controller
     public function buktiTagihan(Request $request, Permohonan $permohonan)
     {
         $this->authorizeOr404('view', $permohonan);
-        abort_unless($permohonan->kode_billing && ($request->user()->isStaff() || $request->user()->id === $permohonan->user_id), 404);
+        abort_unless($permohonan->kode_billing && ($request->user()->isStaff() || $request->user()->sePerusahaanDengan($permohonan->user_id)), 404);
         $p = $permohonan->load(['parameter', 'pemohon']);
 
         return Pdf::respons('pdf.bukti-tagihan', ['p' => $p], 'Bukti Tagihan '.$p->kode_billing.'.pdf', $request->boolean('unduh'));
@@ -565,7 +648,7 @@ class PermohonanController extends Controller
         } else {
             $q = Permohonan::query();
             if ($u->role === Role::PenggunaJasa) {
-                $q->where('user_id', $u->id);
+                $q->milikPerusahaan($u);
             } elseif ($u->isLab()) {
                 $q->whereHas('tahap', fn ($t) => $t->where('lab_id', $u->lab_id));
             }

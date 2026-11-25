@@ -98,11 +98,11 @@ class PenomoranProdukTest extends TestCase
         Carbon::setTestNow('2026-03-02 09:00:00');
         [$o, $h, $vp] = [$this->idParameter('O')[0], $this->idParameter('H')[0], $this->idParameter('VP')[0]];
         $this->as('eksternal@lab.local')->post('/permohonan', [
-            'jenis_komoditas' => 'Moluska', 'asal_sampel' => 'Gresik', 'alamat' => 'Jl. Sunan Giri 21, Gresik', 'tujuan' => 'DOMESTIK',
+            'jenis_layanan' => 'MANDIRI', 'alamat' => 'Jl. Sunan Giri 21, Gresik', 'setuju' => ['metode' => 1, 'biaya' => 1, 'waktu' => 1],
             'produk' => [
-                ['nama' => 'Kerang Darah Segar (P1)', 'jumlah' => 1, 'parameter' => [$vp]],
-                ['nama' => 'Kerang Darah Segar (P2)', 'jumlah' => 2, 'parameter' => [$vp, $o], 'jumlah_uji' => [$o => 1]],
-                ['nama' => 'Tuna Segar', 'jumlah' => 1, 'parameter' => [$h]],
+                ['komoditas' => 'Moluska', 'nama' => 'Kerang Darah Segar (P1)', 'jumlah' => 1, 'berat' => '1 kg', 'parameter' => [$vp]],
+                ['komoditas' => 'Moluska', 'nama' => 'Kerang Darah Segar (P2)', 'jumlah' => 2, 'berat' => '1 kg', 'parameter' => [$vp, $o], 'jumlah_uji' => [$vp => 2]],
+                ['komoditas' => 'Ikan', 'nama' => 'Tuna Segar', 'jumlah' => 1, 'berat' => '500 g', 'parameter' => [$h]],
             ],
         ])->assertRedirect()->assertSessionHasNoErrors();
         $p = Permohonan::query()->latest('id')->firstOrFail();
@@ -111,7 +111,9 @@ class PenomoranProdukTest extends TestCase
         $this->assertSame(3, $p->produk()->count());
         $this->assertSame(4, $p->parameter()->count());
         $this->assertSame(2, $p->parameter()->where('kode', 'VP')->where('produk_id', $p->produk[1]->id)->value('jumlah'));
-        $this->assertSame(1, $p->parameter()->where('kode', 'O')->value('jumlah'));
+        $this->assertSame(1, $p->parameter()->where('kode', 'O')->value('jumlah')); // jumlah uji tidak ikut jumlah sampel
+        $this->assertSame('Moluska, Ikan', $p->jenis_komoditas);
+        $this->assertSame(['1 kg', '1 kg', '500 g'], $p->produk()->pluck('berat')->all());
 
         $this->verifikasi($p, 'EKSTERNAL');
         $p->refresh();
@@ -146,10 +148,10 @@ class PenomoranProdukTest extends TestCase
         $this->as('pengguna@lab.local')->get('/permohonan/baru')->assertOk()
             ->assertSee('Tambah produk')->assertSee('data-produk-template', false)->assertSee('name="produk[0][nama]"', false);
         $this->as('pengguna@lab.local')->post('/permohonan', [
-            'jenis_komoditas' => 'Ikan', 'asal_sampel' => 'X', 'alamat' => 'Jalan X', 'tujuan' => 'DOMESTIK',
+            'jenis_layanan' => 'MANDIRI', 'alamat' => 'Jalan X', 'setuju' => ['metode' => 1, 'biaya' => 1, 'waktu' => 1],
             'produk' => [
-                ['nama' => 'Tuna', 'jumlah' => 1, 'parameter' => $this->idParameter('H')],
-                ['nama' => 'Cakalang', 'jumlah' => 1],
+                ['komoditas' => 'Ikan', 'nama' => 'Tuna', 'jumlah' => 1, 'berat' => '1 kg', 'parameter' => $this->idParameter('H')],
+                ['komoditas' => 'Ikan', 'nama' => 'Cakalang', 'jumlah' => 1, 'berat' => '1 kg'],
             ],
         ])->assertSessionHasErrors('produk.1.parameter');
         $this->assertSame(0, Permohonan::query()->count());

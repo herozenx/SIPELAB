@@ -29,6 +29,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/keluar', [AuthController::class, 'logout'])->name('logout');
     Route::get('/akun', [AuthController::class, 'akun'])->name('akun');
     Route::put('/akun/password', [AuthController::class, 'gantiPassword'])->middleware('throttle:aksi')->name('akun.password');
+    Route::post('/akun/operator', [AuthController::class, 'tambahOperator'])->middleware(['role:pengguna_jasa', 'throttle:aksi'])->name('akun.operator');
+    Route::post('/akun/operator/{operator}', [AuthController::class, 'aturOperator'])->whereNumber('operator')->middleware(['role:pengguna_jasa', 'throttle:aksi'])->name('akun.operator.atur');
 
     Route::get('/beranda', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/api/versi', [PermohonanController::class, 'versi'])->middleware('throttle:api')->name('api.versi');
@@ -46,6 +48,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/permohonan/{permohonan}/bukti-terima.pdf', [PermohonanController::class, 'buktiTerima'])->whereNumber('permohonan')->name('permohonan.bukti-terima');
     Route::get('/permohonan/{permohonan}/surat-tugas.pdf', [PermohonanController::class, 'cetakSuratTugas'])
         ->whereNumber('permohonan')->name('permohonan.surat-tugas');
+    Route::get('/disposisi.pdf', [PermohonanController::class, 'lembarDisposisi'])->middleware('role:superadmin,admin_lab,operator,penyelia,penanggung_jawab')->name('disposisi.pdf');
 
     // Tindakan alur; hak akses per tindakan diatur PermohonanPolicy.
     Route::middleware('throttle:aksi')->whereNumber('permohonan')->prefix('/permohonan/{permohonan}')->name('permohonan.')->group(function () {
@@ -57,6 +60,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/surat-tugas', [PermohonanController::class, 'suratTugas'])->name('surat');
         Route::post('/hasil', [PermohonanController::class, 'inputHasil'])->name('hasil');
         Route::post('/tangani', [PermohonanController::class, 'tangani'])->name('tangani');
+        Route::post('/disposisi', [PermohonanController::class, 'disposisi'])->name('disposisi');
         Route::post('/periksa', [PermohonanController::class, 'periksa'])->name('periksa');
         Route::post('/paraf', [PermohonanController::class, 'paraf'])->name('paraf');
         Route::post('/sahkan', [PermohonanController::class, 'sahkan'])->name('sahkan');

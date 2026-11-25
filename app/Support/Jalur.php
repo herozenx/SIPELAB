@@ -18,7 +18,7 @@ class Jalur
     public static function untuk(Permohonan $p, ?Collection $labs = null): array
     {
         $mandiri = $p->mandiri();
-        $st = [['nama' => 'Verifikasi', 'sub' => 'Administrator', 'kunci' => 'ajukan'], ['nama' => 'Registrasi', 'sub' => 'Kode sampel', 'kunci' => 'registrasi']];
+        $st = [['nama' => 'Verifikasi', 'sub' => 'Kaji ulang', 'kunci' => 'ajukan'], ['nama' => 'Registrasi', 'sub' => 'Kode sampel', 'kunci' => 'registrasi']];
         if ($mandiri) {
             $st[] = ['nama' => 'Pembayaran', 'sub' => 'SIMPONI', 'kunci' => 'bayar'];
         }

@@ -32,7 +32,15 @@ class Permohonan extends Model
             'billing_at' => 'datetime',
             'billing_kedaluwarsa_at' => 'datetime',
             'dibayar_at' => 'datetime',
+            'pemohon_setuju_at' => 'datetime',
+            'kaji_ulang' => 'array',
         ];
+    }
+
+    /** Permohonan milik perusahaan pengguna jasa (diajukan admin perusahaan atau operatornya). */
+    public function scopeMilikPerusahaan(\Illuminate\Database\Eloquent\Builder $q, User $u): \Illuminate\Database\Eloquent\Builder
+    {
+        return $q->whereIn('user_id', User::query()->sePerusahaan($u)->select('id'));
     }
 
     public function pemohon(): BelongsTo
@@ -116,12 +124,13 @@ class Permohonan extends Model
         return $this->kode_sampel ?: (string) $this->kode;
     }
 
+    /** Bayar di awal (layanan yang diajukan pengguna jasa: Ekspor, Uji Mandiri, Uji Banding). */
     public function mandiri(): bool
     {
-        return ($this->jenis_bayar ?? JenisBayar::Mandiri) === JenisBayar::Mandiri;
+        return ($this->jenis_bayar ?? JenisBayar::Mandiri)->bayarDiAwal();
     }
 
-    /** Selain Mandiri dibayar di belakang (setelah LHP disahkan). */
+    /** Layanan petugas (Surveilen, Monitoring, Uji Profisiensi, Pengujian Eksternal) dibayar di belakang. */
     public function eksternal(): bool
     {
         return ! $this->mandiri();

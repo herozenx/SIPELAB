@@ -3,49 +3,66 @@
 namespace App\Enums;
 
 /**
- * Jenis layanan (jenis pengguna jasa). Pengguna jasa hanya bisa mengajukan Mandiri;
- * Eksternal (Pengujian Eksternal) dan Surveilen ditetapkan Operator saat verifikasi.
- * - MANDIRI  : bayar di awal (billing SIMPONI oleh Operator Bendahara), baru diuji.
- * - EKSTERNAL/SURVEILEN: sampel langsung diuji; dibayar di belakang setelah LHP disahkan.
+ * Jenis layanan = "Tujuan permohonan" (masukan Balai 25 Nov 2026).
+ * - Pengguna jasa memilih saat mengajukan: Ekspor (Test Result), Uji Mandiri, Uji Banding.
+ * - Petugas (Operator/Admin Lab) dapat menetapkan saat registrasi: Surveilen, Monitoring, Uji Profisiensi, Pengujian Eksternal.
+ * Layanan pengguna jasa dibayar di awal (billing SIMPONI sebelum diuji); layanan petugas dibayar di belakang.
  */
 enum JenisBayar: string
 {
-    case Mandiri = 'MANDIRI';
-    case Eksternal = 'EKSTERNAL';
-    case Surveilen = 'SURVEILEN';
-    // Data lama dari versi sebelumnya (branch sistem); tetap terbaca, tidak bisa dipilih lagi.
-    case Monitoring = 'MONITORING';
     case TestResult = 'TEST_RESULT';
+    case Mandiri = 'MANDIRI';
     case UjiBanding = 'UJI_BANDING';
+    case Surveilen = 'SURVEILEN';
+    case Monitoring = 'MONITORING';
+    case UjiProfisiensi = 'UJI_PROFISIENSI';
+    case Eksternal = 'EKSTERNAL';
 
     public function label(): string
     {
         return match ($this) {
-            self::Mandiri => 'Mandiri',
-            self::Eksternal => 'Pengujian Eksternal',
+            self::TestResult => 'Ekspor (Test Result)',
+            self::Mandiri => 'Uji Mandiri',
+            self::UjiBanding => 'Uji Banding',
             self::Surveilen => 'Surveilen',
             self::Monitoring => 'Monitoring',
-            self::TestResult => 'Test Result',
-            self::UjiBanding => 'Uji Banding',
+            self::UjiProfisiensi => 'Uji Profisiensi',
+            self::Eksternal => 'Pengujian Eksternal',
         };
     }
 
-    /** @return self[] jenis layanan yang bisa ditetapkan saat registrasi (sesuai keputusan: 3 jenis). */
-    public static function pilihan(): array
+    /** @return self[] pilihan pengguna jasa saat mengajukan permohonan. */
+    public static function pilihanPengguna(): array
     {
-        return [self::Mandiri, self::Eksternal, self::Surveilen];
+        return [self::TestResult, self::Mandiri, self::UjiBanding];
     }
 
-    /** Awalan kode sampel (SP = surat pengajuan) sesuai buku sampel lab, mis. SP.M/221126.01. */
+    /** @return self[] pilihan khusus petugas (Operator/Admin Lab). */
+    public static function pilihanPetugas(): array
+    {
+        return [self::Surveilen, self::Monitoring, self::UjiProfisiensi, self::Eksternal];
+    }
+
+    /** @return self[] semua jenis yang bisa ditetapkan petugas saat registrasi. */
+    public static function pilihan(): array
+    {
+        return [...self::pilihanPengguna(), ...self::pilihanPetugas()];
+    }
+
+    /**
+     * Awalan kode sampel (SP = surat pengajuan) sesuai buku sampel lab, mis. SP.E/251126.01.
+     * Terkonfirmasi dari dokumen Balai: E, M, S, PE. Lainnya sementara, menunggu konfirmasi Balai.
+     */
     public function kodeSurat(): string
     {
         return match ($this) {
+            self::TestResult => 'SP.E',
             self::Mandiri => 'SP.M',
-            self::Eksternal => 'SP.PE',
+            self::UjiBanding => 'SP.UB',
             self::Surveilen => 'SP.S',
             self::Monitoring => 'SP.MN',
-            self::TestResult => 'SP.E',
-            self::UjiBanding => 'SP.UB',
+            self::UjiProfisiensi => 'SP.UP',
+            self::Eksternal => 'SP.PE',
         };
     }
 
@@ -56,9 +73,26 @@ enum JenisBayar: string
             : 'Dibayar di belakang, setelah LHP disahkan';
     }
 
-    /** true = tagihan dibayar sebelum sampel diuji (hanya Mandiri). */
+    /** Penjelasan singkat di form pengajuan. */
+    public function penjelasan(): string
+    {
+        return match ($this) {
+            self::TestResult => 'Hasil uji untuk keperluan ekspor',
+            self::Mandiri => 'Pengujian atas kemauan sendiri',
+            self::UjiBanding => 'Pembanding hasil uji laboratorium lain',
+            default => $this->keterangan(),
+        };
+    }
+
+    /** true = tagihan dibayar sebelum sampel diuji (layanan yang diajukan pengguna jasa). */
     public function bayarDiAwal(): bool
     {
-        return $this === self::Mandiri;
+        return in_array($this, self::pilihanPengguna(), true);
+    }
+
+    /** Tujuan distribusi yang dicetak di LHP mengikuti jenis layanan. */
+    public function tujuan(): Tujuan
+    {
+        return $this === self::TestResult ? Tujuan::Ekspor : Tujuan::Domestik;
     }
 }

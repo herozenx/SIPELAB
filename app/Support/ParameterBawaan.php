@@ -6,7 +6,7 @@ namespace App\Support;
  * Daftar parameter uji bawaan, diambil dari FPPCU 2026 (FL/OK/SUB II/8.5.2.a) dan LHP Balai 2026.
  * Bidang di LHP: Organoleptik, Biologi, Kimia, Radionuklida. akreditasi=false dicetak dengan tanda * di LHP.
  * Tarif mengikuti daftar Jenis dan Tarif PNBP Laboratorium (PMK 1 Tahun 2025) yang dipasang di BPPMHKP Surabaya II.
- * Air/Es proses UPI "E. coli & Coliform" satu tarif Rp100.000 per contoh: dibagi rata ke CM dan ECM.
+ * Air/Es proses UPI "E. coli & Coliform" satu tarif Rp160.000 per contoh: dibagi rata ke CM dan ECM.
  * Kadar air, kadar garam, dan Listeria tidak ada di daftar tarif: 0.
  */
 class ParameterBawaan
@@ -16,7 +16,7 @@ class ParameterBawaan
         'O' => 200000, 'A' => 100000, 'E1' => 245000, 'E2' => 245000, 'EK' => 300000, 'S' => 350000,
         'VC' => 375000, 'VP' => 375000, 'SA' => 360000, 'H' => 555000,
         'CAP' => 400000, 'AOZ' => 400000, 'AMOZ' => 400000, 'AHD' => 400000, 'SEM' => 400000,
-        'C' => 75000, 'CK' => 166000, 'F' => 66000, 'CM' => 50000, 'ECM' => 50000, 'ENTM' => 100000,
+        'C' => 75000, 'CK' => 150000, 'F' => 66000, 'CM' => 80000, 'ECM' => 80000, 'ENTM' => 100000,
         'HG' => 150000, 'PB' => 150000, 'CD' => 150000, 'CS' => 500000,
     ];
 
@@ -47,7 +47,7 @@ class ParameterBawaan
             $p('A', 'Angka Lempeng Total (ALT) Aerob', 'Biologi', 'Mikrobiologi', 'SNI 2332.3-2015', 'Maks. 5,0 x 10⁵ kol/g'),
             $p('E1', 'Escherichia coli', 'Biologi', 'Mikrobiologi', 'ISO 16649-3-2015', 'Negatif/25 g'),
             $p('E2', 'Escherichia coli (APM)', 'Biologi', 'Mikrobiologi', 'SNI 2332.1-2015', '< 3 APM/g'),
-            $p('C', 'Coliform', 'Biologi', 'Mikrobiologi', 'SNI 2332.1-2015', '< 3 APM/g'),
+            $p('C', 'Total Coliform', 'Biologi', 'Mikrobiologi', 'SNI 2332.1-2015', '< 3 APM/g'),
             $p('EK', 'Escherichia coli (produk kekerangan)', 'Biologi', 'Mikrobiologi', 'SNI 2332.1-2015'),
             $p('CK', 'Total Coliform (produk kekerangan)', 'Biologi', 'Mikrobiologi', 'SNI 2332.1-2015'),
             $p('S', 'Salmonella spp.', 'Biologi', 'Mikrobiologi', 'SNI ISO 6579-1:2017', 'Negatif/25 g'),

@@ -11,16 +11,26 @@
     <button type="button" class="btn-ghost btn-sm @if(is_int($i) && $i === 0) hidden @endif" data-produk-hapus><x-ikon n="silang" class="h-4 w-4" />Hapus produk</button>
   </div>
   <div class="panel-body space-y-5">
-    <div class="grid gap-5 sm:grid-cols-[1fr_140px]">
+    <div class="grid gap-5 sm:grid-cols-2">
+      <div>
+        <label for="{{ $id }}-komoditas" class="label">Jenis komoditas</label>
+        <input id="{{ $id }}-komoditas" name="produk[{{ $i }}][komoditas]" value="{{ $nilai['komoditas'] ?? '' }}" class="input" placeholder="Contoh: Krustasea" required maxlength="80" list="daftar-komoditas" @if(is_int($i) && $errors->has("produk.{$i}.komoditas")) aria-invalid="true" @endif>
+        @if (is_int($i))@error("produk.{$i}.komoditas")<p class="error">{{ $message }}</p>@enderror @endif
+      </div>
       <div>
         <label for="{{ $id }}-nama" class="label">Nama/jenis sampel</label>
-        <input id="{{ $id }}-nama" name="produk[{{ $i }}][nama]" value="{{ $nilai['nama'] ?? '' }}" class="input" placeholder="Contoh: Udang frozen" required maxlength="120" @if(is_int($i) && $errors->has("produk.{$i}.nama")) aria-invalid="true" @endif>
+        <input id="{{ $id }}-nama" name="produk[{{ $i }}][nama]" value="{{ $nilai['nama'] ?? '' }}" class="input" placeholder="Contoh: Udang beku" required maxlength="120" @if(is_int($i) && $errors->has("produk.{$i}.nama")) aria-invalid="true" @endif>
         @if (is_int($i))@error("produk.{$i}.nama")<p class="error">{{ $message }}</p>@enderror @endif
       </div>
       <div>
-        <label for="{{ $id }}-jumlah" class="label">Jumlah sampel</label>
+        <label for="{{ $id }}-jumlah" class="label">Jumlah sampel <span class="font-normal text-kabut-500">(kemasan/unit)</span></label>
         <input id="{{ $id }}-jumlah" name="produk[{{ $i }}][jumlah]" type="number" min="1" max="500" value="{{ $jumlah }}" class="input num" required data-jumlah>
         @if (is_int($i))@error("produk.{$i}.jumlah")<p class="error">{{ $message }}</p>@enderror @endif
+      </div>
+      <div>
+        <label for="{{ $id }}-berat" class="label">Berat sampel</label>
+        <input id="{{ $id }}-berat" name="produk[{{ $i }}][berat]" value="{{ $nilai['berat'] ?? '' }}" class="input num" placeholder="Contoh: 500 g atau 1 kg" required maxlength="30" @if(is_int($i) && $errors->has("produk.{$i}.berat")) aria-invalid="true" @endif>
+        @if (is_int($i))@error("produk.{$i}.berat")<p class="error">{{ $message }}</p>@enderror @endif
       </div>
     </div>
 
@@ -39,7 +49,7 @@
                 </label>
                 <span class="num w-24 text-right text-xs text-kabut-500">{{ $x->tarif ? rupiah($x->tarif).'/uji' : 'Tarif menyusul' }}</span>
                 <label class="sr-only" for="{{ $id }}-uji-{{ $x->id }}">Jumlah pengujian {{ $x->nama }}</label>
-                <input id="{{ $id }}-uji-{{ $x->id }}" name="produk[{{ $i }}][jumlah_uji][{{ $x->id }}]" type="number" min="1" max="500" value="{{ $nilai['jumlah_uji'][$x->id] ?? $jumlah }}" class="input num w-20 py-1.5" data-param-jumlah title="Jumlah pengujian">
+                <input id="{{ $id }}-uji-{{ $x->id }}" name="produk[{{ $i }}][jumlah_uji][{{ $x->id }}]" type="number" min="1" max="500" value="{{ $nilai['jumlah_uji'][$x->id] ?? 1 }}" class="input num w-20 py-1.5" data-param-jumlah title="Jumlah pengujian">
               </li>
             @endforeach
           </ul>

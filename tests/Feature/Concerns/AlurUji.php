@@ -40,8 +40,10 @@ trait AlurUji
     protected function ajukan(string $email = 'pengguna@lab.local', array $kode = ['O', 'E1', 'H'], array $tambahan = []): Permohonan
     {
         $this->as($email)->post('/permohonan', $tambahan + [
-            'nama_sampel' => 'Udang Frozen', 'jenis_komoditas' => 'Krustasea', 'jumlah_sampel' => 1,
-            'asal_sampel' => 'Sidoarjo', 'alamat' => 'Jalan Rungkut Madya', 'tujuan' => 'EKSPOR',
+            'jenis_layanan' => 'MANDIRI',
+            'nama_sampel' => 'Udang Frozen', 'jenis_komoditas' => 'Krustasea', 'jumlah_sampel' => 1, 'berat' => '500 g',
+            'alamat' => 'Jalan Rungkut Madya',
+            'setuju' => ['metode' => 1, 'biaya' => 1, 'waktu' => 1],
             'parameter' => $this->idParameter(...$kode),
         ])->assertRedirect()->assertSessionHasNoErrors();
 
@@ -51,7 +53,7 @@ trait AlurUji
     /** Administrator memverifikasi permohonan, lalu Operator/Admin Lab meregistrasi sampel. */
     protected function verifikasi(Permohonan $p, string $jenis = 'MANDIRI', string $oleh = 'operator@lab.local'): void
     {
-        $this->as('superadmin@lab.local')->post("/permohonan/{$p->id}/verifikasi", ['keputusan' => 'valid'])
+        $this->as('superadmin@lab.local')->post("/permohonan/{$p->id}/verifikasi", ['kesimpulan' => 'dapat', 'kaji' => ['personel' => 1, 'bahan' => 1, 'alat' => 1]])
             ->assertSessionHasNoErrors()->assertSessionHas('success');
         $this->registrasi($p, $jenis, $oleh);
     }

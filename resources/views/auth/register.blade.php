@@ -84,6 +84,16 @@
           </div>
 
           <div data-field>
+            <label for="alamat" class="label">Alamat usaha atau instansi <span class="text-karang-600" aria-hidden="true">*</span><span class="sr-only"> wajib</span></label>
+            <div class="relative">
+              <input id="alamat" name="alamat" value="{{ old('alamat') }}" class="form-input input min-h-[48px] pr-10" autocomplete="street-address" required maxlength="300" aria-describedby="alamat-help" @error('alamat') aria-invalid="true" data-server-error="{{ $errors->first('alamat') }}" @enderror>
+              <span data-error-icon="alamat" class="field-error-icon hidden" aria-hidden="true"><x-ikon n="peringatan" class="h-5 w-5" /></span>
+            </div>
+            <p id="alamat-help" class="hint">Dicetak pada LHP. Tidak perlu diisi lagi saat mengajukan uji.</p>
+            <p data-field-error="alamat" class="auth-field-error hidden"></p>
+          </div>
+
+          <div data-field>
             <label for="email" class="label">Email <span class="text-karang-600" aria-hidden="true">*</span><span class="sr-only"> wajib</span></label>
             <div class="relative">
               <input id="email" name="email" type="email" value="{{ old('email') }}" class="form-input input min-h-[48px] pr-10" autocomplete="email" inputmode="email" required @error('email') aria-invalid="true" aria-describedby="email-error" data-server-error="{{ $errors->first('email') }}" @enderror>
@@ -128,6 +138,22 @@
             </div>
             <p data-field-error="password_confirmation" class="auth-field-error hidden"></p>
           </div>
+
+          @php
+            $isianOp = collect(old('operator', []))->filter(fn ($v, $k) => is_int($k) && is_array($v))->values()->all();
+          @endphp
+          <fieldset class="rounded-xl border border-kabut-200 p-4">
+            <legend class="px-1 text-sm font-bold">Akun operator <span class="font-normal text-kabut-500">(opsional)</span></legend>
+            <p class="hint !mt-0">Akun ini menjadi <b>admin perusahaan</b>. Tambahkan operator (personel yang dihubungi) agar setiap permohonan tercatat atas nama yang mengajukan. Operator juga bisa ditambah nanti di menu Akun. Maksimal {{ \App\Http\Controllers\AuthController::MAKS_OPERATOR }} operator.</p>
+            @error('operator')<p class="error">{{ $message }}</p>@enderror
+            <div class="mt-3 space-y-3" data-ulang-daftar="operator" data-maks="{{ \App\Http\Controllers\AuthController::MAKS_OPERATOR }}" data-berikut="{{ count($isianOp) }}">
+              @foreach ($isianOp as $i => $op)
+                @include('auth._operator', ['i' => $i, 'op' => $op])
+              @endforeach
+            </div>
+            <template data-ulang-template="operator">@include('auth._operator', ['i' => '__i__', 'op' => []])</template>
+            <button type="button" class="btn-ghost btn-sm mt-3" data-ulang-tambah="operator"><x-ikon n="tambah" class="h-4 w-4" />Tambah operator</button>
+          </fieldset>
 
           <button type="submit" class="btn-primary min-h-[48px] w-full py-3" data-submit-button>
             <span data-submit-label>Buat akun</span>
