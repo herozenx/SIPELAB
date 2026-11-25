@@ -1,5 +1,5 @@
 @extends(auth()->check() ? 'layouts.app' : 'layouts.guest')
-@section('title', 'Panduan penggunaan')
+@section('title', 'Panduan Penggunaan')
 @section('content')
 @php
   $masuk = auth()->check();

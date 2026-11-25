@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>@yield('title', 'SILANTRO') · BPPMHKP Surabaya II</title>
+  <title>@yield('title', 'SILANTRO') | BPPMHKP Surabaya II</title>
   <meta name="description" content="Layanan permohonan uji mutu hasil perikanan secara online: ajukan, bayar lewat SIMPONI, pantau pengujian, dan terima LHP digital.">
-  <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
+  <link rel="icon" href="{{ asset('img/logo-kkp.png') }}" type="image/png">
   <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ @filemtime(public_path('css/app.css')) }}">
   <script src="{{ asset('js/app.js') }}?v={{ @filemtime(public_path('js/app.js')) }}" defer></script>
 </head>
@@ -15,7 +15,7 @@
   <header class="sticky top-0 z-40 border-b border-kabut-200 bg-white/95 shadow-[0_1px_8px_rgba(19,35,43,0.06)] backdrop-blur-sm">
     <div class="mx-auto grid h-[72px] max-w-6xl grid-cols-[1fr_auto] items-center gap-4 px-4 sm:px-6 lg:grid-cols-[1fr_auto_1fr]">
       <a href="{{ route('home') }}" class="flex min-h-[44px] shrink-0 items-center gap-3 text-tinta no-underline hover:no-underline" aria-label="SILANTRO, beranda">
-        <img src="{{ asset('favicon.svg') }}" alt="" width="36" height="36" class="h-9 w-9">
+        <img src="{{ asset('img/logo-kkp.png') }}" alt="Logo KKP" width="40" height="36" class="h-9 w-auto object-contain">
         <span class="leading-tight">
           <span class="block font-extrabold tracking-tight text-laut-700">SILANTRO</span>
           <span class="block text-2xs font-medium text-kabut-500">BPPMHKP Surabaya II</span>
@@ -72,7 +72,7 @@
       <div class="grid gap-10 md:grid-cols-[1fr_220px] md:gap-16">
         <div>
           <a href="{{ route('home') }}" class="flex min-h-[44px] items-center gap-3 text-white no-underline hover:no-underline" aria-label="SILANTRO, kembali ke beranda">
-            <img src="{{ asset('favicon.svg') }}" alt="" width="36" height="36" class="h-9 w-9">
+            <img src="{{ asset('img/logo-kkp.png') }}" alt="Logo KKP" width="40" height="36" class="h-9 w-auto object-contain">
             <span class="leading-tight">
               <span class="block font-extrabold tracking-tight text-white">SILANTRO</span>
               <span class="block text-2xs font-medium text-laut-200">BPPMHKP Surabaya II</span>

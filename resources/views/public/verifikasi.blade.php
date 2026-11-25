@@ -1,8 +1,8 @@
 @extends('layouts.guest')
-@section('title', 'Cek keaslian LHP')
+@section('title', 'Cek Keaslian LHP')
 @section('content')
 <div class="mx-auto max-w-2xl px-4 py-12 sm:px-6 sm:py-16">
-  <h1>Cek keaslian LHP</h1>
+  <h1>Cek Keaslian LHP</h1>
   <p class="mt-2 text-kabut-600">Masukkan kode verifikasi 12 karakter yang tercetak di Laporan Hasil Pengujian (LHP), atau pindai QR Code pada LHP.</p>
 
   <form action="{{ route('verifikasi') }}" method="get" class="mt-6 flex flex-col gap-3 sm:flex-row">

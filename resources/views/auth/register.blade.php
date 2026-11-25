@@ -1,5 +1,5 @@
 @extends('layouts.guest')
-@section('title', 'Daftar pengguna jasa')
+@section('title', 'Daftar')
 @section('content')
 <div class="bg-kabut-50 px-4 py-6 sm:px-6 sm:py-8">
   <div class="mx-auto grid w-full max-w-[900px] overflow-hidden rounded-xl border border-kabut-200 bg-white shadow-[0_18px_44px_rgba(11,61,80,0.14)] lg:grid-cols-[320px_minmax(0,1fr)]">
@@ -47,7 +47,7 @@
         </a>
 
         <div class="mb-5 flex items-center gap-3 rounded-xl border border-laut-100 bg-laut-50 p-3 lg:hidden">
-          <img src="{{ asset('favicon.svg') }}" alt="" width="44" height="44" class="h-11 w-11 shrink-0">
+          <img src="{{ asset('img/logo-kkp.png') }}" alt="Logo KKP" width="48" height="44" class="h-11 w-auto shrink-0 object-contain">
           <div>
             <p class="text-xs font-bold text-laut-700">SILANTRO</p>
             <p class="mt-0.5 text-sm leading-snug text-kabut-600">Daftar akun dan mulai pengajuan</p>

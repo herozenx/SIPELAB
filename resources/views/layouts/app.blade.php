@@ -39,7 +39,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>@yield('title', 'Beranda') · SILANTRO</title>
-  <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
+  <link rel="icon" href="{{ asset('img/logo-kkp.png') }}" type="image/png">
   <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ @filemtime(public_path('css/app.css')) }}">
   <script src="{{ asset('js/app.js') }}?v={{ @filemtime(public_path('js/app.js')) }}" defer></script>
 </head>
@@ -50,7 +50,7 @@
   {{-- Navigasi samping --}}
   <aside id="nav" class="no-print fixed inset-y-0 left-0 z-40 hidden w-[248px] flex-col bg-laut-700 px-3 pb-4 pt-5 text-white lg:sticky lg:top-0 lg:flex lg:h-screen" data-nav>
     <a href="{{ route('dashboard') }}" class="mb-7 flex items-center gap-2.5 px-3 text-white no-underline hover:no-underline">
-      <img src="{{ asset('favicon.svg') }}" alt="" class="h-8 w-8">
+      <img src="{{ asset('img/logo-kkp.png') }}" alt="Logo KKP" class="h-8 w-auto object-contain">
       <span class="leading-tight"><span class="block text-[1.05rem] font-extrabold tracking-tight">SILANTRO</span><span class="block text-2xs font-medium text-laut-200">BPPMHKP Surabaya II</span></span>
     </a>
     <nav class="flex flex-1 flex-col gap-1 overflow-y-auto" aria-label="Menu utama">
@@ -81,7 +81,7 @@
   <div class="min-w-0">
     {{-- Bilah atas untuk layar kecil --}}
     <header class="no-print sticky top-0 z-20 flex items-center justify-between border-b border-kabut-200 bg-white px-4 py-3 lg:hidden">
-      <a href="{{ route('dashboard') }}" class="flex items-center gap-2 font-extrabold text-laut-700 no-underline"><img src="{{ asset('favicon.svg') }}" alt="" class="h-7 w-7">SILANTRO</a>
+      <a href="{{ route('dashboard') }}" class="flex items-center gap-2 font-extrabold text-laut-700 no-underline"><img src="{{ asset('img/logo-kkp.png') }}" alt="Logo KKP" class="h-7 w-auto object-contain">SILANTRO</a>
       <button type="button" class="btn-ghost btn-sm" data-nav-toggle aria-controls="nav" aria-expanded="false"><x-ikon n="menu" class="h-4 w-4" />Menu</button>
     </header>
 
