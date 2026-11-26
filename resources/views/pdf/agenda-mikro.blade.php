@@ -20,6 +20,7 @@
   table.am tbody.am-blok { border-top: 1.2pt solid #111; }
   table.am td { height: {{ count($d['baris']) > 1 ? '9pt' : '15pt' }}; }
   .am-c, .am-lbl { text-align: center; }
+  .am-nw { white-space: nowrap; }
   .am-lbl { white-space: nowrap; }
   .am-acuan td { text-align: center; font-weight: bold; }
   .am-acuan td:first-child { text-align: left; }

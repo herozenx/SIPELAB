@@ -65,7 +65,7 @@
               @php $r = ! empty($c['gabung']) ? $A::rentangLabel($d, $c['lbl'], $i) : 1; @endphp
               @if ($r > 0)<td rowspan="{{ $r }}" class="am-lbl">{{ $d['baris'][$i][$c['lbl']] ?? '' }}</td>@endif
             @elseif (($c['per'] ?? 'baris') === 'sampel')
-              @if ($i === 0)<td rowspan="{{ $nb }}" class="am-c">{!! $sel($b, $c['k'], true) !!}</td>@endif
+              @if ($i === 0)<td rowspan="{{ $nb }}" class="am-c{{ $c['k'] === 'hasil' ? ' am-nw' : '' }}">{!! $sel($b, $c['k'], true) !!}</td>@endif
             @elseif (($c['per'] ?? 'baris') === 'lbl0')
               @php $r = $A::rentangLabel($d, 0, $i); @endphp
               @if ($r > 0)<td rowspan="{{ $r }}" class="am-c">{!! $sel($b, "g{$i}.{$c['k']}") !!}</td>@endif
