@@ -3,7 +3,7 @@
 @section('content')
 @php
   $S = \App\Enums\Status::class;
-  $menunggu = (int) collect([$S::Diajukan, $S::Diterima, $S::MenungguBilling, $S::MenungguKonfirmasiBayar, $S::SiapUji, $S::MenungguPemeriksaan, $S::MenungguParaf, $S::MenungguPengesahan])->sum(fn ($x) => $st[$x->value] ?? 0);
+  $menunggu = (int) collect([$S::Diajukan, $S::Diterima, $S::MenungguBilling, $S::MenungguKonfirmasiBayar, $S::SiapUji, $S::MenungguParaf, $S::MenungguPemeriksaan, $S::MenungguParafAdmin, $S::MenungguPengesahan])->sum(fn ($x) => $st[$x->value] ?? 0);
   $maxLab = max(1, $perLab->max(fn ($l) => $l['negatif'] + $l['positif']));
   $maxBln = max(1, $bulanan->max('n'));
   $bln = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];

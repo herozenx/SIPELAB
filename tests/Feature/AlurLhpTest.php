@@ -92,15 +92,20 @@ class AlurLhpTest extends TestCase
         $this->assertSame(Status::DiLab, $p->fresh()->status);
         $this->ujiLab($p, 'mikro@lab.local', true, 'Negatif/25 g');
         $this->ujiLab($p, 'kimia@lab.local', true, 'ND');
-        $this->assertSame(Status::MenungguPemeriksaan, $p->fresh()->status);
-
-        // Admin Lab periksa -> penyelia paraf (satu per bidang) -> PJ sahkan.
-        $this->periksa($p);
         $this->assertSame(Status::MenungguParaf, $p->fresh()->status);
+
+        // Penyelia paraf (satu per bidang) -> Administrator validasi -> Admin Lab paraf -> PJ sahkan.
         $this->as('penyelia.organo@lab.local')->post("/permohonan/{$p->id}/paraf", ['paraf' => $this->paraf()])->assertSessionHas('success');
         $this->as('penyelia.organo@lab.local')->post("/permohonan/{$p->id}/paraf", ['paraf' => $this->paraf()])->assertSessionHas('error'); // tidak dobel
         $this->assertSame(Status::MenungguParaf, $p->fresh()->status);
         $this->parafSemua($p, ['penyelia.mikro@lab.local', 'penyelia.kimia@lab.local']);
+        $this->assertSame(Status::MenungguPemeriksaan, $p->fresh()->status);
+        $this->as('admin@lab.local')->post("/permohonan/{$p->id}/paraf-admin", ['paraf' => $this->paraf()])->assertForbidden(); // belum divalidasi
+        $this->periksa($p);
+        $this->assertSame(Status::MenungguParafAdmin, $p->fresh()->status);
+        $this->as('penyelia.organo@lab.local')->post("/permohonan/{$p->id}/paraf-admin", ['paraf' => $this->paraf()])->assertForbidden();
+        $this->as('admin@lab.local')->post("/permohonan/{$p->id}/paraf-admin")->assertSessionHasErrors('paraf');
+        $this->parafAdmin($p);
         $this->assertSame(Status::MenungguPengesahan, $p->fresh()->status);
         $this->sahkan($p);
 
@@ -111,7 +116,7 @@ class AlurLhpTest extends TestCase
         $this->assertSame(StatusIzin::Lulus, $lhu->status_izin);
         $this->assertSame(4, $lhu->versi_sidik);
         $this->assertSame(1, $p->no_agenda);
-        $this->assertSame(['PARAF', 'PARAF', 'PARAF', 'PERIKSA', 'SAH'], Persetujuan::query()->where('permohonan_id', $p->id)->pluck('jenis')->sort()->values()->all());
+        $this->assertSame(['PARAF', 'PARAF', 'PARAF', 'PARAF_ADM', 'PERIKSA', 'SAH'], Persetujuan::query()->where('permohonan_id', $p->id)->pluck('jenis')->sort()->values()->all());
 
         // LHP: petugas kantor membuka pratinjau (dengan QR); pengguna jasa hanya melihat status selesai (rapat 19 Nov).
         $this->as('operator@lab.local')->get("/permohonan/{$p->id}/lhp")->assertOk()
@@ -138,8 +143,9 @@ class AlurLhpTest extends TestCase
         $this->suratTugas($p);
         $this->assertSame(1, SuratTugas::query()->where('permohonan_id', $p->id)->count()); // hanya Mikrobiologi
         $this->ujiLab($p, 'mikro@lab.local');
-        $this->periksa($p);
         $this->parafSemua($p, ['penyelia.mikro@lab.local']);
+        $this->periksa($p);
+        $this->parafAdmin($p);
         $this->sahkan($p);
 
         $p->refresh();
@@ -225,12 +231,14 @@ class AlurLhpTest extends TestCase
         $this->assertNull(PermohonanParameter::query()->find($histamin)->hasil); // bukan parameter labnya: diabaikan
 
         $this->ujiSemua($p);
-        $this->as('operator@lab.local')->post("/permohonan/{$p->id}/periksa", ['cek' => ['identitas' => 1, 'parameter' => 1, 'hasil' => 1]])->assertForbidden();
-        $this->as('admin@lab.local')->post("/permohonan/{$p->id}/periksa", ['cek' => ['identitas' => 1, 'parameter' => 1, 'hasil' => 1]])->assertForbidden();
-        $this->periksa($p);
         $this->as('penyelia.radio@lab.local')->post("/permohonan/{$p->id}/paraf")->assertNotFound();
         $this->as('mikro@lab.local')->post("/permohonan/{$p->id}/paraf")->assertForbidden();
         $this->parafSemua($p);
+        $this->as('operator@lab.local')->post("/permohonan/{$p->id}/periksa", ['cek' => ['identitas' => 1, 'parameter' => 1, 'hasil' => 1]])->assertForbidden();
+        $this->as('admin@lab.local')->post("/permohonan/{$p->id}/periksa", ['cek' => ['identitas' => 1, 'parameter' => 1, 'hasil' => 1]])->assertForbidden();
+        $this->periksa($p);
+        $this->as('administrasi@lab.local')->post("/permohonan/{$p->id}/paraf-admin", ['paraf' => $this->paraf()])->assertForbidden();
+        $this->parafAdmin($p);
         $this->as('admin@lab.local')->post("/permohonan/{$p->id}/sahkan")->assertForbidden();
         $this->as('superadmin@lab.local')->post("/permohonan/{$p->id}/sahkan")->assertForbidden();
         $this->sahkan($p);
@@ -270,29 +278,38 @@ class AlurLhpTest extends TestCase
         $kimia = $this->u('kimia@lab.local')->lab_id;
         $mikro = $this->u('mikro@lab.local')->lab_id;
 
-        // 1) Validasi hasil (Administrator): data belum benar/lengkap -> kembali ke pengujian (revisi).
-        $this->as('admin@lab.local')->post("/permohonan/{$p->id}/kembalikan", ['lab_id' => $kimia, 'jenis' => 'REVISI', 'catatan' => 'Admin Lab tidak berwenang'])->assertForbidden();
+        // 0) Paraf penyelia (sebelum validasi): penyelia boleh mengembalikan bidangnya ke pengujian; Admin Lab belum berwenang.
+        $this->as('admin@lab.local')->post("/permohonan/{$p->id}/kembalikan", ['lab_id' => $kimia, 'jenis' => 'REVISI', 'catatan' => 'Admin Lab belum berwenang'])->assertForbidden();
+        $this->as('penyelia.kimia@lab.local')->post("/permohonan/{$p->id}/kembalikan", ['jenis' => 'PERBAIKAN', 'catatan' => 'bukan pilihan di tahap ini'])->assertSessionHas('error');
+        $this->parafSemua($p);
+        $this->assertSame(Status::MenungguPemeriksaan, $p->fresh()->status);
+
+        // 1) Validasi hasil (Administrator): data belum benar/lengkap -> kembali ke pengujian (revisi), lalu diparaf ulang.
         $this->as('superadmin@lab.local')->post("/permohonan/{$p->id}/kembalikan", ['jenis' => 'PERBAIKAN', 'catatan' => 'bukan pilihan di tahap ini'])->assertSessionHas('error');
         $this->as('superadmin@lab.local')->post("/permohonan/{$p->id}/kembalikan", ['lab_id' => $kimia, 'jenis' => 'REVISI', 'catatan' => 'Satuan histamin salah tulis'])->assertSessionHas('success');
         $p->refresh();
         $this->assertSame(Status::DiLab, $p->status);
         $this->assertSame('Negatif', $p->parameter()->where('kode', 'H')->value('hasil'));
+        $this->assertSame(0, Persetujuan::query()->where('permohonan_id', $p->id)->count());
         $this->as('kimia@lab.local')->get("/permohonan/{$p->id}")->assertOk()->assertSee('Revisi data')->assertSee('Satuan histamin salah tulis');
         $this->ujiLab($p, 'kimia@lab.local', true, 'ND');
-        $this->assertSame(Status::MenungguPemeriksaan, $p->fresh()->status);
+        $this->assertSame(Status::MenungguParaf, $p->fresh()->status);
         $this->assertNotNull(Pengembalian::query()->where('permohonan_id', $p->id)->value('selesai_at'));
+        $this->parafSemua($p);
 
-        // 2) Paraf/validasi akhir tidak disetujui: perbaikan data -> kembali ke validasi hasil (Administrator).
+        // 2) Paraf Admin Lab / pengesahan tidak disetujui: perbaikan data -> kembali ke validasi Administrator; paraf penyelia tetap.
         $this->periksa($p);
-        $this->as('penyelia.kimia@lab.local')->post("/permohonan/{$p->id}/paraf", ['paraf' => $this->paraf()]);
-        $this->as('penyelia.kimia@lab.local')->post("/permohonan/{$p->id}/kembalikan", ['lab_id' => $kimia, 'jenis' => 'REVISI', 'catatan' => 'revisi tidak berlaku di tahap paraf'])->assertSessionHas('error');
-        $this->as('pj@lab.local')->post("/permohonan/{$p->id}/kembalikan", ['jenis' => 'PERBAIKAN', 'catatan' => 'Nama sampel di LHP salah ketik'])->assertSessionHas('success');
+        $this->assertSame(Status::MenungguParafAdmin, $p->fresh()->status);
+        $this->as('admin@lab.local')->post("/permohonan/{$p->id}/kembalikan", ['lab_id' => $kimia, 'jenis' => 'REVISI', 'catatan' => 'revisi tidak berlaku di tahap ini'])->assertSessionHas('error');
+        $this->as('admin@lab.local')->post("/permohonan/{$p->id}/kembalikan", ['jenis' => 'PERBAIKAN', 'catatan' => 'Nama sampel di LHP salah ketik'])->assertSessionHas('success');
         $this->assertSame(Status::MenungguPemeriksaan, $p->fresh()->status);
-        $this->assertSame(0, Persetujuan::query()->where('permohonan_id', $p->id)->count());
+        $this->assertSame(['PARAF', 'PARAF', 'PARAF'], Persetujuan::query()->where('permohonan_id', $p->id)->pluck('jenis')->all());
         $this->as('superadmin@lab.local')->get("/permohonan/{$p->id}")->assertOk()->assertSee('Perlu perbaikan data')->assertSee('Nama sampel di LHP salah ketik');
         $this->periksa($p);
         $this->assertNotNull(Pengembalian::query()->where('jenis', 'PERBAIKAN')->value('selesai_at'));
-
+        $this->parafAdmin($p);
+        $this->as('pj@lab.local')->post("/permohonan/{$p->id}/kembalikan", ['jenis' => 'PERBAIKAN', 'catatan' => 'Alamat pemohon perlu dicek'])->assertSessionHas('success');
+        $this->assertSame(Status::MenungguPemeriksaan, $p->fresh()->status);
         // 3) Perlu pengujian ulang -> lab: hasil dikosongkan, nilai lama disimpan. Penyelia hanya untuk bidangnya.
         $this->as('penyelia.organo@lab.local')->post("/permohonan/{$p->id}/kembalikan", ['lab_id' => $mikro, 'jenis' => 'UJI_ULANG', 'catatan' => 'coba lab lain'])->assertSessionHas('error');
         $this->as('penyelia.mikro@lab.local')->post("/permohonan/{$p->id}/kembalikan", ['lab_id' => $mikro, 'jenis' => 'UJI_ULANG', 'catatan' => 'Sampel terkontaminasi, uji ulang'])->assertSessionHas('success');
@@ -300,6 +317,11 @@ class AlurLhpTest extends TestCase
         $this->assertNull($p->parameter()->where('kode', 'E1')->value('hasil'));
         $k = Pengembalian::query()->where('permohonan_id', $p->id)->where('jenis', 'UJI_ULANG')->firstOrFail();
         $this->assertSame('Negatif', $k->data_lama[0]['hasil']);
+        // Kode uji ulang di lab mengikuti rekap Balai (kode asli + "-1"); LHP tetap kode asli.
+        $kode = $p->fresh()->kode_sampel;
+        $this->as('mikro@lab.local')->get("/permohonan/{$p->id}")->assertOk()->assertSee("{$kode}-1");
+        $this->assertSame("{$kode}-1", \App\Models\Pengembalian::kodeUjiUlang($kode, $p->pengembalian()->get(), $mikro));
+        $this->assertSame($kode, \App\Models\Pengembalian::kodeUjiUlang($kode, $p->pengembalian()->get(), $kimia));
     }
 
     public function test_bukti_terima_dan_lhp_pdf(): void
@@ -334,8 +356,9 @@ class AlurLhpTest extends TestCase
 
         $this->suratTugas($p);
         $this->ujiSemua($p);
-        $this->periksa($p);
         $this->parafSemua($p);
+        $this->periksa($p);
+        $this->parafAdmin($p);
         $this->sahkan($p);
         // Rapat 19 Nov: pengguna jasa tidak mengunduh LHP; LHP dicetak & diserahkan di kantor.
         $this->as('pengguna@lab.local')->get("/permohonan/{$p->id}/lhp.pdf")->assertNotFound();
@@ -353,8 +376,9 @@ class AlurLhpTest extends TestCase
         $this->bayarLunas($p);
         $this->suratTugas($p);
         $this->ujiSemua($p);
-        $this->periksa($p);
         $this->parafSemua($p);
+        $this->periksa($p);
+        $this->parafAdmin($p);
 
         PermohonanParameter::query()->where('permohonan_id', $p->id)->where('kode', 'H')->update(['hasil' => '150 mg/kg']);
         $this->as('pj@lab.local')->post("/permohonan/{$p->id}/sahkan", ['jabatan' => 'PJ'])->assertSessionHas('error');
@@ -376,8 +400,9 @@ class AlurLhpTest extends TestCase
         $this->bayarLunas($p);
         $this->suratTugas($p);
         $this->ujiLab($p, 'kimia@lab.local', false, '150 mg/kg');
-        $this->periksa($p);
         $this->parafSemua($p, ['penyelia.kimia@lab.local']);
+        $this->periksa($p);
+        $this->parafAdmin($p);
         $this->as('pj@lab.local')->get("/permohonan/{$p->id}")->assertOk()->assertSee('tidak memenuhi');
         $this->sahkan($p);
         $this->assertSame(StatusIzin::TidakLulus, $p->fresh()->lhu->status_izin);
@@ -450,10 +475,12 @@ class AlurLhpTest extends TestCase
         $this->as('mikro@lab.local')->get('/beranda')->assertOk()->assertSee($p->kode_sampel)->assertSee('Lewat');
         $this->as('superadmin@lab.local')->get('/beranda')->assertOk()->assertSee('Sampel melewati norma waktu');
         $this->ujiSemua($p);
-        $this->as('superadmin@lab.local')->get('/beranda')->assertOk()->assertSee('Validasi hasil pengujian')->assertSee($p->kode_sampel);
-        $this->periksa($p);
         $this->as('penyelia.mikro@lab.local')->get('/beranda')->assertOk()->assertSee('Menunggu paraf Anda')->assertSee('Periksa &amp; paraf', false);
         $this->parafSemua($p);
+        $this->as('superadmin@lab.local')->get('/beranda')->assertOk()->assertSee('Validasi hasil pengujian')->assertSee($p->kode_sampel);
+        $this->periksa($p);
+        $this->as('admin@lab.local')->get('/beranda')->assertOk()->assertSee('Paraf Admin Laboratorium')->assertSee($p->kode_sampel);
+        $this->parafAdmin($p);
         $this->as('pj@lab.local')->get('/beranda')->assertOk()->assertSee('Validasi akhir LHP')->assertSee($p->kode_sampel);
         $this->sahkan($p);
         $this->as('operator@lab.local')->get('/beranda')->assertOk()->assertSee('LHP selesai terbaru')->assertSee('Cetak LHP');

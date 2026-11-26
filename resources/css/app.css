@@ -184,3 +184,23 @@
   html, body { background: #fff !important; }
   .no-print { display: none !important; }
 }
+
+/* Lembar Agenda Pemeriksaan mikrobiologi (L/OK/SUB II/8.6c) di form input hasil. */
+.am-wrap { overflow-x: auto; border: 1px solid #d5dde3; border-radius: 0.5rem; padding: 0.5rem; background: #fff; }
+.am-judul { text-align: center; font-size: 0.8rem; line-height: 1.25; margin-bottom: 0.4rem; }
+table.am { border-collapse: collapse; font-size: 0.7rem; min-width: 100%; }
+table.am th, table.am td { border: 1px solid #44525c; padding: 1px 2px; vertical-align: middle; }
+table.am th { text-align: center; font-weight: 700; background: #f3f6f8; line-height: 1.15; }
+table.am tbody.am-blok { border-top: 2px solid #111; }
+table.am .am-c { text-align: center; }
+table.am .am-kode { min-width: 6.5rem; white-space: nowrap; }
+table.am .am-lbl { white-space: nowrap; font-weight: 600; text-align: center; }
+table.am .am-acuan td { text-align: center; font-weight: 600; }
+table.am .am-acuan td:first-child { text-align: left; }
+.am-in { width: 2.6rem; min-width: 2.6rem; border: 0; background: #f7fafc; padding: 2px; text-align: center; font-size: 0.75rem; }
+.am-in:focus { outline: 2px solid #1f6f9b; background: #fff; }
+.am-in.am-lebar { width: 100%; min-width: 5.5rem; }
+.am-in.am-hasil { width: 7rem; }
+.am-x2 { margin-left: 2px; border: 1px solid #b9c6cf; border-radius: 4px; padding: 0 4px; font-size: 0.7rem; }
+.am-x2[aria-pressed='true'] { background: #1f6f9b; color: #fff; }
+.am-kaki { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.7rem; color: #44525c; margin-top: 0.25rem; }

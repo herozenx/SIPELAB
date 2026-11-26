@@ -9,6 +9,9 @@
   $belumAkreditasi = $parameter->contains(fn ($x) => ! $x->akreditasi);
   $paraf = $p->persetujuan->where('jenis', \App\Models\Persetujuan::PARAF);
   $periksa = $p->persetujuan->firstWhere('jenis', \App\Models\Persetujuan::PERIKSA);
+  $parafAdmin = $p->persetujuan->firstWhere('jenis', \App\Models\Persetujuan::PARAF_ADMIN);
+  // Zoom 26 Nov: paraf penyelia tidak dicetak di LHU; yang dicetak hanya paraf Admin Laboratorium.
+  $parafCetak = collect($parafAdmin?->paraf_gambar ? [[$parafAdmin, 'Admin Lab']] : []);
 @endphp
 <!doctype html>
 <html lang="id">
@@ -38,11 +41,13 @@
     <header class="flex items-center gap-4 border-b-2 border-tinta pb-3">
       <img src="{{ asset('img/logo-kkp.png') }}" alt="Logo KKP" class="h-14 w-auto">
       <div class="flex-1 text-center">
-        <p class="text-[11px] font-bold uppercase">Kementerian Kelautan dan Perikanan</p>
-        <p class="text-[13px] font-extrabold uppercase leading-tight">{{ $S::get('nama_instansi') }}</p>
-        <p class="text-[10px]">{{ $S::get('alamat_instansi') }}</p>
+        {{-- Sesuai "KOP ORI 2026" dari Balai. --}}
+        <p class="text-[12px] font-bold">KEMENTERIAN KELAUTAN DAN PERIKANAN</p>
+        <p class="text-[10.5px] font-bold leading-tight">BADAN PENGENDALIAN DAN PENGAWASAN MUTU HASIL KELAUTAN DAN PERIKANAN</p>
+        <p class="text-[10.5px] font-bold leading-tight">BALAI PENGENDALIAN DAN PENGAWASAN MUTU HASIL KELAUTAN DAN PERIKANAN SURABAYA II</p>
+        <p class="mt-0.5 text-[8.5px] leading-tight">KANTOR : PASAR INDUK MODERN AGROBISNIS "PUSPA AGRO"<br>JALAN SAWUNGGALING NO. 177 - 183, DS. JEMUNDO, KEC. TAMAN - SIDOARJO<br>TELEPON (031) 7873151 FAKSIMILE (031) 7873148<br>LAMAN www.kkp.go.id SUREL bppmhkpsurabaya2@kkp.go.id; lab.bkiperak@gmail.com</p>
       </div>
-      <div class="text-center text-[7px] leading-tight"><img src="{{ asset('img/logo-kan.png') }}" alt="Logo KAN" class="h-9 w-auto">Laboratorium Penguji<br>LP-573-IDN</div>
+      <div class="w-14 shrink-0" aria-hidden="true"></div>
     </header>
 
     <h1 class="mt-4 text-center text-[15px] font-extrabold uppercase tracking-wide underline underline-offset-4">Hasil Uji</h1>
@@ -83,8 +88,8 @@
                   <td rowspan="{{ $list->count() }}">{{ $bidang }}</td>
                 @endif
                 <td>{{ $x->nama }}@unless($x->akreditasi)*@endunless</td>
-                <td class="{{ $x->memenuhi === false ? 'font-bold' : '' }}">{{ $x->hasil }}{{ $x->satuan && $x->hasil && ! str_contains($x->hasil, $x->satuan) ? ' '.$x->satuan : '' }}</td>
-                <td>{{ $x->persyaratan ?: '-' }}</td>
+                <td class="{{ $x->memenuhi === false ? 'font-bold' : '' }}">{!! \App\Support\Pangkat::html($x->hasil) !!}{{ $x->satuan && $x->hasil && ! str_contains($x->hasil, $x->satuan) ? ' '.$x->satuan : '' }}</td>
+                <td>{!! $x->persyaratan ? \App\Support\Pangkat::html($x->persyaratan) : '-' !!}</td>
                 <td>{{ $x->metode }}</td>
                 <td>{{ $x->keterangan }}</td>
               </tr>
@@ -123,14 +128,14 @@
           <p class="font-semibold">Pindai untuk cek keaslian</p>
           <p class="num break-all">{{ $urlCek }}</p>
           <p class="mt-1">Kode verifikasi <span class="num font-bold tracking-wider">{{ $lhu->kode_verifikasi }}</span></p>
-          @if ($periksa || $paraf->isNotEmpty())
-            <p class="mt-1.5 text-[8.5px] text-kabut-600">Diperiksa: {{ $periksa?->user->initials() ?? '-' }} · Paraf: {{ $paraf->map(fn ($x) => $x->user->initials().' ('.$x->lab?->nama.')')->join(', ') ?: '-' }}</p>
+          @if ($periksa || $parafAdmin)
+            <p class="mt-1.5 text-[8.5px] text-kabut-600">Diperiksa: {{ $periksa?->user->initials() ?? '-' }}@if($parafAdmin) · Admin Lab: {{ $parafAdmin->user->initials() }}@endif</p>
           @endif
-          @if ($paraf->contains(fn ($x) => $x->paraf_gambar))
+          @if ($parafCetak->isNotEmpty())
             <div class="mt-1.5 flex items-end gap-3">
-              <span class="text-[8.5px]">Paraf penyelia:</span>
-              @foreach ($paraf->filter(fn ($x) => $x->paraf_gambar) as $pf)
-                <span class="text-center text-[8px]"><img src="{{ $pf->paraf_gambar }}" alt="Paraf {{ $pf->user->nama }}" class="h-[9mm]"><span class="block">{{ $pf->lab?->nama }}</span></span>
+              <span class="text-[8.5px]">Paraf:</span>
+              @foreach ($parafCetak as [$pf, $ket])
+                <span class="text-center text-[8px]"><img src="{{ $pf->paraf_gambar }}" alt="Paraf {{ $pf->user->nama }}" class="h-[9mm]"><span class="block">{{ $ket }}</span></span>
               @endforeach
             </div>
           @endif

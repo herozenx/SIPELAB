@@ -43,6 +43,20 @@ class Pengembalian extends Model
         return self::labelJenis($this->jenis);
     }
 
+    /**
+     * Kode sampel untuk uji ulang di lab, mengikuti rekap uji ulang Balai: kode asli + "-1", lalu "-2" bila diuji ulang lagi.
+     * Hanya untuk catatan lab (agenda, riwayat); LHP tetap memakai kode asli.
+     * $sampai: hitung sampai pengembalian ini saja (untuk riwayat).
+     */
+    public static function kodeUjiUlang(string $kode, iterable $pengembalian, ?int $labId, ?self $sampai = null): string
+    {
+        // Uji ulang pertama "-1", berikutnya "-2", dan seterusnya.
+        $n = collect($pengembalian)->filter(fn ($k) => $k->jenis === self::UJI_ULANG && $k->lab_id === $labId
+            && ($sampai === null || $k->id <= $sampai->id))->count();
+
+        return $n > 0 ? "{$kode}-{$n}" : $kode;
+    }
+
     public static function labelJenis(string $jenis): string
     {
         return match ($jenis) {

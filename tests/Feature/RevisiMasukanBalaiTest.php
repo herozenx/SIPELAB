@@ -206,26 +206,50 @@ class RevisiMasukanBalaiTest extends TestCase
         $this->bayarLunas($p);
         $this->suratTugas($p);
         $this->ujiSemua($p);
-        $this->periksa($p);
 
         // Paraf wajib digambar; selain PNG ditolak.
         $this->as('penyelia.organo@lab.local')->post("/permohonan/{$p->id}/paraf")->assertSessionHasErrors('paraf');
         $this->as('penyelia.organo@lab.local')->post("/permohonan/{$p->id}/paraf", ['paraf' => 'data:image/png;base64,'.base64_encode('bukan png')])->assertSessionHasErrors('paraf');
         $this->parafSemua($p);
         $this->assertSame(3, \App\Models\Persetujuan::query()->where('permohonan_id', $p->id)->where('jenis', 'PARAF')->whereNotNull('paraf_gambar')->count());
+        $this->periksa($p);
+        $this->parafAdmin($p);
+        $this->assertNotNull(\App\Models\Persetujuan::query()->where('permohonan_id', $p->id)->where('jenis', 'PARAF_ADM')->value('paraf_gambar'));
 
         // Jabatan penanda tangan wajib dipilih dan tercetak di LHP.
         $this->as('pj@lab.local')->post("/permohonan/{$p->id}/sahkan")->assertSessionHasErrors('jabatan');
         $this->as('pj@lab.local')->post("/permohonan/{$p->id}/sahkan", ['jabatan' => 'KEPALA'])->assertSessionHasNoErrors()->assertSessionHas('success');
         $this->assertSame('KEPALA', $p->fresh()->lhu->jabatan_penanda);
         $this->as('operator@lab.local')->get("/permohonan/{$p->id}/lhp")->assertOk()
-            ->assertSee('Kepala UPT')->assertDontSee('Kepala UPT/Penanggung jawab')->assertSee('Paraf penyelia');
+            ->assertSee('Kepala UPT')->assertDontSee('Kepala UPT/Penanggung jawab')->assertSee('Paraf:')->assertSee('Admin Lab');
+        $this->as('operator@lab.local')->get("/permohonan/{$p->id}/lhp")->assertDontSee('alt="Paraf Penyelia Organoleptik"', false)->assertDontSee('alt="Paraf Penyelia Kimia"', false);
         $this->as('operator@lab.local')->get("/permohonan/{$p->id}/lhp.pdf")->assertOk();
 
         // Pengguna jasa hanya melihat status selesai.
         $this->assertSame(\App\Enums\Status::Selesai, $p->fresh()->status);
         $this->as('pengguna@lab.local')->get("/permohonan/{$p->id}/lhp")->assertNotFound();
         $this->as('pengguna@lab.local')->get("/permohonan/{$p->id}")->assertOk()->assertSee('diserahkan oleh petugas di kantor Balai')->assertDontSee('LHP (PDF)');
+    }
+
+    public function test_penanda_surat_tugas_dipilih_dan_penyelia_langsung_disposisi(): void
+    {
+        $pj2 = User::query()->where('email', 'pj@lab.local')->first()->replicate();
+        $pj2->fill(['nama' => 'Dr. Contoh Penanggung', 'email' => 'pj2@lab.local', 'nip' => '19800101 200501 1 002'])->save();
+
+        $p = $this->ajukan();
+        $this->verifikasi($p);
+        $this->bayarLunas($p);
+        $this->as('admin@lab.local')->get("/permohonan/{$p->id}")->assertOk()
+            ->assertSee('Kepala/Penanggung Jawab Laboratorium Pengujian')->assertSee('Ricat Pahlefi Hidayat')->assertSee('Dr. Contoh Penanggung');
+        $this->as('admin@lab.local')->post("/permohonan/{$p->id}/surat-tugas", ['penanda' => 'xx'])->assertSessionHasErrors('penanda');
+        $this->as('admin@lab.local')->post("/permohonan/{$p->id}/surat-tugas", ['penanda' => 'u'.$pj2->id])->assertSessionHas('success');
+        $st = \App\Models\SuratTugas::query()->where('permohonan_id', $p->id)->first();
+        $this->assertSame(['Dr. Contoh Penanggung', '19800101 200501 1 002'], [$st->penanda_nama, $st->penanda_nip]);
+        $this->as('penyelia.kimia@lab.local')->get("/permohonan/{$p->id}/surat-tugas.pdf")->assertOk();
+
+        // Penyelia tidak lagi menekan "Tangani sampel"; analis masih bisa.
+        $this->as('penyelia.kimia@lab.local')->get("/permohonan/{$p->id}")->assertOk()->assertSee('Disposisi analis')->assertDontSee('Tangani sampel');
+        $this->as('kimia@lab.local')->get("/permohonan/{$p->id}")->assertOk()->assertSee('Tangani sampel');
     }
 
     public function test_tarif_dan_nama_parameter_sesuai_daftar_resmi(): void
@@ -235,5 +259,62 @@ class RevisiMasukanBalaiTest extends TestCase
         $this->assertSame(160000, ParameterUji::query()->where('kode', 'CM')->value('tarif'));
         $this->assertSame('Escherichia coli & Coliform (Air/Es proses UPI)', ParameterUji::query()->where('kode', 'CM')->value('nama'));
         $this->assertFalse(ParameterUji::query()->where('kode', 'ECM')->where('aktif', true)->exists());
+    }
+    public function test_pangkat_hasil_dicetak_sebagai_superskrip(): void
+    {
+        $this->assertSame('2,5 x 10<sup>3</sup> kol/g', \App\Support\Pangkat::html('2,5 x 10³ kol/g'));
+        $this->assertSame('1,0 x 10<sup>-2</sup>', \App\Support\Pangkat::html('1,0 x 10⁻²'));
+        $this->assertSame('5 x 10<sup>5</sup> &amp; 10<sup>-1</sup>', \App\Support\Pangkat::html('5 x 10^5 & 10^{-1}'));
+        $this->assertSame('&lt;b&gt;ND&lt;/b&gt;', \App\Support\Pangkat::html('<b>ND</b>'));
+
+        $p = $this->ajukan('pengguna@lab.local', ['A', 'E1', 'H']);
+        $this->verifikasi($p);
+        $this->bayarLunas($p);
+        $this->suratTugas($p);
+        $this->ujiLab($p, 'mikro@lab.local', true, '2,5 x 10³ kol/g');
+        $this->ujiLab($p, 'kimia@lab.local');
+        $this->parafSemua($p, ['penyelia.mikro@lab.local', 'penyelia.kimia@lab.local']);
+        $this->periksa($p);
+        $this->parafAdmin($p);
+        $this->sahkan($p);
+        $this->as('operator@lab.local')->get("/permohonan/{$p->id}/lhp")->assertOk()
+            ->assertSee('2,5 x 10<sup>3</sup> kol/g', false)->assertSee('5,0 x 10<sup>5</sup> kol/g', false);
+        $this->as('operator@lab.local')->get("/permohonan/{$p->id}/lhp.pdf")->assertOk();
+    }
+    public function test_agenda_pemeriksaan_mikro_diisi_dan_dicetak_sesuai_formulir(): void
+    {
+        Carbon::setTestNow('2026-11-26 09:00:00');
+        $p = $this->ajukan('pengguna@lab.local', ['S', 'VP', 'E2', 'H']);
+        $this->verifikasi($p);
+        $this->bayarLunas($p);
+        $this->suratTugas($p);
+        [$s, $vp] = [$p->parameter()->where('kode', 'S')->value('id'), $p->parameter()->where('kode', 'VP')->value('id')];
+
+        $this->as('mikro@lab.local')->get("/permohonan/{$p->id}")->assertOk()
+            ->assertSee('AGENDA PEMERIKSAAN <i>Salmonella</i> sp.', false)->assertSee('METODE SNI ISO 6579.2017')
+            ->assertSee("name=\"lk[{$s}][1][r0.tsia]\"", false)->assertSee("name=\"lk[{$s}][1][g2.enrichment]\"", false)
+            ->assertSee('AGENDA PEMERIKSAAN <i>Vibrio Parahaemolyticus</i>', false)->assertSee('10⁻³.3')
+            ->assertSee('AGENDA PEMERIKSAAN <i>E. coli</i> / Coliform', false)->assertSee('L/OK/SUB II/8.6c')
+            ->assertSee("name=\"hasil[{$s}][hasil]\"", false);
+
+        $this->as('mikro@lab.local')->post("/permohonan/{$p->id}/hasil", ['aksi' => 'simpan',
+            'lk' => [$s => [1 => ['bpw' => '+', 'g0.enrichment' => '+', 'r1.plating' => 'PH', 'r3.vi' => ' - ', 'r9.tsia' => 'x', 'liar' => 'x', 'hasil' => 'abaikan']]],
+            'hasil' => [$s => ['hasil' => 'Negatif/25 g', 'memenuhi' => '1']],
+        ])->assertSessionHasNoErrors()->assertSessionHas('success');
+        $baris = \App\Models\PermohonanParameter::find($s);
+        $this->assertSame(['s1' => ['bpw' => '+', 'g0.enrichment' => '+', 'r1.plating' => 'PH', 'r3.vi' => '-']], $baris->lembar_kerja);
+        $this->assertSame('Negatif/25 g', $baris->hasil);
+
+        // Kimia tidak bisa mengisi lembar parameter mikro.
+        $this->as('kimia@lab.local')->post("/permohonan/{$p->id}/hasil", ['aksi' => 'simpan', 'lk' => [$vp => [1 => ['r0.tcbs' => 'H']]]]);
+        $this->assertNull(\App\Models\PermohonanParameter::find($vp)->lembar_kerja);
+
+        $this->as('penyelia.mikro@lab.local')->get('/agenda-mikro.pdf?jenis=S&bulan=2026-11')->assertOk()->assertHeader('Content-Type', 'application/pdf');
+        foreach (['CM', 'E1', 'E2', 'SA', 'VC', 'VP'] as $jenis) {
+            $this->as('mikro@lab.local')->get("/agenda-mikro.pdf?jenis={$jenis}&bulan=2026-11")->assertOk();
+        }
+        $this->as('mikro@lab.local')->get('/agenda-mikro.pdf?jenis=X')->assertNotFound();
+        $this->as('mikro@lab.local')->get('/agenda-mikro.pdf?jenis=S&bulan=abc')->assertOk();
+        $this->as('pengguna@lab.local')->get('/agenda-mikro.pdf?jenis=S')->assertForbidden();
     }
 }

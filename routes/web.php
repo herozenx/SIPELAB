@@ -49,6 +49,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/permohonan/{permohonan}/surat-tugas.pdf', [PermohonanController::class, 'cetakSuratTugas'])
         ->whereNumber('permohonan')->name('permohonan.surat-tugas');
     Route::get('/disposisi.pdf', [PermohonanController::class, 'lembarDisposisi'])->middleware('role:superadmin,administrasi,admin_lab,operator,penyelia,penanggung_jawab')->name('disposisi.pdf');
+    Route::get('/agenda-mikro.pdf', [PermohonanController::class, 'agendaMikro'])->middleware('role:superadmin,administrasi,admin_lab,operator,penyelia,penanggung_jawab,petugas_lab')->name('agenda-mikro.pdf');
 
     // Tindakan alur; hak akses per tindakan diatur PermohonanPolicy.
     Route::middleware('throttle:aksi')->whereNumber('permohonan')->prefix('/permohonan/{permohonan}')->name('permohonan.')->group(function () {
@@ -63,6 +64,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/disposisi', [PermohonanController::class, 'disposisi'])->name('disposisi');
         Route::post('/periksa', [PermohonanController::class, 'periksa'])->name('periksa');
         Route::post('/paraf', [PermohonanController::class, 'paraf'])->name('paraf');
+        Route::post('/paraf-admin', [PermohonanController::class, 'parafAdmin'])->name('paraf-admin');
         Route::post('/sahkan', [PermohonanController::class, 'sahkan'])->name('sahkan');
         Route::post('/kembalikan', [PermohonanController::class, 'kembalikan'])->name('kembalikan');
     });

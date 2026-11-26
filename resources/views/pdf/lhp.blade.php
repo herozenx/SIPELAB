@@ -38,11 +38,13 @@
     <tr>
       <td style="width:24mm"><img src="{{ \App\Support\Pdf::logo('kkp') }}" style="width:19mm;height:17.3mm"></td>
       <td class="tengah">
-        <div style="font-size:9pt;font-weight:bold">KEMENTERIAN KELAUTAN DAN PERIKANAN</div>
-        <div style="font-size:10.5pt;font-weight:bold;text-transform:uppercase">{{ $S::get('nama_instansi') }}</div>
-        <div style="font-size:7.5pt">{{ $S::get('alamat_instansi') }}</div>
+        {{-- Sesuai "KOP ORI 2026" dari Balai. --}}
+        <div style="font-size:9.5pt;font-weight:bold">KEMENTERIAN KELAUTAN DAN PERIKANAN</div>
+        <div style="font-size:8pt;font-weight:bold">BADAN PENGENDALIAN DAN PENGAWASAN MUTU HASIL KELAUTAN DAN PERIKANAN</div>
+        <div style="font-size:8pt;font-weight:bold">BALAI PENGENDALIAN DAN PENGAWASAN MUTU HASIL KELAUTAN DAN PERIKANAN SURABAYA II</div>
+        <div style="font-size:6.6pt;line-height:1.15">KANTOR : PASAR INDUK MODERN AGROBISNIS "PUSPA AGRO"<br>JALAN SAWUNGGALING NO. 177 - 183, DS. JEMUNDO, KEC. TAMAN - SIDOARJO<br>TELEPON (031) 7873151 FAKSIMILE (031) 7873148<br>LAMAN www.kkp.go.id SUREL bppmhkpsurabaya2@kkp.go.id; lab.bkiperak@gmail.com</div>
       </td>
-      <td style="width:24mm;text-align:center;font-size:5pt;line-height:1.1"><img src="{{ \App\Support\Pdf::logo('kan') }}" style="width:22mm;height:9mm"><br>Laboratorium Penguji<br>LP-573-IDN</td>
+      <td style="width:24mm"></td>
     </tr>
   </table>
 
@@ -82,8 +84,8 @@
                 <td rowspan="{{ $list->count() }}">{{ $bidang }}</td>
               @endif
               <td>{{ $x->nama }}@unless($x->akreditasi)*@endunless</td>
-              <td @if($x->memenuhi === false) class="tebal" @endif>{{ $x->hasil }}</td>
-              <td>{{ $x->persyaratan ?: '-' }}</td>
+              <td @if($x->memenuhi === false) class="tebal" @endif>{!! \App\Support\Pangkat::html($x->hasil) !!}</td>
+              <td>{!! $x->persyaratan ? \App\Support\Pangkat::html($x->persyaratan) : '-' !!}</td>
               <td>{{ $x->metode }}</td>
               <td>{{ $x->keterangan }}</td>
             </tr>
@@ -121,12 +123,16 @@
             Kode verifikasi <b>{{ $lhu->kode_verifikasi }}</b>
           </td>
         </tr></table>
-        @php $parafGambar = $p->persetujuan->where('jenis', \App\Models\Persetujuan::PARAF)->filter(fn ($x) => $x->paraf_gambar); @endphp
+        @php
+          // Zoom 26 Nov: paraf penyelia tidak dicetak di LHU; yang dicetak hanya paraf Admin Laboratorium.
+          $parafAdmin = $p->persetujuan->firstWhere('jenis', \App\Models\Persetujuan::PARAF_ADMIN);
+          $parafGambar = collect($parafAdmin?->paraf_gambar ? [[$parafAdmin, 'Admin Lab']] : []);
+        @endphp
         @if ($parafGambar->isNotEmpty())
           <table style="margin-top:3px"><tr>
-            <td class="kecil" style="vertical-align:middle;padding-right:4px">Paraf penyelia:</td>
-            @foreach ($parafGambar as $pf)
-              <td class="kecil tengah" style="padding-right:6px"><img src="{{ $pf->paraf_gambar }}" style="height:9mm"><br>{{ $pf->lab?->nama }}</td>
+            <td class="kecil" style="vertical-align:middle;padding-right:4px">Paraf:</td>
+            @foreach ($parafGambar as [$pf, $ket])
+              <td class="kecil tengah" style="padding-right:6px"><img src="{{ $pf->paraf_gambar }}" style="height:9mm"><br>{{ $ket }}</td>
             @endforeach
           </tr></table>
         @endif

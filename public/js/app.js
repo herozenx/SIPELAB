@@ -1140,4 +1140,30 @@
     kanvas.addEventListener('pointercancel', selesai);
     $('[data-paraf-hapus]', box)?.addEventListener('click', kosongkan);
   });
+
+  // Pangkat hasil uji (mis. 2,5 x 10³): tombol x² menyalakan mode pangkat; angka & tanda yang diketik menjadi superskrip.
+  const SUP = { 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹', '-': '⁻', '+': '⁺' };
+  $$('[data-pangkat]').forEach((btn) => {
+    const input = document.getElementById(btn.dataset.pangkat);
+    if (!input) return;
+    const atur = (aktif) => {
+      btn.setAttribute('aria-pressed', aktif ? 'true' : 'false');
+      btn.classList.toggle('bg-laut-600', aktif);
+      btn.classList.toggle('text-white', aktif);
+    };
+    btn.addEventListener('click', () => {
+      atur(btn.getAttribute('aria-pressed') !== 'true');
+      input.focus();
+    });
+    input.addEventListener('beforeinput', (e) => {
+      if (btn.getAttribute('aria-pressed') !== 'true' || e.inputType !== 'insertText' || !e.data) return;
+      const ubah = [...e.data].map((c) => SUP[c] ?? c).join('');
+      if (ubah === e.data) return;
+      e.preventDefault();
+      input.setRangeText(ubah, input.selectionStart, input.selectionEnd, 'end');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    // Keluar dari kolom mengakhiri mode pangkat.
+    input.addEventListener('blur', (e) => { if (e.relatedTarget !== btn) atur(false); });
+  });
 })();

@@ -41,8 +41,9 @@ class PenomoranProdukTest extends TestCase
             $email = ['Organoleptik' => 'organo', 'Mikrobiologi' => 'mikro', 'Kimia' => 'kimia', 'Radionuklida' => 'radio'][\App\Models\Lab::query()->find($labId)->nama];
             $this->ujiLab($p, "{$email}@lab.local");
         }
-        $this->periksa($p);
         $this->parafSemua($p, $penyelia);
+        $this->periksa($p);
+        $this->parafAdmin($p);
         $this->sahkan($p);
     }
 
@@ -160,7 +161,7 @@ class PenomoranProdukTest extends TestCase
     public function test_pengaturan_bawaan_sesuai_dokumen_balai(): void
     {
         $this->assertSame('Surabaya', Setting::get('kota_lhp'));
-        $this->assertSame('Plt. Kepala Laboratorium Penguji', Setting::get('jabatan_kepala_lab'));
+        $this->assertSame('Kepala/Penanggung Jawab Laboratorium Pengujian', Setting::get('jabatan_kepala_lab'));
         $this->assertSame('19780424 200502 1 001', Setting::get('nip_kepala_lab'));
     }
 }

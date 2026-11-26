@@ -204,6 +204,7 @@ class PermohonanController extends Controller
             'parameter' => $parameter, 'dokumen' => $dokumen->values(), 'riwayat' => $riwayat->values(),
             'tahap' => $tahap, 'tahapSaya' => $tahapSaya, 'pengembalian' => $pengembalian,
             'penyeliaPerLab' => $penyeliaPerLab,
+            'pilihanPenanda' => $p->status === Status::SiapUji ? \App\Models\SuratTugas::pilihanPenanda() : [],
             'analisLab' => $tahapSaya && $u->role === Role::Penyelia
                 ? \App\Models\User::query()->where('role', Role::PetugasLab->value)->where('lab_id', $u->lab_id)->where('aktif', true)->orderBy('nama')->get(['id', 'nama'])
                 : collect(),
@@ -351,8 +352,14 @@ class PermohonanController extends Controller
         $data = $request->validate([
             'penyelia' => ['nullable', 'array'], 'penyelia.*' => ['nullable', 'integer'],
             'catatan' => ['nullable', 'string', 'max:1000'],
+            'penanda' => ['nullable', 'string', 'max:20'],
         ]);
-        $surat = $this->wf->buatSuratTugas($permohonan, $request->user(), array_filter($data['penyelia'] ?? []), $data['catatan'] ?? null);
+        $pilihan = \App\Models\SuratTugas::pilihanPenanda();
+        $penanda = $pilihan[$data['penanda'] ?? ''] ?? null;
+        if ($pilihan && ! $penanda) {
+            return back()->withErrors(['penanda' => 'Pilih penanda tangan surat tugas.'])->withInput();
+        }
+        $surat = $this->wf->buatSuratTugas($permohonan, $request->user(), array_filter($data['penyelia'] ?? []), $data['catatan'] ?? null, $penanda);
         Audit::log('SURAT_TUGAS', 'permohonan', $permohonan->id, ['nomor' => $surat->first()?->nomor]);
 
         return back()->with('success', 'Surat tugas '.$surat->first()?->nomor.' diterbitkan untuk '.$surat->count().' bidang. Sampel masuk antrean lab.');
@@ -366,11 +373,16 @@ class PermohonanController extends Controller
         $surat = $permohonan->suratTugas()->with(['lab', 'penyelia'])->get()->sortBy(fn ($s) => $s->lab->urutan)->values();
         abort_if($surat->isEmpty(), 404);
 
-        $pj = \App\Models\User::query()->where('role', Role::PenanggungJawab->value)->where('aktif', true)->orderBy('id')->first();
-        $penandaTangan = [
-            'nama' => Setting::get('nama_kepala_lab') ?: (string) $pj?->nama,
-            'nip' => Setting::get('nip_kepala_lab') ?: (string) $pj?->nip,
-        ];
+        if ($surat->first()->penanda_nama) {
+            $penandaTangan = ['nama' => $surat->first()->penanda_nama, 'nip' => (string) $surat->first()->penanda_nip];
+        } else {
+            // Surat tugas lama, sebelum penanda tangan bisa dipilih.
+            $pj = \App\Models\User::query()->where('role', Role::PenanggungJawab->value)->where('aktif', true)->orderBy('id')->first();
+            $penandaTangan = [
+                'nama' => Setting::get('nama_kepala_lab') ?: (string) $pj?->nama,
+                'nip' => Setting::get('nip_kepala_lab') ?: (string) $pj?->nip,
+            ];
+        }
 
         return Pdf::respons('pdf.surat-tugas', [
             'p' => $permohonan->load('produk'), 'surat' => $surat, 'parameter' => $permohonan->parameter()->get(),
@@ -392,6 +404,7 @@ class PermohonanController extends Controller
             'hasil.*.hasil' => ['nullable', 'string', 'max:150'],
             'hasil.*.memenuhi' => ['nullable', Rule::in(['0', '1'])],
             'hasil.*.keterangan' => ['nullable', 'string', 'max:300'],
+            'lk' => ['nullable', 'array'],
             'lampiran' => ['nullable', 'array', 'max:3'],
             'lampiran.*' => ['file', 'max:5120', 'mimes:pdf,jpg,jpeg,png'],
         ], [
@@ -401,7 +414,7 @@ class PermohonanController extends Controller
         ]);
 
         $selesai = $data['aksi'] === 'selesai';
-        $semua = $this->wf->simpanHasil($permohonan, $request->user(), $data['hasil'] ?? [], $request->file('lampiran', []), $selesai);
+        $semua = $this->wf->simpanHasil($permohonan, $request->user(), $data['hasil'] ?? [], $request->file('lampiran', []), $selesai, $data['lk'] ?? []);
         Audit::log($selesai ? 'HASIL_SELESAI' : 'HASIL_SIMPAN', 'permohonan', $permohonan->id);
         $kode = $permohonan->kodeTampil();
 
@@ -410,7 +423,7 @@ class PermohonanController extends Controller
         }
 
         return redirect()->route('dashboard')->with('success', $semua
-            ? "Pengujian {$kode} selesai di semua lab. Menunggu pemeriksaan LHP oleh Admin Laboratorium."
+            ? "Pengujian {$kode} selesai di semua lab. Menunggu paraf penyelia."
             : "Pengujian lab Anda untuk {$kode} selesai. Menunggu lab lain.");
     }
 
@@ -467,6 +480,33 @@ class PermohonanController extends Controller
         ], 'Lembar Disposisi '.$tanggal->format('Y-m-d').'.pdf', $request->boolean('unduh'), 'landscape');
     }
 
+    /** Agenda Pemeriksaan mikrobiologi (L/OK/SUB II/8.6c) satu metode untuk satu bulan masuk lab, sesuai formulir Balai. */
+    public function agendaMikro(Request $request)
+    {
+        $u = $request->user();
+        $def = \App\Support\AgendaMikro::jenis((string) $request->query('jenis'));
+        abort_unless($def, 404);
+        $ym = (string) $request->query('bulan');
+        $ym = preg_match('/^20\d\d-(0[1-9]|1[0-2])$/', $ym) ? $ym : now()->format('Y-m');
+        $bulan = \Illuminate\Support\Carbon::createFromFormat('Y-m-d H:i:s', $ym.'-01 00:00:00', config('app.timezone'));
+
+        $q = \App\Models\PermohonanParameter::query()
+            ->whereHas('permohonan', fn ($p) => $p->whereNotNull('kode_sampel')->whereBetween('masuk_lab_at', [$bulan->copy(), $bulan->copy()->endOfMonth()]))
+            ->with(['permohonan.tahap', 'permohonan.persetujuan.user', 'permohonan.pengembalian', 'produk', 'analis', 'penginput']);
+        if ($u->isLab()) {
+            $q->where('lab_id', $u->lab_id);
+        }
+        $baris = $q->get()
+            ->filter(fn ($x) => (\App\Support\AgendaMikro::untukMetode($x->metode)['jenis'] ?? null) === $def['jenis'])
+            ->sortBy(fn ($x) => [$x->permohonan->masuk_lab_at?->timestamp, (string) ($x->produk?->kode ?: $x->permohonan->kode_sampel), $x->id])
+            ->values();
+        $blok = $baris->flatMap(fn ($x) => \App\Support\AgendaMikro::blok($x))->all();
+        Audit::log('CETAK_AGENDA_MIKRO', 'permohonan', null, ['jenis' => $def['jenis'], 'bulan' => $bulan->format('Y-m')]);
+
+        return Pdf::respons('pdf.agenda-mikro', ['d' => $def, 'blok' => $blok, 'bulan' => $bulan],
+            'Agenda '.$def['jenis'].' '.$bulan->format('Y-m').'.pdf', $request->boolean('unduh'), ($def['tegak'] ?? false) ? 'portrait' : 'landscape');
+    }
+
     /** Admin Laboratorium: periksa kesesuaian data LHP dengan permohonan. */
     public function periksa(Request $request, Permohonan $permohonan)
     {
@@ -481,14 +521,34 @@ class PermohonanController extends Controller
         $this->wf->periksa($permohonan, $request->user(), $data['catatan'] ?? null);
         Audit::log('PERIKSA_LHP', 'permohonan', $permohonan->id);
 
-        return back()->with('success', 'Pemeriksaan tercatat. LHP diteruskan ke penyelia untuk diparaf.');
+        return back()->with('success', 'Validasi tercatat. LHP diteruskan ke Admin Laboratorium untuk diparaf.');
     }
 
     public function paraf(Request $request, Permohonan $permohonan)
     {
         $this->authorizeOr404('view', $permohonan);
         abort_unless(Gate::allows('paraf', $permohonan), 403);
-        // Paraf digambar di layar (rapat 19 Nov) lalu dicetak di LHP: hanya PNG kecil dari kanvas.
+        $this->validasiParaf($request);
+        $lengkap = $this->wf->paraf($permohonan, $request->user(), (string) $request->input('paraf'));
+        Audit::log('PARAF_LHP', 'permohonan', $permohonan->id);
+
+        return back()->with('success', $lengkap ? 'Paraf tercatat. Semua bidang lengkap, hasil menunggu validasi Administrator.' : 'Paraf tercatat. Menunggu paraf penyelia bidang lain.');
+    }
+
+    /** Paraf Admin Laboratorium setelah validasi Administrator. */
+    public function parafAdmin(Request $request, Permohonan $permohonan)
+    {
+        Gate::authorize('parafAdmin', $permohonan);
+        $this->validasiParaf($request);
+        $this->wf->parafAdmin($permohonan, $request->user(), (string) $request->input('paraf'));
+        Audit::log('PARAF_ADMIN_LHP', 'permohonan', $permohonan->id);
+
+        return back()->with('success', 'Paraf tercatat. LHP menunggu pengesahan Penanggung Jawab.');
+    }
+
+    /** Paraf digambar di layar (rapat 19 Nov) lalu dicetak di LHP: hanya PNG kecil dari kanvas. */
+    private function validasiParaf(Request $request): void
+    {
         $request->validate(
             ['paraf' => ['required', 'string', 'max:200000', 'starts_with:data:image/png;base64,', function ($attr, $v, $fail) {
                 $png = base64_decode(substr((string) $v, 22), true);
@@ -498,10 +558,6 @@ class PermohonanController extends Controller
             }]],
             ['paraf.required' => 'Gambar paraf Anda di kotak paraf terlebih dahulu.', 'paraf.starts_with' => 'Gambar paraf tidak valid. Gambar ulang paraf Anda.', 'paraf.max' => 'Gambar paraf terlalu besar. Hapus lalu gambar ulang.'],
         );
-        $lengkap = $this->wf->paraf($permohonan, $request->user(), (string) $request->input('paraf'));
-        Audit::log('PARAF_LHP', 'permohonan', $permohonan->id);
-
-        return back()->with('success', $lengkap ? 'Paraf tercatat. Semua bidang lengkap, LHP menunggu pengesahan.' : 'Paraf tercatat. Menunggu paraf penyelia bidang lain.');
     }
 
     public function sahkan(Request $request, Permohonan $permohonan)

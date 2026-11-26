@@ -20,7 +20,7 @@ class Setting extends Model
         'kota_surat_tugas' => 'Surabaya',
         'kode_formulir_surat_tugas' => 'FL/OK/SUB II/8.5.3.d',
         // Penanda tangan surat tugas & kota LHP sesuai dokumen Balai 2026.
-        'jabatan_kepala_lab' => 'Plt. Kepala Laboratorium Penguji',
+        'jabatan_kepala_lab' => 'Kepala/Penanggung Jawab Laboratorium Pengujian',
         'nama_kepala_lab' => 'Ricat Pahlefi Hidayat, S.St.Pi., M.Si',
         'nip_kepala_lab' => '19780424 200502 1 001',
         'kota_lhp' => 'Surabaya',

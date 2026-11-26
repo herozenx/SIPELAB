@@ -27,8 +27,9 @@ class DashboardController extends Controller
         [Status::MenungguBilling, 'Terbitkan billing SIMPONI', 'Layanan pengguna jasa sebelum diuji; layanan petugas setelah LHP disahkan.', [Role::Bendahara]],
         [Status::MenungguKonfirmasiBayar, 'Cek pembayaran', 'Cocokkan bukti setor dengan dana masuk di SIMPONI.', [Role::Bendahara]],
         [Status::SiapUji, 'Terbitkan surat tugas', 'Surat tugas pengujian ke penyelia setiap bidang yang terlibat.', [Role::AdminLab]],
-        [Status::MenungguPemeriksaan, 'Validasi hasil pengujian', 'Periksa kesesuaian hasil dengan permohonan dan pastikan semua parameter terisi.', [Role::Administrasi]],
         [Status::MenungguParaf, 'Menunggu paraf penyelia', 'Penyelia tiap bidang memaraf hasil bidangnya.', []],
+        [Status::MenungguPemeriksaan, 'Validasi hasil pengujian', 'Periksa kesesuaian hasil dengan permohonan dan pastikan semua parameter terisi.', [Role::Administrasi]],
+        [Status::MenungguParafAdmin, 'Paraf Admin Laboratorium', 'Paraf LHP yang sudah divalidasi Administrator.', [Role::AdminLab]],
         [Status::MenungguPengesahan, 'Validasi akhir LHP', 'Validasi akhir dan pengesahan LHP bernomor.', [Role::PenanggungJawab]],
     ];
 
@@ -121,6 +122,7 @@ class DashboardController extends Controller
                 Status::DiLab->value,
                 Status::MenungguPemeriksaan->value,
                 Status::MenungguParaf->value,
+                Status::MenungguParafAdmin->value,
                 Status::MenungguPengesahan->value,
             ])->count(),
             'selesai' => (clone $baseQuery)->where('status', Status::Selesai->value)->count(),
@@ -158,7 +160,7 @@ class DashboardController extends Controller
         $iz = Lhu::query()->whereNotNull('nomor')->select('status_izin', DB::raw('COUNT(*) as n'))->groupBy('status_izin')->pluck('n', 'status_izin');
 
         // PNBP terkonfirmasi: Mandiri setelah lunas (sudah lewat tahap bayar), lainnya setelah pelunasan (selesai).
-        $lunasMandiri = [Status::SiapUji, Status::DiLab, Status::MenungguPemeriksaan, Status::MenungguParaf, Status::MenungguPengesahan, Status::Selesai];
+        $lunasMandiri = [Status::SiapUji, Status::DiLab, Status::MenungguPemeriksaan, Status::MenungguParaf, Status::MenungguParafAdmin, Status::MenungguPengesahan, Status::Selesai];
         $diAwal = array_map(fn (JenisBayar $j) => $j->value, JenisBayar::pilihanPengguna());
         $pnbp = (int) Permohonan::query()->where(fn ($q) => $q
             ->where(fn ($m) => $m->whereIn('jenis_bayar', $diAwal)->whereIn('status', array_map(fn ($s) => $s->value, $lunasMandiri)))

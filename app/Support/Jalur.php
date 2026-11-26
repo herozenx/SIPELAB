@@ -8,8 +8,8 @@ use Illuminate\Support\Collection;
 
 /**
  * Menyusun stasiun "jalur uji" sebuah permohonan:
- * - Mandiri  : Verifikasi -> Registrasi -> Pembayaran -> Surat tugas -> Pengujian -> Validasi -> Paraf -> Pengesahan.
- * - Lainnya  : Verifikasi -> Registrasi -> Surat tugas -> Pengujian -> Validasi -> Paraf -> Pengesahan -> Pelunasan.
+ * - Mandiri  : Verifikasi -> Registrasi -> Pembayaran -> Surat tugas -> Pengujian -> Paraf penyelia -> Validasi -> Paraf Admin Lab -> Pengesahan.
+ * - Lainnya  : Verifikasi -> Registrasi -> Surat tugas -> Pengujian -> Paraf penyelia -> Validasi -> Paraf Admin Lab -> Pengesahan -> Pelunasan.
  * Setiap stasiun berstatus done | now | todo | fail.
  */
 class Jalur
@@ -24,8 +24,9 @@ class Jalur
         }
         $st[] = ['nama' => 'Surat tugas', 'sub' => 'Ke penyelia', 'kunci' => 'surat'];
         $st[] = ['nama' => 'Pengujian', 'sub' => 'Lab', 'kunci' => 'lab'];
-        $st[] = ['nama' => 'Validasi', 'sub' => 'Administrator', 'kunci' => 'periksa'];
         $st[] = ['nama' => 'Paraf', 'sub' => 'Penyelia', 'kunci' => 'paraf'];
+        $st[] = ['nama' => 'Validasi', 'sub' => 'Administrator', 'kunci' => 'periksa'];
+        $st[] = ['nama' => 'Paraf', 'sub' => 'Admin Lab', 'kunci' => 'paraf-admin'];
         $st[] = ['nama' => 'Pengesahan', 'sub' => 'Penanggung jawab', 'kunci' => 'sah'];
         if (! $mandiri) {
             $st[] = ['nama' => 'Pelunasan', 'sub' => 'SIMPONI', 'kunci' => 'bayar'];
@@ -41,6 +42,7 @@ class Jalur
             Status::DiLab => $idx('lab'),
             Status::MenungguPemeriksaan => $idx('periksa'),
             Status::MenungguParaf => $idx('paraf'),
+            Status::MenungguParafAdmin => $idx('paraf-admin'),
             Status::MenungguPengesahan => $idx('sah'),
             Status::Selesai => $last + 1,
         };

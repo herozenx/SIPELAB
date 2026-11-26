@@ -5,8 +5,8 @@ namespace App\Enums;
 /**
  * Alur permohonan.
  * Mandiri  : Diajukan -> Diterima (registrasi sampel) -> Menunggu billing -> Menunggu pembayaran -> Cek pembayaran -> Siap uji (surat tugas)
- *            -> Di lab -> Pemeriksaan -> Paraf penyelia -> Pengesahan -> Selesai.
- * Lainnya  : Diajukan -> Diterima -> Siap uji -> Di lab -> Pemeriksaan -> Paraf -> Pengesahan
+ *            -> Di lab -> Paraf penyelia -> Validasi Administrator -> Paraf Admin Lab -> Pengesahan -> Selesai.
+ * Lainnya  : Diajukan -> Diterima -> Siap uji -> Di lab -> Paraf penyelia -> Validasi -> Paraf Admin Lab -> Pengesahan
  *            -> Menunggu billing -> Menunggu pembayaran -> Cek pembayaran -> Selesai (bayar di belakang).
  */
 enum Status: string
@@ -21,6 +21,7 @@ enum Status: string
     case DiLab = 'DI_LAB';
     case MenungguPemeriksaan = 'MENUNGGU_PEMERIKSAAN';
     case MenungguParaf = 'MENUNGGU_PARAF';
+    case MenungguParafAdmin = 'MENUNGGU_PARAF_ADMIN';
     case MenungguPengesahan = 'MENUNGGU_PENGESAHAN';
     case Selesai = 'SELESAI';
 
@@ -38,6 +39,7 @@ enum Status: string
             self::DiLab => 'Sedang diuji',
             self::MenungguPemeriksaan => 'Validasi hasil',
             self::MenungguParaf => 'Menunggu paraf penyelia',
+            self::MenungguParafAdmin => 'Menunggu paraf Admin Lab',
             self::MenungguPengesahan => 'Validasi akhir',
             self::Selesai => 'LHP selesai',
         };
@@ -54,7 +56,7 @@ enum Status: string
             self::MenungguPembayaran => 'Menunggu pembayaran',
             self::MenungguKonfirmasiBayar => 'Pembayaran sedang dicek',
             self::SiapUji, self::DiLab => 'Sedang diproses/pengujian',
-            self::MenungguPemeriksaan, self::MenungguParaf, self::MenungguPengesahan => 'Penyusunan LHP',
+            self::MenungguPemeriksaan, self::MenungguParaf, self::MenungguParafAdmin, self::MenungguPengesahan => 'Penyusunan LHP',
             self::Selesai => 'LHP selesai',
         };
     }
@@ -64,7 +66,7 @@ enum Status: string
     {
         return match ($this) {
             self::Diajukan, self::Diterima, self::MenungguBilling, self::MenungguKonfirmasiBayar,
-            self::MenungguPemeriksaan, self::MenungguParaf, self::MenungguPengesahan => 'wait',
+            self::MenungguPemeriksaan, self::MenungguParaf, self::MenungguParafAdmin, self::MenungguPengesahan => 'wait',
             self::MenungguPembayaran => 'info',
             self::SiapUji, self::DiLab => 'lab',
             self::Selesai => 'ok',
@@ -75,7 +77,7 @@ enum Status: string
     /** Tahap penyusunan LHP: hasil sudah lengkap, belum disahkan. Proses bisa dikembalikan ke lab. */
     public function tahapLhp(): bool
     {
-        return in_array($this, [self::MenungguPemeriksaan, self::MenungguParaf, self::MenungguPengesahan], true);
+        return in_array($this, [self::MenungguParaf, self::MenungguPemeriksaan, self::MenungguParafAdmin, self::MenungguPengesahan], true);
     }
 
     public function tahapBayar(): bool

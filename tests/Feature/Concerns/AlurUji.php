@@ -84,7 +84,7 @@ trait AlurUji
 
     protected function suratTugas(Permohonan $p): void
     {
-        $this->as('admin@lab.local')->post("/permohonan/{$p->id}/surat-tugas")->assertSessionHas('success');
+        $this->as('admin@lab.local')->post("/permohonan/{$p->id}/surat-tugas", ['penanda' => 'setelan'])->assertSessionHas('success');
     }
 
     /** Analis lab mengisi semua parameter lab-nya lalu menyelesaikan. */
@@ -102,7 +102,7 @@ trait AlurUji
         foreach (['organo@lab.local', 'mikro@lab.local', 'kimia@lab.local'] as $e) {
             $this->ujiLab($p, $e);
         }
-        $this->assertSame(Status::MenungguPemeriksaan, $p->fresh()->status);
+        $this->assertSame(Status::MenungguParaf, $p->fresh()->status);
     }
 
     protected function periksa(Permohonan $p): void
@@ -118,6 +118,11 @@ trait AlurUji
         }
     }
 
+    protected function parafAdmin(Permohonan $p): void
+    {
+        $this->as('admin@lab.local')->post("/permohonan/{$p->id}/paraf-admin", ['paraf' => $this->paraf()])->assertSessionHasNoErrors()->assertSessionHas('success');
+    }
+
     protected function sahkan(Permohonan $p): void
     {
         $this->as('pj@lab.local')->post("/permohonan/{$p->id}/sahkan", ['jabatan' => 'PJ'])->assertSessionHasNoErrors()->assertSessionHas('success');
@@ -131,8 +136,9 @@ trait AlurUji
         $this->bayarLunas($p);
         $this->suratTugas($p);
         $this->ujiSemua($p);
-        $this->periksa($p);
         $this->parafSemua($p);
+        $this->periksa($p);
+        $this->parafAdmin($p);
         $this->sahkan($p);
 
         return $p->fresh();

@@ -16,7 +16,7 @@ class PermohonanParameter extends Model
     {
         return [
             'jumlah' => 'integer', 'tarif' => 'integer', 'akreditasi' => 'boolean',
-            'memenuhi' => 'boolean', 'diinput_at' => 'datetime',
+            'memenuhi' => 'boolean', 'diinput_at' => 'datetime', 'lembar_kerja' => 'array',
         ];
     }
 

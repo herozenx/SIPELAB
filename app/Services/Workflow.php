@@ -21,6 +21,7 @@ use App\Models\StatusLog;
 use App\Models\SuratTugas;
 use App\Models\TahapLab;
 use App\Models\User;
+use App\Support\AgendaMikro;
 use App\Support\HariKerja;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\UploadedFile;
@@ -434,9 +435,9 @@ class Workflow
      * @param  array<int, int|null>  $penyelia  [lab_id => user_id penyelia]
      * @return Collection<int, SuratTugas>
      */
-    public function buatSuratTugas(Permohonan $p, User $operator, array $penyelia = [], ?string $catatan = null): Collection
+    public function buatSuratTugas(Permohonan $p, User $operator, array $penyelia = [], ?string $catatan = null, ?array $penanda = null): Collection
     {
-        return $this->tx(function () use ($p, $operator, $penyelia, $catatan) {
+        return $this->tx(function () use ($p, $operator, $penyelia, $catatan, $penanda) {
             $this->kunci($p);
             $this->pastikanStatus($p, Status::SiapUji);
             $p->load('parameter');
@@ -458,6 +459,7 @@ class Workflow
                 $surat->push(SuratTugas::query()->create([
                     'permohonan_id' => $p->id, 'lab_id' => $lab->id, 'nomor' => $nomor,
                     'penyelia_id' => $pj?->id, 'dibuat_oleh' => $operator->id, 'catatan' => $catatan,
+                    'penanda_nama' => $penanda['nama'] ?? null, 'penanda_nip' => ($penanda['nip'] ?? '') ?: null,
                 ]));
                 $this->masukLab($p, $lab);
             }
@@ -573,19 +575,19 @@ class Workflow
 
     /**
      * Simpan hasil parameter lab petugas. Bila $selesai, semua parameter lab itu wajib terisi,
-     * tahap lab ditutup, dan bila seluruh lab sudah selesai sampel masuk pemeriksaan LHP.
+     * tahap lab ditutup, dan bila seluruh lab sudah selesai sampel menunggu paraf penyelia.
      *
      * @param  array<int, array{hasil?:?string, memenuhi?:mixed, keterangan?:?string}>  $hasil  [permohonan_parameter_id => ...]
      * @param  UploadedFile[]  $files
      * @return bool true bila seluruh pengujian selesai (masuk pemeriksaan)
      */
-    public function simpanHasil(Permohonan $p, User $petugas, array $hasil, array $files, bool $selesai): bool
+    public function simpanHasil(Permohonan $p, User $petugas, array $hasil, array $files, bool $selesai, array $lembar = []): bool
     {
         if (! $petugas->isLab()) {
             throw new WorkflowException('Hanya analis atau penyelia lab yang dapat menginput hasil.');
         }
 
-        return $this->tx(function () use ($p, $petugas, $hasil, $files, $selesai) {
+        return $this->tx(function () use ($p, $petugas, $hasil, $files, $selesai, $lembar) {
             $this->kunci($p);
             $lab = $petugas->lab ?? throw new WorkflowException('Akun Anda belum ditempatkan di lab.');
             $tahap = $this->tahapTerbuka($p, $lab->id) ?? throw new WorkflowException('Sampel ini tidak ada di antrean lab Anda.');
@@ -594,7 +596,16 @@ class Workflow
             foreach ($baris as $b) {
                 $in = $hasil[$b->id] ?? null;
                 // Parameter yang didisposisikan ke analis lain hanya diisi analis itu (atau penyelia).
-                if (! is_array($in) || ($petugas->role === Role::PetugasLab && $b->analis_id && $b->analis_id !== $petugas->id)) {
+                if ($petugas->role === Role::PetugasLab && $b->analis_id && $b->analis_id !== $petugas->id) {
+                    continue;
+                }
+                if (is_array($lembar[$b->id] ?? null) && ($def = AgendaMikro::untukMetode($b->metode))) {
+                    $isi = $this->isiLembar($def, $lembar[$b->id], max(1, (int) $b->jumlah));
+                    if ($isi !== $b->lembar_kerja) {
+                        $b->fill(['lembar_kerja' => $isi, 'diinput_oleh' => $petugas->id, 'diinput_at' => now()])->save();
+                    }
+                }
+                if (! is_array($in)) {
                     continue;
                 }
                 $nilai = trim((string) ($in['hasil'] ?? ''));
@@ -629,18 +640,40 @@ class Workflow
 
                 return false;
             }
-            $this->transisi($p, Status::DiLab, ['status' => Status::MenungguPemeriksaan->value, 'current_lab_id' => null],
-                "Pengujian Lab {$lab->nama} selesai. Seluruh hasil lengkap, menunggu pemeriksaan LHP oleh Admin Laboratorium", $petugas);
+            $this->transisi($p, Status::DiLab, ['status' => Status::MenungguParaf->value, 'current_lab_id' => null],
+                "Pengujian Lab {$lab->nama} selesai. Seluruh hasil lengkap, menunggu paraf penyelia", $petugas);
 
             return true;
         });
     }
 
+    /** Isian lembar Agenda Pemeriksaan: hanya sel yang ada di formulir, maks. 30 karakter, kosong dibuang. */
+    private function isiLembar(array $def, array $masuk, int $jumlah): ?array
+    {
+        $sah = AgendaMikro::kunciSah($def);
+        $hasil = [];
+        for ($s = 1; $s <= $jumlah; $s++) {
+            $sel = is_array($masuk[$s] ?? null) ? $masuk[$s] : [];
+            foreach ($sah as $k) {
+                // Satu sampel: kolom Hasil lembar adalah hasil LHP (disimpan di kolom hasil parameter).
+                if ($k === 'hasil' && $jumlah === 1) {
+                    continue;
+                }
+                $v = trim((string) ($sel[$k] ?? ''));
+                if ($v !== '') {
+                    $hasil["s{$s}"][$k] = mb_substr($v, 0, $k === 'hasil' ? 60 : 30);
+                }
+            }
+        }
+
+        return $hasil ?: null;
+    }
+
     // =====================================================================================
-    // 5. Pemeriksaan (Admin Lab) -> Paraf (Penyelia) -> Pengesahan (Penanggung Jawab)
+    // 5. Paraf (Penyelia) -> Validasi (Administrator) -> Paraf (Admin Lab) -> Pengesahan (Penanggung Jawab)
     // =====================================================================================
 
-    /** Admin Lab menyatakan seluruh data LHP sudah sesuai dengan permohonan. */
+    /** Administrator memvalidasi: seluruh data LHP sesuai permohonan dan lengkap (setelah diparaf penyelia). */
     public function periksa(Permohonan $p, User $admin, ?string $catatan = null): void
     {
         $this->tx(function () use ($p, $admin, $catatan) {
@@ -648,12 +681,12 @@ class Workflow
             $this->pastikanStatus($p, Status::MenungguPemeriksaan);
             $this->setujui($p, Persetujuan::PERIKSA, null, $admin, $catatan);
             Pengembalian::query()->where('permohonan_id', $p->id)->where('jenis', Pengembalian::PERBAIKAN)->whereNull('selesai_at')->update(['selesai_at' => now()]);
-            $this->transisi($p, Status::MenungguPemeriksaan, ['status' => Status::MenungguParaf->value],
-                'Hasil pengujian divalidasi Administrator: sesuai permohonan dan lengkap. Menunggu paraf penyelia', $admin);
+            $this->transisi($p, Status::MenungguPemeriksaan, ['status' => Status::MenungguParafAdmin->value],
+                'Hasil pengujian divalidasi Administrator: sesuai permohonan dan lengkap. Menunggu paraf Admin Laboratorium', $admin);
         });
     }
 
-    /** Penyelia memaraf hasil bidangnya. Bila semua bidang sudah diparaf, LHP menunggu pengesahan. */
+    /** Penyelia memaraf hasil bidangnya. Bila semua bidang sudah diparaf, hasil menunggu validasi Administrator. */
     /** @param string|null $gambar paraf yang digambar penyelia (data URL PNG), dicetak di LHP */
     public function paraf(Permohonan $p, User $penyelia, ?string $gambar = null): bool
     {
@@ -671,8 +704,8 @@ class Workflow
             $this->setujui($p, Persetujuan::PARAF, $penyelia->lab_id, $penyelia, null, $gambar);
             $sudah = Persetujuan::query()->where('permohonan_id', $p->id)->where('jenis', Persetujuan::PARAF)->pluck('lab_id');
             if ($labs->diff($sudah)->isEmpty()) {
-                $this->transisi($p, Status::MenungguParaf, ['status' => Status::MenungguPengesahan->value],
-                    "Diparaf {$penyelia->nama} (Penyelia {$penyelia->lab?->nama}). Semua bidang sudah diparaf, menunggu pengesahan", $penyelia);
+                $this->transisi($p, Status::MenungguParaf, ['status' => Status::MenungguPemeriksaan->value],
+                    "Diparaf {$penyelia->nama} (Penyelia {$penyelia->lab?->nama}). Semua bidang sudah diparaf, menunggu validasi Administrator", $penyelia);
 
                 return true;
             }
@@ -680,6 +713,21 @@ class Workflow
             $this->catat($p, Status::MenungguParaf, "Diparaf {$penyelia->nama} (Penyelia {$penyelia->lab?->nama})", $penyelia);
 
             return false;
+        });
+    }
+
+    /** Admin Laboratorium memaraf LHP setelah divalidasi Administrator; lalu LHP menunggu pengesahan. */
+    public function parafAdmin(Permohonan $p, User $admin, ?string $gambar = null): void
+    {
+        if ($admin->role !== Role::AdminLab) {
+            throw new WorkflowException('Hanya Admin Laboratorium yang memaraf pada tahap ini.');
+        }
+        $this->tx(function () use ($p, $admin, $gambar) {
+            $this->kunci($p);
+            $this->pastikanStatus($p, Status::MenungguParafAdmin);
+            $this->setujui($p, Persetujuan::PARAF_ADMIN, null, $admin, null, $gambar);
+            $this->transisi($p, Status::MenungguParafAdmin, ['status' => Status::MenungguPengesahan->value],
+                "Diparaf {$admin->nama} (Admin Laboratorium). Menunggu pengesahan", $admin);
         });
     }
 
@@ -756,9 +804,10 @@ class Workflow
     {
         return match (true) {
             // Validasi hasil (Administrator): data belum benar/lengkap -> kembali ke pengujian.
-            $status === Status::MenungguPemeriksaan => [Pengembalian::REVISI, Pengembalian::UJI_ULANG],
-            // Paraf/validasi akhir tidak disetujui: perbaikan data -> Administrator; pengujian ulang -> lab.
-            in_array($status, [Status::MenungguParaf, Status::MenungguPengesahan], true) => [Pengembalian::PERBAIKAN, Pengembalian::UJI_ULANG],
+            // Paraf penyelia / validasi hasil (Administrator): data belum benar/lengkap -> kembali ke pengujian.
+            in_array($status, [Status::MenungguParaf, Status::MenungguPemeriksaan], true) => [Pengembalian::REVISI, Pengembalian::UJI_ULANG],
+            // Paraf Admin Lab / pengesahan tidak disetujui: perbaikan data -> Administrator; pengujian ulang -> lab.
+            in_array($status, [Status::MenungguParafAdmin, Status::MenungguPengesahan], true) => [Pengembalian::PERBAIKAN, Pengembalian::UJI_ULANG],
             default => [],
         };
     }
@@ -780,7 +829,8 @@ class Workflow
                     'permohonan_id' => $p->id, 'lab_id' => null, 'jenis' => $jenis, 'catatan' => mb_substr($catatan, 0, 1000),
                     'oleh' => $oleh->id, 'dari_status' => $p->status->value, 'created_at' => now(),
                 ]);
-                Persetujuan::query()->where('permohonan_id', $p->id)->delete();
+                // Paraf penyelia tetap berlaku (hasil uji tidak berubah); validasi dan paraf sesudahnya diulang.
+                Persetujuan::query()->where('permohonan_id', $p->id)->where('jenis', '!=', Persetujuan::PARAF)->delete();
                 $this->transisi($p, $p->status, ['status' => Status::MenungguPemeriksaan->value],
                     "Hasil belum disetujui, perlu perbaikan data. Dikembalikan ke validasi hasil (Administrator) oleh {$oleh->nama}: {$catatan}", $oleh);
 
@@ -799,9 +849,9 @@ class Workflow
 
             $lama = null;
             if ($jenis === Pengembalian::UJI_ULANG) {
-                $lama = $baris->map->only(['id', 'nama', 'hasil', 'memenuhi', 'keterangan', 'diinput_oleh', 'diinput_at'])->values()->all();
+                $lama = $baris->map->only(['id', 'nama', 'hasil', 'memenuhi', 'keterangan', 'diinput_oleh', 'diinput_at', 'lembar_kerja'])->values()->all();
                 PermohonanParameter::query()->whereIn('id', $baris->pluck('id'))
-                    ->update(['hasil' => null, 'memenuhi' => null, 'diinput_oleh' => null, 'diinput_at' => null]);
+                    ->update(['hasil' => null, 'memenuhi' => null, 'diinput_oleh' => null, 'diinput_at' => null, 'lembar_kerja' => null]);
                 $this->masukLab($p, $lab); // norma waktu dihitung ulang
             } else {
                 TahapLab::query()->where('permohonan_id', $p->id)->where('lab_id', $labId)->update(['selesai_at' => null]);

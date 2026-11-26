@@ -5,7 +5,7 @@
   $S = \App\Enums\Status::class;
   $u = auth()->user();
   $total = $antrean->sum(fn ($a) => $a['rows']->count());
-  $urutPapan = [$S::Diajukan, $S::Diterima, $S::MenungguBilling, $S::MenungguPembayaran, $S::MenungguKonfirmasiBayar, $S::SiapUji, $S::DiLab, $S::MenungguPemeriksaan, $S::MenungguParaf, $S::MenungguPengesahan];
+  $urutPapan = [$S::Diajukan, $S::Diterima, $S::MenungguBilling, $S::MenungguPembayaran, $S::MenungguKonfirmasiBayar, $S::SiapUji, $S::DiLab, $S::MenungguParaf, $S::MenungguPemeriksaan, $S::MenungguParafAdmin, $S::MenungguPengesahan];
 @endphp
 <div class="flex flex-wrap items-end justify-between gap-3">
   <div>

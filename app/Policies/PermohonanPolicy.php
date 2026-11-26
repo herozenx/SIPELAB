@@ -71,6 +71,12 @@ class PermohonanPolicy
             && $p->parameter()->where('lab_id', $u->lab_id)->exists();
     }
 
+    /** Paraf Admin Laboratorium setelah validasi Administrator (masukan Zoom 26 Nov). */
+    public function parafAdmin(User $u, Permohonan $p): bool
+    {
+        return $u->role === Role::AdminLab && $p->status === Status::MenungguParafAdmin;
+    }
+
     public function sahkan(User $u, Permohonan $p): bool
     {
         return $u->role === Role::PenanggungJawab;
@@ -80,6 +86,11 @@ class PermohonanPolicy
     {
         if ($u->role === Role::Penyelia) {
             return $this->view($u, $p);
+        }
+
+        // Admin Lab menolak hanya pada tahap parafnya sendiri.
+        if ($u->role === Role::AdminLab) {
+            return $p->status === Status::MenungguParafAdmin;
         }
 
         return $u->hasRole(Role::Superadmin, Role::Administrasi, Role::PenanggungJawab);

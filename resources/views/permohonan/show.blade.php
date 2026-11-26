@@ -39,8 +39,8 @@
   {{-- Tahapan ringkas untuk pengguna jasa --}}
   @php
     $langkah = $mandiri
-      ? [['Verifikasi', [$S::Diajukan, $S::Diterima]], ['Pembayaran', [$S::MenungguBilling, $S::MenungguPembayaran, $S::MenungguKonfirmasiBayar]], ['Pengujian', [$S::SiapUji, $S::DiLab]], ['Penyusunan LHP', [$S::MenungguPemeriksaan, $S::MenungguParaf, $S::MenungguPengesahan]], ['LHP selesai', [$S::Selesai]]]
-      : [['Verifikasi', [$S::Diajukan, $S::Diterima]], ['Pengujian', [$S::SiapUji, $S::DiLab]], ['Penyusunan LHP', [$S::MenungguPemeriksaan, $S::MenungguParaf, $S::MenungguPengesahan]], ['Pembayaran', [$S::MenungguBilling, $S::MenungguPembayaran, $S::MenungguKonfirmasiBayar]], ['LHP selesai', [$S::Selesai]]];
+      ? [['Verifikasi', [$S::Diajukan, $S::Diterima]], ['Pembayaran', [$S::MenungguBilling, $S::MenungguPembayaran, $S::MenungguKonfirmasiBayar]], ['Pengujian', [$S::SiapUji, $S::DiLab]], ['Penyusunan LHP', [$S::MenungguParaf, $S::MenungguPemeriksaan, $S::MenungguParafAdmin, $S::MenungguPengesahan]], ['LHP selesai', [$S::Selesai]]]
+      : [['Verifikasi', [$S::Diajukan, $S::Diterima]], ['Pengujian', [$S::SiapUji, $S::DiLab]], ['Penyusunan LHP', [$S::MenungguParaf, $S::MenungguPemeriksaan, $S::MenungguParafAdmin, $S::MenungguPengesahan]], ['Pembayaran', [$S::MenungguBilling, $S::MenungguPembayaran, $S::MenungguKonfirmasiBayar]], ['LHP selesai', [$S::Selesai]]];
     $posisi = collect($langkah)->search(fn ($l) => in_array($p->status, $l[1], true));
     $posisi = $p->status === $S::Ditolak ? 0 : ($posisi === false ? 0 : $posisi);
   @endphp
@@ -345,6 +345,15 @@
                 </li>
               @endforeach
             </ul>
+            @if ($pilihanPenanda)
+              <div>
+                <label for="penanda" class="label">Penanda tangan <span class="font-normal text-kabut-500">({{ \App\Models\Setting::get('jabatan_kepala_lab') }})</span></label>
+                <select id="penanda" name="penanda" class="input max-w-md" required>
+                  @foreach ($pilihanPenanda as $kode => $pt)<option value="{{ $kode }}" @selected(old('penanda') === $kode)>{{ $pt['nama'] }}{{ $pt['nip'] ? ' · NIP '.$pt['nip'] : '' }}</option>@endforeach
+                </select>
+                @error('penanda')<p class="error">{{ $message }}</p>@enderror
+              </div>
+            @endif
             <div><label for="catatan_st" class="label">Catatan <span class="font-normal text-kabut-500">(opsional, dicetak di surat tugas)</span></label><textarea id="catatan_st" name="catatan" rows="2" maxlength="1000" class="input">{{ old('catatan') }}</textarea></div>
             <button class="btn-primary" data-confirm="Terbitkan surat tugas untuk {{ $p->kodeTampil() }}?"><x-ikon n="surat" class="h-4 w-4" />Terbitkan surat tugas</button>
           </form>
@@ -372,8 +381,10 @@
       <section class="panel ring-2 ring-laut-500">
         <div class="panel-head"><h2>Input hasil Lab {{ $u->lab->nama }}</h2><span class="flex items-center gap-3"><span class="text-xs text-kabut-500">Batas {{ tanggal($tahapSaya->batas_at, false) }}</span>@if($p->suratTugas->isNotEmpty())<a href="{{ route('permohonan.surat-tugas', $p) }}" target="_blank" rel="noopener" class="btn-ghost btn-sm"><x-ikon n="berkas" class="h-4 w-4" />Surat tugas</a>@endif</span></div>
         @if ($balik)
-          <div class="alert-warning m-5 mb-0"><x-ikon n="putar" class="mt-0.5 h-4 w-4 shrink-0" /><div><span class="font-semibold">{{ $balik->label() }}</span> diminta {{ $balik->pengirim->nama }}: {{ $balik->catatan }}</div></div>
+          <div class="alert-warning m-5 mb-0"><x-ikon n="putar" class="mt-0.5 h-4 w-4 shrink-0" /><div><span class="font-semibold">{{ $balik->label() }}</span>@if($balik->jenis === \App\Models\Pengembalian::UJI_ULANG) (kode lab <span class="num font-semibold">{{ \App\Models\Pengembalian::kodeUjiUlang($p->kodeTampil(), $p->pengembalian, $balik->lab_id, $balik) }}</span>)@endif diminta {{ $balik->pengirim->nama }}: {{ $balik->catatan }}</div></div>
         @endif
+        {{-- Penyelia tidak perlu "Tangani sampel"; langsung disposisi analis. --}}
+        @if ($u->role !== $R::Penyelia)
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-kabut-200 bg-kabut-50 px-5 py-3 {{ $balik ? 'mt-5' : '' }}">
           @if ($sudahMenangani)
             <p class="flex items-center gap-2 text-sm font-semibold text-lamun-700"><x-ikon n="cek" class="h-4 w-4" />Anda tercatat menangani sampel ini.</p>
@@ -382,9 +393,10 @@
             <form method="post" action="{{ route('permohonan.tangani', $p) }}" data-guard>@csrf<button class="btn-ghost btn-sm"><x-ikon n="tangan" class="h-4 w-4" />Tangani sampel</button></form>
           @endif
         </div>
+        @endif
         @if ($u->role === $R::Penyelia)
           {{-- Disposisi: penyelia menugaskan analis untuk tiap parameter (Lembar Disposisi FL/OK/SUB II/8.5.2.a). --}}
-          <form method="post" action="{{ route('permohonan.disposisi', $p) }}" class="border-b border-kabut-200 px-5 py-4" data-guard>
+          <form method="post" action="{{ route('permohonan.disposisi', $p) }}" class="border-b border-kabut-200 px-5 py-4 {{ $balik ? 'mt-5' : '' }}" data-guard>
             @csrf
             <div class="flex flex-wrap items-center justify-between gap-2">
               <h3 class="text-sm font-bold">Disposisi analis</h3>
@@ -417,12 +429,39 @@
             <fieldset class="rounded-lg border border-kabut-200 p-4 {{ $bukanTugasSaya ? 'bg-kabut-50 opacity-75' : '' }}" @disabled($bukanTugasSaya)>
               <legend class="px-1 text-sm font-bold">@if($labelProduk($x))<span class="block text-xs font-semibold text-laut-700">{{ $labelProduk($x) }}</span>@endif{{ $x->kode ? $x->kode.' · ' : '' }}{{ $x->nama }} <span class="font-normal text-kabut-500">×{{ $x->jumlah }}</span></legend>
               @if ($x->analis_id)<p class="mb-1 text-xs font-semibold {{ $x->analis_id === $u->id ? 'text-lamun-700' : 'text-kabut-500' }}">Analis: {{ $x->analis?->nama }}{{ $x->analis_id === $u->id ? ' (Anda)' : '' }}</p>@endif
-                <p class="text-xs text-kabut-500">Metode {{ $x->metode }} · Persyaratan: <span class="font-semibold text-tinta">{{ $x->persyaratan ?: '–' }}</span>@if($x->satuan) · Satuan {{ $x->satuan }}@endif</p>
-              <div class="mt-3 grid gap-3 sm:grid-cols-[1fr_auto]">
-                <div>
-                  <label for="hasil-{{ $x->id }}" class="label">Hasil</label>
-                  <input id="hasil-{{ $x->id }}" name="hasil[{{ $x->id }}][hasil]" value="{{ old("hasil.{$x->id}.hasil", $x->hasil) }}" class="input" maxlength="150" placeholder="mis. Negatif/25 g, ND, 7,0">
+                <p class="text-xs text-kabut-500">Metode {{ $x->metode }} · Persyaratan: <span class="font-semibold text-tinta">{!! $x->persyaratan ? \App\Support\Pangkat::html($x->persyaratan) : '–' !!}</span>@if($x->satuan) · Satuan {{ $x->satuan }}@endif</p>
+              @php
+                $agenda = \App\Support\AgendaMikro::untukMetode($x->metode);
+                $hasilDiLembar = $agenda && (int) $x->jumlah <= 1;
+              @endphp
+              @if ($agenda)
+                <div class="mt-3">
+                  <div class="mb-1 flex flex-wrap items-center justify-between gap-2">
+                    <span class="label !mb-0">Agenda Pemeriksaan</span>
+                    <a href="{{ route('agenda-mikro.pdf', ['jenis' => $agenda['jenis'], 'bulan' => ($tahapSaya?->masuk_at ?? $p->masuk_lab_at ?? now())->format('Y-m')]) }}" target="_blank" rel="noopener" class="btn-ghost btn-sm"><x-ikon n="berkas" class="h-4 w-4" />Cetak agenda</a>
+                  </div>
+                  <div class="am-wrap">
+                    @include('partials.agenda-mikro', [
+                      'd' => $agenda, 'blok' => \App\Support\AgendaMikro::blok($x, $p), 'nama' => "lk[{$x->id}]",
+                      'hasilLhp' => $hasilDiLembar ? ['id' => "hasil-{$x->id}", 'name' => "hasil[{$x->id}][hasil]"] : null,
+                    ])
+                  </div>
+                  <p class="hint">Isi sel pengamatan seperti di formulir. @if($hasilDiLembar)Kolom Hasil adalah hasil yang dicetak di LHP.@else Hasil per sampel diisi di tabel; hasil yang dicetak di LHP diisi di kolom Hasil di bawah.@endif</p>
                 </div>
+              @endif
+              <div class="mt-3 grid gap-3 sm:grid-cols-[1fr_auto]">
+                @if ($hasilDiLembar)
+                <div></div>
+                @else
+                <div>
+                  <label for="hasil-{{ $x->id }}" class="label">Hasil{{ $agenda ? " di LHP" : "" }}</label>
+                  <div class="flex gap-2">
+                    <input id="hasil-{{ $x->id }}" name="hasil[{{ $x->id }}][hasil]" value="{{ old("hasil.{$x->id}.hasil", $x->hasil) }}" class="input" maxlength="150" placeholder="mis. Negatif/25 g, ND, 2,5 x 10³">
+                    <button type="button" class="btn-ghost btn-sm shrink-0 num" data-pangkat="hasil-{{ $x->id }}" aria-pressed="false" title="Ketik pangkat: tekan x², ketik angka pangkatnya, lalu tekan x² lagi">x²</button>
+                  </div>
+                  <p class="hint">Pangkat (mis. 10³): tekan <span class="num">x²</span>, ketik angkanya, tekan <span class="num">x²</span> lagi.</p>
+                </div>
+                @endif
                 <div>
                   <span class="label">Persyaratan</span>
                   <div class="flex gap-2">
@@ -448,7 +487,7 @@
           </div>
           <div class="flex flex-wrap gap-2">
             <button class="btn-ghost" name="aksi" value="simpan">Simpan sementara</button>
-            <button class="btn-primary" name="aksi" value="selesai" data-confirm="Selesaikan pengujian Lab {{ $u->lab->nama }}? Semua parameter harus sudah terisi.">Selesai &amp; kirim ke pemeriksaan</button>
+            <button class="btn-primary" name="aksi" value="selesai" data-confirm="Selesaikan pengujian Lab {{ $u->lab->nama }}? Semua parameter harus sudah terisi.">Selesai &amp; kirim ke paraf penyelia</button>
           </div>
         </form>
       </section>
@@ -467,7 +506,7 @@
           @endif
           <form method="post" action="{{ route('permohonan.periksa', $p) }}" class="panel-body space-y-4" data-guard>
             @csrf
-            <p class="text-sm text-kabut-600">Periksa kesesuaian hasil dengan permohonan dan pastikan seluruh parameter sudah terisi. Bila benar dan lengkap, hasil diteruskan ke penyelia untuk diparaf. <a href="#hasil">Lihat tabel hasil</a>.</p>
+            <p class="text-sm text-kabut-600">Periksa kesesuaian hasil dengan permohonan dan pastikan seluruh parameter sudah terisi. Hasil sudah diparaf penyelia. Bila benar dan lengkap, LHP diteruskan ke Admin Laboratorium untuk diparaf. <a href="#hasil">Lihat tabel hasil</a>.</p>
             <div class="grid gap-2">
               @foreach (['identitas' => 'Identitas pelanggan, kode sampel, dan jenis sampel sesuai permohonan', 'parameter' => 'Seluruh parameter dan jumlah pengujian yang diminta sudah terisi', 'hasil' => 'Hasil, persyaratan mutu, metode acuan, dan keterangan sudah benar'] as $k => $l)
                 <label class="choice"><input type="checkbox" name="cek[{{ $k }}]" value="1" @checked(old("cek.$k")) class="h-4 w-4 accent-laut-600"><span class="text-sm">{{ $l }}</span></label>
@@ -476,14 +515,14 @@
               @error('cek.*')<p class="error">{{ $message }}</p>@enderror
             </div>
             <div><label for="catatan_periksa" class="label">Catatan <span class="font-normal text-kabut-500">(opsional)</span></label><input id="catatan_periksa" name="catatan" maxlength="500" class="input" value="{{ old('catatan') }}"></div>
-            <button class="btn-primary" data-confirm="Hasil {{ $p->kodeTampil() }} benar dan lengkap, teruskan ke penyelia?"><x-ikon n="cek" class="h-4 w-4" />Benar &amp; lengkap, teruskan ke penyelia</button>
+            <button class="btn-primary" data-confirm="Hasil {{ $p->kodeTampil() }} benar dan lengkap, teruskan ke Admin Laboratorium?"><x-ikon n="cek" class="h-4 w-4" />Benar &amp; lengkap, teruskan ke Admin Lab</button>
             <p class="text-xs text-kabut-500">Data belum benar atau belum lengkap? Gunakan <a href="#kembalikan">Kembalikan</a> di bawah untuk mengirim kembali ke pengujian.</p>
           </form>
         </section>
       @endcan
     @endif
 
-    {{-- 8. Paraf (Penyelia) --}}
+    {{-- 6b. Paraf (Penyelia), sebelum validasi Administrator --}}
     @if ($p->status === $S::MenungguParaf && ($staff || $lab))
       <section class="panel {{ Gate::allows('paraf', $p) && ! $paraf->contains('lab_id', $u->lab_id) ? 'ring-2 ring-laut-500' : '' }}">
         <div class="panel-head"><h2>Paraf penyelia</h2></div>
@@ -517,14 +556,39 @@
       </section>
     @endif
 
-    {{-- 9. Pengesahan (Penanggung Jawab) --}}
+    {{-- 9. Paraf Admin Laboratorium (setelah validasi Administrator) --}}
+    @if ($p->status === $S::MenungguParafAdmin && $staff)
+      <section class="panel {{ Gate::allows('parafAdmin', $p) ? 'ring-2 ring-laut-500' : '' }}">
+        <div class="panel-head"><h2>Paraf Admin Laboratorium</h2></div>
+        <div class="panel-body space-y-4">
+          @can('parafAdmin', $p)
+            <form method="post" action="{{ route('permohonan.paraf-admin', $p) }}" data-guard>
+              @csrf
+              <p class="mb-3 text-sm text-kabut-600">Hasil sudah diparaf penyelia dan divalidasi Administrator. Dengan memaraf, Anda menyatakan LHP siap disahkan Penanggung Jawab. Bila hasil berubah setelahnya, paraf gugur.</p>
+              <div class="mb-4" data-paraf>
+                <label class="label" for="paraf-kanvas">Gambar paraf Anda</label>
+                <canvas id="paraf-kanvas" width="480" height="160" class="block w-full max-w-sm touch-none rounded-lg border-2 border-dashed border-kabut-300 bg-white" aria-label="Kotak paraf: gambar paraf dengan mouse atau jari"></canvas>
+                <input type="hidden" name="paraf" value="">
+                <div class="mt-2 flex items-center gap-3"><button type="button" class="btn-ghost btn-sm" data-paraf-hapus>Hapus</button><span class="hint !mt-0">Paraf ini dicetak di LHP sebelah kiri.</span></div>
+                @error('paraf')<p class="error">{{ $message }}</p>@enderror
+              </div>
+              <button class="btn-primary" data-confirm="Paraf LHP {{ $p->kodeTampil() }} sebagai Admin Laboratorium?"><x-ikon n="pena" class="h-4 w-4" />Paraf sebagai Admin Lab</button>
+            </form>
+          @else
+            <p class="text-sm text-kabut-600">Menunggu paraf Admin Laboratorium.</p>
+          @endcan
+        </div>
+      </section>
+    @endif
+
+    {{-- 10. Pengesahan (Penanggung Jawab) --}}
     @if ($p->status === $S::MenungguPengesahan)
       @can('sahkan', $p)
         <section class="panel ring-2 ring-laut-500">
           <div class="panel-head"><h2>Validasi &amp; pengesahan LHP</h2></div>
           <form method="post" action="{{ route('permohonan.sahkan', $p) }}" class="panel-body space-y-4" data-guard>
             @csrf
-            <p class="text-sm text-kabut-600">Seluruh hasil sudah divalidasi Administrator dan diparaf penyelia. Setelah disahkan, sistem memberi nomor LHP urut agenda, kode verifikasi, dan QR Code keaslian.{{ $mandiri ? '' : ' Layanan '.$p->jenis_bayar->label().' lalu menunggu billing pelunasan.' }}</p>
+            <p class="text-sm text-kabut-600">Seluruh hasil sudah diparaf penyelia, divalidasi Administrator, dan diparaf Admin Laboratorium. Setelah disahkan, sistem memberi nomor LHP urut agenda, kode verifikasi, dan QR Code keaslian.{{ $mandiri ? '' : ' Layanan '.$p->jenis_bayar->label().' lalu menunggu billing pelunasan.' }}</p>
             @if ($parameter->contains(fn ($x) => $x->memenuhi === false))
               <div class="alert-warning"><x-ikon n="info" class="mt-0.5 h-4 w-4 shrink-0" />Ada parameter yang <span class="font-semibold">tidak memenuhi</span> persyaratan mutu.</div>
             @endif
@@ -542,13 +606,13 @@
     @endif
 
     {{-- Kembalikan (sesuai flowchart):
-         validasi hasil -> data belum benar/lengkap -> pengujian (revisi/uji ulang);
-         paraf/validasi akhir tidak disetujui -> perbaikan data (ke Administrator) atau pengujian ulang (ke lab). --}}
+         paraf penyelia / validasi hasil -> data belum benar/lengkap -> pengujian (revisi/uji ulang);
+         paraf Admin Lab / pengesahan tidak disetujui -> perbaikan data (ke Administrator) atau pengujian ulang (ke lab). --}}
     @if ($bolehKembali)
       @php
         $pilihanLab = $u->role === $R::Penyelia ? $labTerlibat->where('id', $u->lab_id) : $labTerlibat;
         $pilihan = \App\Services\Workflow::pilihanKembali($p->status);
-        $keLab = $p->status === $S::MenungguPemeriksaan;
+        $keLab = in_array($p->status, [$S::MenungguParaf, $S::MenungguPemeriksaan], true);
         $ket = [
             'REVISI' => 'Data belum benar/lengkap; analis memperbaiki input, hasil lama tetap ada',
             'UJI_ULANG' => 'Sampel diuji ulang; hasil lab itu dikosongkan, norma waktu dihitung ulang',
@@ -624,8 +688,8 @@
             @foreach ($list as $x)
               <tr>
                 <td class="min-w-[160px]"><span class="font-semibold">{{ $x->nama }}</span>@unless($x->akreditasi)<span class="text-kabut-500">*</span>@endunless<span class="block text-xs text-kabut-500">@if($labelProduk($x)){{ $labelProduk($x) }} · @endif×{{ $x->jumlah }}</span></td>
-                <td data-label="Hasil"><span>{{ $x->hasil ?? '–' }}@if($x->memenuhi !== null)<span class="mt-1 block w-fit {{ $x->memenuhi ? 'badge-ok' : 'badge-bad' }}">{{ $x->memenuhi ? 'Memenuhi' : 'Tidak memenuhi' }}</span>@endif</span></td>
-                <td class="text-sm text-kabut-600" data-label="Persyaratan">{{ $x->persyaratan ?: '–' }}</td>
+                <td data-label="Hasil"><span>{!! $x->hasil !== null ? \App\Support\Pangkat::html($x->hasil) : '–' !!}@if($x->memenuhi !== null)<span class="mt-1 block w-fit {{ $x->memenuhi ? 'badge-ok' : 'badge-bad' }}">{{ $x->memenuhi ? 'Memenuhi' : 'Tidak memenuhi' }}</span>@endif</span></td>
+                <td class="text-sm text-kabut-600" data-label="Persyaratan">{!! $x->persyaratan ? \App\Support\Pangkat::html($x->persyaratan) : '–' !!}</td>
                 <td class="text-sm text-kabut-600" data-label="Metode">{{ $x->metode }}</td>
                 <td class="max-w-[200px] text-sm text-kabut-600" data-label="Keterangan">{{ $x->keterangan ?: '–' }}</td>
                 @unless($pengguna)<td class="whitespace-nowrap text-xs text-kabut-500" data-label="Diinput">{{ $x->penginput?->nama ?? '–' }}@if($x->diinput_at)<span class="block">{{ tanggal($x->diinput_at) }}</span>@endif</td>@endunless
@@ -684,7 +748,7 @@
         <ul class="divide-y divide-kabut-100">
           @foreach ($pengembalian->reverse() as $k)
             <li class="px-5 py-3 text-sm">
-              <span class="flex flex-wrap items-center gap-2"><span class="{{ $k->selesai_at ? 'badge-ok' : 'badge-wait' }}">{{ $k->label() }}{{ $k->selesai_at ? ', selesai' : '' }}</span><span class="font-semibold">{{ $k->lab ? 'Lab '.$k->lab->nama : 'Validasi hasil (Administrator)' }}</span><span class="text-xs text-kabut-500">oleh {{ $k->pengirim->nama }}, {{ tanggal($k->created_at) }}</span></span>
+              <span class="flex flex-wrap items-center gap-2"><span class="{{ $k->selesai_at ? 'badge-ok' : 'badge-wait' }}">{{ $k->label() }}{{ $k->selesai_at ? ', selesai' : '' }}</span>@if($k->jenis === \App\Models\Pengembalian::UJI_ULANG)<span class="num text-xs font-semibold">{{ \App\Models\Pengembalian::kodeUjiUlang($p->kodeTampil(), $p->pengembalian, $k->lab_id, $k) }}</span>@endif<span class="font-semibold">{{ $k->lab ? 'Lab '.$k->lab->nama : 'Validasi hasil (Administrator)' }}</span><span class="text-xs text-kabut-500">oleh {{ $k->pengirim->nama }}, {{ tanggal($k->created_at) }}</span></span>
               <p class="mt-1 text-kabut-600">{{ $k->catatan }}</p>
               @if ($k->data_lama)<p class="mt-1 text-xs text-kabut-500">Hasil sebelum uji ulang: {{ collect($k->data_lama)->map(fn ($d) => $d['nama'].' = '.($d['hasil'] ?? '–'))->join('; ') }}</p>@endif
             </li>
