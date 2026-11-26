@@ -115,27 +115,28 @@
           <div data-field>
             <label for="password" class="label">Kata sandi <span class="text-karang-600" aria-hidden="true">*</span><span class="sr-only"> wajib</span></label>
             <div class="relative">
-              <input id="password" name="password" type="password" class="form-input input min-h-[48px] pr-20" autocomplete="new-password" required aria-describedby="password-help" @error('password') aria-invalid="true" data-server-error="{{ $errors->first('password') }}" @enderror>
+              <input id="password" name="password" type="password" class="form-input input min-h-[48px] pr-20" autocomplete="new-password" required aria-describedby="password-help" data-password-input @error('password') aria-invalid="true" data-server-error="{{ $errors->first('password') }}" @enderror>
               <span data-error-icon="password" class="field-error-icon !right-12 hidden" aria-hidden="true"><x-ikon n="peringatan" class="h-5 w-5" /></span>
               <button type="button" class="absolute inset-y-0 right-0 min-h-[48px] min-w-[48px] px-3 text-kabut-600 transition-colors duration-200 hover:text-tinta" data-toggle-password="password" aria-label="Tampilkan kata sandi" aria-controls="password">
                 <span data-eye-open><x-ikon n="mata" class="h-5 w-5" /></span>
                 <span data-eye-closed class="hidden"><x-ikon n="mata-tutup" class="h-5 w-5" /></span>
               </button>
             </div>
-            <p id="password-help" class="hint">Minimal 8 karakter, huruf besar, huruf kecil, dan angka.</p>
+            @include('auth._password-checklist', ['for' => 'password', 'id' => 'password-help'])
             <p data-field-error="password" class="auth-field-error hidden"></p>
           </div>
 
           <div data-field>
             <label for="password_confirmation" class="label">Ulangi kata sandi <span class="text-karang-600" aria-hidden="true">*</span><span class="sr-only"> wajib</span></label>
             <div class="relative">
-              <input id="password_confirmation" name="password_confirmation" type="password" class="form-input input min-h-[48px] pr-20" autocomplete="new-password" required @error('password') aria-invalid="true" data-server-error="Pengulangan kata sandi harus sama dengan kata sandi." @enderror>
+              <input id="password_confirmation" name="password_confirmation" type="password" class="form-input input min-h-[48px] pr-20" autocomplete="new-password" required data-password-confirm-for="password" @error('password') aria-invalid="true" data-server-error="Kata sandi tidak cocok." @enderror>
               <span data-error-icon="password_confirmation" class="field-error-icon !right-12 hidden" aria-hidden="true"><x-ikon n="peringatan" class="h-5 w-5" /></span>
               <button type="button" class="absolute inset-y-0 right-0 min-h-[48px] min-w-[48px] px-3 text-kabut-600 transition-colors duration-200 hover:text-tinta" data-toggle-password="password_confirmation" aria-label="Tampilkan ulangi kata sandi" aria-controls="password_confirmation">
                 <span data-eye-open><x-ikon n="mata" class="h-5 w-5" /></span>
                 <span data-eye-closed class="hidden"><x-ikon n="mata-tutup" class="h-5 w-5" /></span>
               </button>
             </div>
+            <p data-password-match="password_confirmation" class="mt-1.5 hidden items-center gap-1.5 text-xs font-semibold" aria-live="polite"></p>
             <p data-field-error="password_confirmation" class="auth-field-error hidden"></p>
           </div>
 
@@ -188,10 +189,17 @@
             </div>
           </section>
 
-          <button type="submit" class="btn-primary min-h-[48px] w-full py-3" data-submit-button>
-            <span data-submit-label>Buat akun</span>
-          </button>
+          <div class="pt-1">
+            <label for="pernyataan_benar" class="flex min-h-[44px] cursor-pointer items-start gap-3 py-1 text-sm leading-snug text-tinta">
+              <input id="pernyataan_benar" name="pernyataan_benar" type="checkbox" value="1" class="mt-0.5 h-4 w-4 shrink-0 rounded border-kabut-300 text-laut-600 focus:ring-laut-500" data-agree-checkbox @checked(old('pernyataan_benar'))>
+              <span>Dengan ini saya menyatakan bahwa seluruh data dan/atau informasi yang saya sampaikan adalah benar</span>
+            </label>
+          </div>
 
+          <button type="submit" class="btn-primary min-h-[48px] w-full py-3" data-submit-button @disabled(!old('pernyataan_benar'))>
+            <span data-submit-label>Daftar</span>
+          </button>
+<!--  -->
           <p class="text-center text-sm text-kabut-600">
             Sudah punya akun?
             <a href="{{ route('login') }}" class="auth-inline-link">Masuk</a>

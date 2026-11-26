@@ -112,6 +112,7 @@
         };
 
         const setError = (field, message) => {
+            field.classList.remove("is-valid");
             field.classList.add("is-invalid");
             field.setAttribute("aria-invalid", "true");
             field
@@ -155,6 +156,7 @@
 
         const validateField = (field) => {
             clearError(field);
+            if (field.type === "checkbox") return true;
             const value = field.value.trim();
             let message = "";
 
@@ -179,7 +181,7 @@
           else if (!/[0-9]/.test(value)) message = 'Gunakan sedikitnya satu angka.';
         } else if (field.id === 'password_confirmation') {
           const password = authForm.querySelector('#password')?.value || '';
-          if (value !== password) message = 'Ulangi kata sandi dengan tepat.';
+          if (value !== password) message = 'Kata sandi tidak cocok.';
         } else if (field.id === 'alamat' && value.length < 5) {
           message = 'Tulis alamat lengkap.';
         } else if (field.name.endsWith('[nik]') && !/^\d{16}$/.test(value)) {
@@ -213,6 +215,15 @@
             if (submitted && e.target.matches("input[name]"))
                 validateField(e.target);
         });
+        const agreeBox = authForm.querySelector("[data-agree-checkbox]");
+        const submitBtn = authForm.querySelector("[data-submit-button]");
+        const syncAgree = () => {
+            if (agreeBox && submitBtn) submitBtn.disabled = !agreeBox.checked;
+        };
+        if (agreeBox) {
+            agreeBox.addEventListener("change", syncAgree);
+            syncAgree();
+        }
         authForm.addEventListener("input", (e) => {
             const field = e.target;
             if (!field.matches("input[name]")) return;
@@ -255,15 +266,10 @@
             }
 
             const button = authForm.querySelector("[data-submit-button]");
-            const label = authForm.querySelector("[data-submit-label]");
             if (button) {
                 button.disabled = true;
                 button.setAttribute("aria-busy", "true");
                 button.classList.add("cursor-not-allowed", "opacity-70");
-            }
-            if (label) {
-                label.textContent =
-                    label.dataset.loadingLabel || "Membuat akun...";
             }
         });
 
@@ -292,7 +298,88 @@
         });
     });
 
-    // Snackbar sementara (mis. notifikasi setelah keluar) dengan jeda saat disentuh/difokus.
+    // Tutup banner notifikasi statis (mis. notifikasi setelah keluar di halaman masuk).
+    document.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-inline-dismiss]");
+        if (btn) btn.closest("[data-inline-banner]")?.remove();
+    });
+
+    // Indikator ringkas syarat kata sandi (x / centang) dan status cocok saat konfirmasi sesuai.
+    const updatePasswordChecklist = (input) => {
+        if (!input?.id) return;
+        const box = document.querySelector(`[data-password-checklist="${input.id}"]`);
+        if (!box) return;
+        const v = input.value;
+        const rules = {
+            len: v.length >= 8,
+            case: /[A-Z]/.test(v) && /[a-z]/.test(v),
+            num: /[0-9]/.test(v),
+        };
+        let met = 0;
+        Object.entries(rules).forEach(([key, ok]) => {
+            if (ok) met += 1;
+            const row = box.querySelector(`[data-pw-rule="${key}"]`);
+            if (!row) return;
+            row.classList.toggle("text-lamun-700", ok);
+            row.classList.toggle("font-medium", ok);
+            row.classList.toggle("text-karang-600", !ok);
+            row.querySelector("[data-pw-pending]")?.classList.toggle("hidden", ok);
+            row.querySelector("[data-pw-ok]")?.classList.toggle("hidden", !ok);
+        });
+        const hasErr = input.getAttribute("aria-invalid") === "true";
+        input.classList.toggle("is-valid", v.length > 0 && met === 3 && !hasErr);
+    };
+
+    const updatePasswordMatch = (confirmInput) => {
+        if (!confirmInput?.dataset.passwordConfirmFor) return;
+        const target = document.getElementById(confirmInput.dataset.passwordConfirmFor);
+        const statusEl = document.querySelector(`[data-password-match="${confirmInput.id}"]`);
+        if (!target || !statusEl) return;
+        const c = confirmInput.value;
+        const p = target.value;
+        const hasErr = confirmInput.getAttribute("aria-invalid") === "true";
+        const match = p !== "" && c !== "" && c === p && !hasErr;
+
+        confirmInput.classList.toggle("is-valid", match);
+        if (!match) {
+            statusEl.classList.add("hidden");
+            statusEl.classList.remove("flex");
+            statusEl.replaceChildren();
+            return;
+        }
+
+        statusEl.classList.remove("hidden");
+        statusEl.classList.add("flex", "text-lamun-700");
+
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.setAttribute("viewBox", "0 0 16 16");
+        svg.setAttribute("class", "h-3.5 w-3.5 shrink-0");
+        svg.setAttribute("fill", "none");
+        svg.setAttribute("stroke", "currentColor");
+        svg.setAttribute("stroke-width", "1.8");
+        svg.setAttribute("stroke-linecap", "round");
+        svg.setAttribute("stroke-linejoin", "round");
+        svg.setAttribute("aria-hidden", "true");
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("d", "M3 8.5 6.5 12 13 4.5");
+        svg.appendChild(path);
+
+        const text = document.createElement("span");
+        text.textContent = "Kata sandi cocok";
+        statusEl.replaceChildren(svg, text);
+    };
+
+    document.addEventListener("input", (e) => {
+        const el = e.target;
+        if (el.matches("[data-password-input]")) {
+            updatePasswordChecklist(el);
+            $$(`[data-password-confirm-for="${el.id}"]`).forEach(updatePasswordMatch);
+        } else if (el.matches("[data-password-confirm-for]")) {
+            updatePasswordMatch(el);
+        }
+    });
+
+    // Snackbar sementara dengan jeda saat disentuh/difokus.
     $$("[data-snackbar]").forEach((bar) => {
         const duration = Math.max(
             2000,

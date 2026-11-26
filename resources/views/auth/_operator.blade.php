@@ -60,7 +60,7 @@
         </div>
 
         <div data-field>
-          <label for="{{ $id }}-email" class="label">Email untuk masuk <span class="text-karang-600" aria-hidden="true">*</span><span class="sr-only"> wajib</span></label>
+          <label for="{{ $id }}-email" class="label">Email<span class="text-karang-600" aria-hidden="true">*</span><span class="sr-only"> wajib</span></label>
           <div class="relative">
             <input id="{{ $id }}-email" name="operator[{{ $i }}][email]" type="email" value="{{ $op['email'] ?? '' }}"
               class="form-input input min-h-[44px] pr-10" maxlength="120" required autocomplete="off"
@@ -73,11 +73,12 @@
 
         <div data-field>
           <label for="{{ $id }}-telepon" class="label">No. HP <span class="font-normal text-kabut-600">(opsional)</span></label>
-          <div class="relative">
-            <input id="{{ $id }}-telepon" name="operator[{{ $i }}][telepon]" type="tel" value="{{ $op['telepon'] ?? '' }}"
-              class="form-input input num min-h-[44px] pr-10" inputmode="tel" maxlength="20" autocomplete="off"
+          <div data-phone-box class="relative flex min-h-[44px] overflow-hidden rounded-lg border border-kabut-300 bg-white focus-within:border-laut-500 focus-within:ring-1 focus-within:ring-laut-500">
+            <span class="flex shrink-0 items-center border-r border-kabut-200 bg-kabut-50 px-3 text-sm font-semibold text-tinta" aria-label="Kode negara Indonesia +62">+62</span>
+            <input id="{{ $id }}-telepon" name="operator[{{ $i }}][telepon]" type="tel" value="{{ preg_replace('/^\+?62/', '', (string) ($op['telepon'] ?? '')) }}"
+              class="input num min-h-[44px] min-w-0 border-0 bg-white px-3 pr-10 shadow-none focus:shadow-none" inputmode="tel" maxlength="20" autocomplete="off"
               @if($e('telepon')) aria-invalid="true" data-server-error="{{ $e('telepon') }}" @endif>
-            <span data-error-icon="{{ $id }}-telepon" class="field-error-icon hidden" aria-hidden="true"><x-ikon n="peringatan" class="h-5 w-5" /></span>
+            <span data-error-icon="{{ $id }}-telepon" class="field-error-icon !right-3 hidden" aria-hidden="true"><x-ikon n="peringatan" class="h-5 w-5" /></span>
           </div>
           <p data-field-error="{{ $id }}-telepon" class="auth-field-error hidden"></p>
         </div>
@@ -87,7 +88,7 @@
           <div class="relative">
             <input id="{{ $id }}-password" name="operator[{{ $i }}][password]" type="password"
               class="form-input input min-h-[44px] pr-20" maxlength="128" required autocomplete="new-password"
-              aria-describedby="{{ $id }}-password-help"
+              aria-describedby="{{ $id }}-password-help" data-password-input
               @if($e('password')) aria-invalid="true" data-server-error="{{ $e('password') }}" @endif>
             <span data-error-icon="{{ $id }}-password" class="field-error-icon !right-12 hidden" aria-hidden="true"><x-ikon n="peringatan" class="h-5 w-5" /></span>
             <button type="button"
@@ -99,7 +100,7 @@
               <span data-eye-closed class="hidden"><x-ikon n="mata-tutup" class="h-5 w-5" /></span>
             </button>
           </div>
-          <p id="{{ $id }}-password-help" class="mt-1 text-xs text-kabut-600">Minimal 8 karakter, huruf besar, huruf kecil, dan angka.</p>
+          @include('auth._password-checklist', ['for' => "{$id}-password", 'id' => "{$id}-password-help"])
           <p data-field-error="{{ $id }}-password" class="auth-field-error hidden"></p>
         </div>
       </div>

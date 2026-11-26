@@ -77,9 +77,25 @@
         @foreach ([['nama', 'Nama lengkap', 'text', 'off', 100], ['nik', 'NIK (16 angka)', 'text', 'off', 16], ['email', 'Email (untuk masuk)', 'email', 'off', 120], ['telepon', 'No. HP (opsional)', 'tel', 'off', 20], ['password', 'Kata sandi operator', 'password', 'new-password', 128]] as [$f, $l, $t, $ac, $max])
           <div @class(['sm:col-span-2' => $f === 'password'])>
             <label for="op-{{ $f }}" class="label">{{ $l }}</label>
-            <input id="op-{{ $f }}" name="op[{{ $f }}]" type="{{ $t }}" value="{{ $f === 'password' ? '' : old("op.$f") }}" maxlength="{{ $max }}" autocomplete="{{ $ac }}" class="input {{ in_array($f, ['nik', 'telepon']) ? 'num' : '' }}" @if($f !== 'telepon') required @endif @error("op.$f") aria-invalid="true" @enderror>
+            @if ($f === 'password')
+              <div class="relative">
+                <input id="op-password" name="op[password]" type="password" maxlength="128" autocomplete="new-password" class="input pr-12" required aria-describedby="op-password-help" data-password-input @error('op.password') aria-invalid="true" @enderror>
+                <button type="button" class="absolute inset-y-0 right-0 min-h-[44px] min-w-[44px] px-3 text-kabut-600 transition-colors duration-150 hover:text-tinta" data-toggle-password="op-password" aria-label="Tampilkan kata sandi operator" aria-controls="op-password">
+                  <span data-eye-open><x-ikon n="mata" class="h-5 w-5" /></span>
+                  <span data-eye-closed class="hidden"><x-ikon n="mata-tutup" class="h-5 w-5" /></span>
+                </button>
+              </div>
+              @include('auth._password-checklist', ['for' => 'op-password', 'id' => 'op-password-help'])
+              <p class="hint">Sampaikan ke operator secara pribadi.</p>
+            @elseif ($f === 'telepon')
+              <div data-phone-box class="relative flex min-h-[44px] overflow-hidden rounded-lg border border-kabut-300 bg-white focus-within:border-laut-500 focus-within:ring-1 focus-within:ring-laut-500">
+                <span class="flex shrink-0 items-center border-r border-kabut-200 bg-kabut-50 px-3 text-sm font-semibold text-tinta" aria-label="Kode negara Indonesia +62">+62</span>
+                <input id="op-telepon" name="op[telepon]" type="tel" value="{{ preg_replace('/^\+?62/', '', (string) old('op.telepon', '')) }}" maxlength="{{ $max }}" autocomplete="{{ $ac }}" class="input num min-h-[44px] min-w-0 border-0 bg-white px-3 shadow-none focus:shadow-none" inputmode="tel" @error('op.telepon') aria-invalid="true" @enderror>
+              </div>
+            @else
+              <input id="op-{{ $f }}" name="op[{{ $f }}]" type="{{ $t }}" value="{{ old("op.$f") }}" maxlength="{{ $max }}" autocomplete="{{ $ac }}" class="input {{ in_array($f, ['nik', 'telepon']) ? 'num' : '' }}" @if($f !== 'telepon') required @endif @error("op.$f") aria-invalid="true" @enderror>
+            @endif
             @error("op.$f")<p class="error">{{ $message }}</p>@enderror
-            @if ($f === 'password')<p class="hint">Minimal 8 karakter, huruf besar, huruf kecil, dan angka. Sampaikan ke operator secara pribadi.</p>@endif
           </div>
         @endforeach
         <div class="sm:col-span-2"><button class="btn-primary"><x-ikon n="tambah" class="h-4 w-4" />Tambah operator</button></div>

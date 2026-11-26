@@ -84,7 +84,7 @@
           </div>
 
           <button type="submit" class="btn-primary min-h-[48px] w-full py-3" data-submit-button>
-            <span data-submit-label data-loading-label="Memproses...">Masuk</span>
+            <span data-submit-label>Masuk</span>
           </button>
 
           <p class="border-t border-kabut-200 pt-5 text-center text-sm text-kabut-600">
@@ -96,18 +96,4 @@
     </section>
   </div>
 </div>
-
-@if (session('success'))
-  <div data-snackbar data-snackbar-duration="4500" role="status" aria-live="polite"
-       class="fixed left-1/2 top-[84px] z-50 flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-2 items-center gap-3 rounded-xl bg-tinta px-4 py-3 text-sm font-medium text-white opacity-0 shadow-lg transition-all duration-300 motion-reduce:transition-none">
-    <span class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-lamun-600/25 text-lamun-500" aria-hidden="true">
-      <x-ikon n="cek" class="h-4 w-4" />
-    </span>
-    <span class="min-w-0 flex-1">{{ session('success') }}</span>
-    <button type="button" data-snackbar-close aria-label="Tutup notifikasi"
-            class="-mr-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-kabut-300 transition-colors hover:bg-white/10 hover:text-white">
-      <x-ikon n="silang" class="h-4 w-4" />
-    </button>
-  </div>
-@endif
 @endsection
