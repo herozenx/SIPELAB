@@ -271,6 +271,24 @@
                 button.setAttribute("aria-busy", "true");
                 button.classList.add("cursor-not-allowed", "opacity-70");
             }
+            const loading = document.querySelector("[data-auth-loading]");
+            if (loading) {
+                loading.classList.add("is-open");
+                loading.setAttribute("aria-hidden", "false");
+            }
+        });
+
+        window.addEventListener("pageshow", () => {
+            const loading = document.querySelector("[data-auth-loading]");
+            if (loading) {
+                loading.classList.remove("is-open");
+                loading.setAttribute("aria-hidden", "true");
+            }
+            if (submitBtn) {
+                submitBtn.removeAttribute("aria-busy");
+                submitBtn.classList.remove("cursor-not-allowed", "opacity-70");
+                submitBtn.disabled = agreeBox ? !agreeBox.checked : false;
+            }
         });
 
         requestAnimationFrame(() => {

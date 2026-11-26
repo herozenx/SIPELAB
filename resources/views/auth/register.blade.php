@@ -244,4 +244,5 @@
     </div>
   </div>
 </div>
+@include('auth._loading')
 @endsection

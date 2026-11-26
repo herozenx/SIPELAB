@@ -29,7 +29,10 @@
     .op-panel,
     .op-card,
     .op-modal,
-    .op-modal-panel { transition: none !important; }
+    .op-modal-panel,
+    .auth-loading,
+    .auth-loading-panel,
+    .auth-loading-ring { transition: none !important; animation: none !important; }
   }
   a[href],
   button,
@@ -63,6 +66,12 @@
   .op-modal.is-open { opacity: 1; visibility: visible; pointer-events: auto; }
   .op-modal-panel { opacity: 0; transform: translateY(8px) scale(0.97); transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1), transform 220ms cubic-bezier(0.22, 1, 0.36, 1); }
   .op-modal.is-open .op-modal-panel { opacity: 1; transform: translateY(0) scale(1); }
+  .auth-loading { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 180ms ease, visibility 180ms ease; }
+  .auth-loading.is-open { opacity: 1; visibility: visible; pointer-events: auto; }
+  .auth-loading-panel { opacity: 0; transform: scale(0.96); transition: opacity 200ms cubic-bezier(0.22, 1, 0.36, 1), transform 200ms cubic-bezier(0.22, 1, 0.36, 1); }
+  .auth-loading.is-open .auth-loading-panel { opacity: 1; transform: scale(1); }
+  .auth-loading-ring { animation: auth-spin 0.9s linear infinite; }
+  @keyframes auth-spin { to { transform: rotate(360deg); } }
   .panduan-page-link { @apply inline-flex min-h-[44px] items-center rounded-lg px-3 text-sm font-bold text-laut-700 no-underline transition-colors duration-200 hover:bg-kabut-50 hover:text-laut-600 hover:no-underline; }
   .auth-inline-link { @apply font-semibold text-laut-700 no-underline transition-colors duration-200 hover:text-laut-500 hover:no-underline; }
   .public-nav-link { @apply inline-flex min-h-[44px] items-center rounded-lg px-2 text-sm font-semibold text-kabut-600 no-underline transition-colors duration-200 hover:text-laut-700 hover:no-underline; }

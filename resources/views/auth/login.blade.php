@@ -96,4 +96,5 @@
     </section>
   </div>
 </div>
+@include('auth._loading')
 @endsection
